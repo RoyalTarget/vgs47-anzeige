@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Anlage VGS 47</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Anlage VGS 47</h1>
+  <div id="stand" class="stand">lädt …</div>
+</header>
+
+<main>
+  <section>
+    <h2>Heizung</h2>
+    <div class="karte schema-karte">
+      <div id="schema" class="schema">
+        <img src="img/schema_bg.svg" alt="Anlagenschema" class="bg">
+        <div id="overlays"></div>
+        <div id="werte"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Klima</h2>
+    <div id="klima" class="raster drei"></div>
+  </section>
+
+  <div class="zwei">
+    <section>
+      <h2>Energie</h2>
+      <div class="karte">
+        <svg id="fluss" viewBox="0 0 400 312" class="fluss" aria-label="Energiefluss"></svg>
+        <div id="verbraucher" class="chips"></div>
+      </div>
+    </section>
+    <section>
+      <h2>Batterie</h2>
+      <div class="karte">
+        <svg id="tacho" viewBox="0 0 200 120" class="tacho" aria-label="Batterie-Ladestand"></svg>
+      </div>
+      <div class="karte streifen">
+        <img src="img/batt_bg.svg" alt="" class="bg">
+        <img src="img/batt_laden.svg" alt="" id="batt_laden" hidden>
+        <img src="img/batt_entladen.svg" alt="" id="batt_entladen" hidden>
+        <span id="batt_w" class="batt-w"></span>
+      </div>
+      <h3>Last je Phase</h3>
+      <div class="karte raster drei-fest" id="phasen"></div>
+      <h3>Stromzähler</h3>
+      <div class="raster zwei-fest" id="zaehler"></div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Wasser</h2>
+    <div id="wasser" class="raster vier"></div>
+  </section>
+</main>
+
+<footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
+<script src="app.js"></script>
+</body>
+</html>
