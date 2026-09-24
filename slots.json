@@ -187,6 +187,17 @@
   "dec": 2
  },
  {
+  "id": "rl_wz",
+  "left": 90.83,
+  "top": 29.86,
+  "anchor": "start",
+  "color": "#3b82f6",
+  "prefix": "RL WZ ",
+  "entity": "sensor.rl_wohnzimmer",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
   "id": "hk_mix",
   "left": 63.33,
   "top": 42.5,
