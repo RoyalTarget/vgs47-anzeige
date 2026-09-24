@@ -178,6 +178,45 @@ function zeigeWasser(s) {
     + k("Ventil", ventil);
 }
 
+// ---------- Großverbraucher & PV je Fläche ----------
+function zeigeTabellen(s, k) {
+  const kw = (e) => (k[e] == null ? "–" : zahl(k[e], 2));
+  const G = [
+    ["Wärmepumpe", "sensor.cmi_wp_leistung_elektrisch", "sensor.cmi_wp_energie_heute", "sensor.wp_energie_monat", "–"],
+    ["BWWP", "sensor.keller_bwwp_shelly_leistung", "sensor.keller_bwwp_shelly_bwwp_energie_heute", "sensor.bwwp_energie_monat", "L2"],
+    ["Entfeuchter", "sensor.keller_entfeuchter_power", "sensor.entfeuchter_energie_heute", "sensor.entfeuchter_energie_monat", "L2"],
+    ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung", "sensor.spulmaschine_energie_heute", "sensor.spulmaschine_energie_monat", "L1"],
+    ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung", "sensor.waschmaschine_energie_heute", "sensor.waschmaschine_energie_monat", "–"],
+    ["Trockner", "sensor.keller_miele_trockner_leistung", "sensor.trockner_energie_heute", "sensor.trockner_energie_monat", "–"],
+    ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "L2"],
+    ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "–"],
+    ["Klima Wintergarten ≈", "sensor.klima_wintergarten_leistung_geschatzt", "sensor.klima_wintergarten_heute", "sensor.klima_wintergarten_monat", "L2"],
+    ["Klima Emil ≈", "sensor.klima_emil_leistung_geschatzt", "sensor.klima_emil_heute", "sensor.klima_emil_monat", "L2"],
+    ["Klima Dachspitz ≈", "sensor.klima_dachspitz_leistung_geschatzt", "sensor.klima_dachspitz_heute", "sensor.klima_dachspitz_monat", "L2"],
+    ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.nerdaxe_energie_heute", "sensor.nerdaxe_energie_monat", "L2"],
+    ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "–"],
+  ];
+  const w0 = (e) => { const v = num(s, e); return v === null ? "–" : zahl(v, 0) + " W"; };
+  $("gross").innerHTML = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Phase</th></tr>"
+    + G.map(([n, p, h, m, ph]) => `<tr><td>${n}</td><td>${w0(p)}</td><td>${kw(h)}</td><td>${kw(m)}</td><td>${ph}</td></tr>`).join("")
+    + `<tr><td>Rest (ungemessen)</td><td>${w0("sensor.rest_ungemessen")}</td><td></td><td></td><td></td></tr>`
+    + `<tr class="summe"><td>Haus gesamt</td><td>${w0("sensor.hausverbrauch")}</td><td></td><td></td><td></td></tr>`;
+
+  const F = [
+    ["Dach Ost", "MPPT1", "sensor.mppt1_1_dach_ost_leistung_pv_ertrag", "sensor.mppt1_1_dach_ost_ertrag_heute", "sensor.mppt1_1_dach_ost_maximalleistung_heute"],
+    ["Dach West", "MPPT3", "sensor.mppt3_6_dach_west_leistung_pv_ertrag", "sensor.mppt3_6_dach_west_ertrag_heute", "sensor.mppt3_6_dach_west_maximalleistung_heute"],
+    ["Fassade Süd oben", "RS 450 #3", "sensor.mppt2_leistung_pv_tracker_3_sued_oben", "sensor.mppt2_ertrag_tracker_3_sued_oben_heute", "sensor.mppt2_maximalleistung_tracker_3_sued_oben_heute"],
+    ["Fassade Süd unten", "RS 450 #4", "sensor.mppt2_leistung_pv_tracker_4_sued_unten", "sensor.mppt2_ertrag_tracker_4_sued_unten_heute", "sensor.mppt2_maximalleistung_tracker_4_sued_unten_heute"],
+    ["Gaube Ost", "RS 450 #2", "sensor.mppt2_leistung_pv_tracker_2_gaube_ost", "sensor.mppt2_ertrag_tracker_2_gaube_ost_heute", "sensor.mppt2_maximalleistung_tracker_2_gaube_ost_heute"],
+    ["Gaube West", "RS 450 #5", "sensor.mppt2_leistung_pv_tracker_5_gaube_west", "sensor.mppt2_ertrag_tracker_5_gaube_west_heute", "sensor.mppt2_maximalleistung_tracker_5_gaube_west_heute"],
+  ];
+  const sw = F.reduce((a, f) => a + (num(s, f[2]) ?? 0), 0);
+  const sh = F.reduce((a, f) => a + (k[f[3]] ?? 0), 0);
+  $("pvflaeche").innerHTML = "<tr><th>Fläche</th><th>jetzt</th><th>heute kWh</th><th>max heute</th></tr>"
+    + F.map(([n, m, p, h, mx]) => `<tr><td>${n} <span class="klein">${m}</span></td><td>${w0(p)}</td><td>${kw(h)}</td><td>${w0(mx)}</td></tr>`).join("")
+    + `<tr class="summe"><td>Summe</td><td>${zahl(sw, 0)} W</td><td>${zahl(sh, 2)}</td><td></td></tr>`;
+}
+
 // ---------- Laden ----------
 async function holen() {
   try {
@@ -185,7 +224,7 @@ async function holen() {
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
     $("sonne").hidden = s["binary_sensor.pv_uberschuss"] !== "on";
-    zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s);
+    zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {});
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
