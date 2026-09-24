@@ -251,5 +251,16 @@
   "entity": "sensor.cmi_t_zirkulation_rl",
   "unit": "°C",
   "dec": 1
+ },
+ {
+  "id": "wasser",
+  "left": 96.67,
+  "top": 98.33,
+  "anchor": "middle",
+  "color": "#22d3ee",
+  "prefix": "",
+  "entity": "sensor.syr_connect_245124253_getflo",
+  "unit": "l/h",
+  "dec": 0
  }
 ]
