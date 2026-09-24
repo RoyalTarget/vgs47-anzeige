@@ -83,3 +83,7 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
   .vier { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .klima .temp { font-size: 26px; }
 }
+
+/* Hinweis PV-Überschuss */
+.sonne { background: #3a2f0b; border: 1px solid var(--orange); color: #fde68a; border-radius: 12px;
+  padding: 10px 14px; margin-top: 12px; font-size: 15px; }
