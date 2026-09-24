@@ -189,9 +189,9 @@
  {
   "id": "rl_wz",
   "left": 90.83,
-  "top": 29.86,
+  "top": 50.28,
   "anchor": "start",
-  "color": "#3b82f6",
+  "color": "#f59e0b",
   "prefix": "RL WZ ",
   "entity": "sensor.rl_wohnzimmer",
   "unit": "°C",
