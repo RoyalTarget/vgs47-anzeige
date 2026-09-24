@@ -1,0 +1,404 @@
+[
+ {
+  "img": "pump_pmg.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_hk_pumpe",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "flow_zirk.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_zirkulationspumpe",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "fan_wp.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_lauft",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "fan_bwwp.svg",
+  "conds": [
+   [
+    "binary_sensor.bwwp_lauft",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "flow_entfeuchter.svg",
+  "conds": [
+   [
+    "binary_sensor.entfeuchter_lauft",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "abtauen.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_taut_ab",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "flow_wp_1.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_lauft",
+    "on"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    null,
+    2.0
+   ]
+  ]
+ },
+ {
+  "img": "flow_wp_2.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_lauft",
+    "on"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    2.0,
+    4.0
+   ]
+  ]
+ },
+ {
+  "img": "flow_wp_3.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_lauft",
+    "on"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    4.0,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "flow_ww_1.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_anforderung_wp_ww_ladung",
+    "on"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    null,
+    2.0
+   ]
+  ]
+ },
+ {
+  "img": "flow_ww_2.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_anforderung_wp_ww_ladung",
+    "on"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    2.0,
+    4.0
+   ]
+  ]
+ },
+ {
+  "img": "flow_ww_3.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_anforderung_wp_ww_ladung",
+    "on"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    4.0,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "flow_ie_hk_1.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_lauft",
+    "on"
+   ],
+   [
+    "binary_sensor.cmi_anforderung_wp_ww_ladung",
+    "off"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    null,
+    2.0
+   ]
+  ]
+ },
+ {
+  "img": "flow_ie_hk_2.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_lauft",
+    "on"
+   ],
+   [
+    "binary_sensor.cmi_anforderung_wp_ww_ladung",
+    "off"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    2.0,
+    4.0
+   ]
+  ]
+ },
+ {
+  "img": "flow_ie_hk_3.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_lauft",
+    "on"
+   ],
+   [
+    "binary_sensor.cmi_anforderung_wp_ww_ladung",
+    "off"
+   ],
+   [
+    "sensor.cmi_wp_leistung_thermisch",
+    4.0,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "flow_heiz_1.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_hk_pumpe",
+    "on"
+   ],
+   [
+    "sensor.hk_leistung",
+    null,
+    1.5
+   ]
+  ]
+ },
+ {
+  "img": "flow_heiz_2.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_hk_pumpe",
+    "on"
+   ],
+   [
+    "sensor.hk_leistung",
+    1.5,
+    3.5
+   ]
+  ]
+ },
+ {
+  "img": "flow_heiz_3.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_hk_pumpe",
+    "on"
+   ],
+   [
+    "sensor.hk_leistung",
+    3.5,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "flow_puffer_laden_1.svg",
+  "conds": [
+   [
+    "binary_sensor.puffer_wird_geladen",
+    "on"
+   ],
+   [
+    "sensor.puffer_bilanz",
+    null,
+    1.5
+   ]
+  ]
+ },
+ {
+  "img": "flow_puffer_laden_2.svg",
+  "conds": [
+   [
+    "binary_sensor.puffer_wird_geladen",
+    "on"
+   ],
+   [
+    "sensor.puffer_bilanz",
+    1.5,
+    3.0
+   ]
+  ]
+ },
+ {
+  "img": "flow_puffer_laden_3.svg",
+  "conds": [
+   [
+    "binary_sensor.puffer_wird_geladen",
+    "on"
+   ],
+   [
+    "sensor.puffer_bilanz",
+    3.0,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "flow_puffer_entladen_3.svg",
+  "conds": [
+   [
+    "binary_sensor.puffer_wird_entladen",
+    "on"
+   ],
+   [
+    "sensor.puffer_bilanz",
+    null,
+    -3.0
+   ]
+  ]
+ },
+ {
+  "img": "flow_puffer_entladen_2.svg",
+  "conds": [
+   [
+    "binary_sensor.puffer_wird_entladen",
+    "on"
+   ],
+   [
+    "sensor.puffer_bilanz",
+    -3.0,
+    -1.5
+   ]
+  ]
+ },
+ {
+  "img": "flow_puffer_entladen_1.svg",
+  "conds": [
+   [
+    "binary_sensor.puffer_wird_entladen",
+    "on"
+   ],
+   [
+    "sensor.puffer_bilanz",
+    -1.5,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "flow_zapfung_1.svg",
+  "conds": [
+   [
+    "binary_sensor.warmwasser_wird_gezapft",
+    "on"
+   ],
+   [
+    "sensor.syr_connect_245124253_getflo",
+    null,
+    300
+   ]
+  ]
+ },
+ {
+  "img": "flow_zapfung_2.svg",
+  "conds": [
+   [
+    "binary_sensor.warmwasser_wird_gezapft",
+    "on"
+   ],
+   [
+    "sensor.syr_connect_245124253_getflo",
+    300,
+    600
+   ]
+  ]
+ },
+ {
+  "img": "flow_zapfung_3.svg",
+  "conds": [
+   [
+    "binary_sensor.warmwasser_wird_gezapft",
+    "on"
+   ],
+   [
+    "sensor.syr_connect_245124253_getflo",
+    600,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "flow_mischer_3.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_hk_pumpe",
+    "on"
+   ],
+   [
+    "sensor.cmi_hk_mischer",
+    null,
+    25
+   ]
+  ]
+ },
+ {
+  "img": "flow_mischer_2.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_hk_pumpe",
+    "on"
+   ],
+   [
+    "sensor.cmi_hk_mischer",
+    25,
+    60
+   ]
+  ]
+ },
+ {
+  "img": "flow_mischer_1.svg",
+  "conds": [
+   [
+    "binary_sensor.cmi_hk_pumpe",
+    "on"
+   ],
+   [
+    "sensor.cmi_hk_mischer",
+    60,
+    97
+   ]
+  ]
+ }
+]
