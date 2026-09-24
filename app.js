@@ -184,6 +184,7 @@ async function holen() {
     const r = await fetch(DATEN + "?t=" + Date.now(), { cache: "no-store" });
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
+    $("sonne").hidden = s["binary_sensor.pv_uberschuss"] !== "on";
     zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
