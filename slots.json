@@ -145,7 +145,7 @@
  {
   "id": "hk_vl",
   "left": 63.33,
-  "top": 29.17,
+  "top": 22.22,
   "anchor": "middle",
   "color": "#ef4444",
   "prefix": "VL ",
@@ -156,7 +156,7 @@
  {
   "id": "hk_rl",
   "left": 63.33,
-  "top": 32.5,
+  "top": 25.56,
   "anchor": "middle",
   "color": "#3b82f6",
   "prefix": "RL ",
@@ -167,7 +167,7 @@
  {
   "id": "hk_q",
   "left": 63.33,
-  "top": 39.17,
+  "top": 32.22,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -178,7 +178,7 @@
  {
   "id": "hk_p",
   "left": 63.33,
-  "top": 35.83,
+  "top": 28.89,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -200,7 +200,7 @@
  {
   "id": "hk_mix",
   "left": 63.33,
-  "top": 42.5,
+  "top": 35.56,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "Mischer ",
@@ -211,7 +211,7 @@
  {
   "id": "ent_p",
   "left": 31.25,
-  "top": 96.67,
+  "top": 97.22,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
