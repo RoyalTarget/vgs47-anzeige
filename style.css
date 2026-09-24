@@ -87,3 +87,14 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 /* Hinweis PV-Überschuss */
 .sonne { background: #3a2f0b; border: 1px solid var(--orange); color: #fde68a; border-radius: 12px;
   padding: 10px 14px; margin-top: 12px; font-size: 15px; }
+
+/* Tabellen Großverbraucher / PV */
+.tab { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tab th, .tab td { padding: 6px 6px; border-bottom: 1px solid var(--rand); }
+.tab th { color: var(--leise); font-weight: 500; text-align: right; }
+.tab th:first-child, .tab td:first-child { text-align: left; }
+.tab td { text-align: right; white-space: nowrap; }
+.tab td:first-child { white-space: normal; }
+.tab tr.summe td { font-weight: 600; border-bottom: none; }
+.tab .klein { color: var(--leise); font-size: 11px; }
+.fuss { color: var(--leise); font-size: 12px; margin-top: 8px; }
