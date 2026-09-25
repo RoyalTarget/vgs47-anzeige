@@ -54,21 +54,12 @@
   ]
  },
  {
-  "img": "tank_voll.svg",
-  "conds": [
-   [
-    "binary_sensor.entfeuchter_tank_voll",
-    "on"
-   ]
-  ]
- },
- {
   "img": "tank_fill_1.svg",
   "conds": [
    [
     "sensor.entfeuchter_fullstand",
-    9,
-    30
+    4,
+    15
    ]
   ]
  },
@@ -77,8 +68,8 @@
   "conds": [
    [
     "sensor.entfeuchter_fullstand",
-    29,
-    50
+    14,
+    25
    ]
   ]
  },
@@ -87,8 +78,8 @@
   "conds": [
    [
     "sensor.entfeuchter_fullstand",
-    49,
-    70
+    24,
+    35
    ]
   ]
  },
@@ -97,8 +88,8 @@
   "conds": [
    [
     "sensor.entfeuchter_fullstand",
-    69,
-    90
+    34,
+    45
    ]
   ]
  },
@@ -107,8 +98,67 @@
   "conds": [
    [
     "sensor.entfeuchter_fullstand",
-    89,
+    44,
+    55
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_6.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    54,
+    65
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_7.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    64,
+    75
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_8.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    74,
+    85
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_9.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    84,
+    95
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_10.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    94,
     null
+   ]
+  ]
+ },
+ {
+  "img": "tank_voll.svg",
+  "conds": [
+   [
+    "binary_sensor.entfeuchter_tank_voll",
+    "on"
    ]
   ]
  },
