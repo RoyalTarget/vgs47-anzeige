@@ -63,6 +63,56 @@
   ]
  },
  {
+  "img": "tank_fill_1.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    9,
+    30
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_2.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    29,
+    50
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_3.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    49,
+    70
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_4.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    69,
+    90
+   ]
+  ]
+ },
+ {
+  "img": "tank_fill_5.svg",
+  "conds": [
+   [
+    "sensor.entfeuchter_fullstand",
+    89,
+    null
+   ]
+  ]
+ },
+ {
   "img": "flow_wp_1.svg",
   "conds": [
    [
