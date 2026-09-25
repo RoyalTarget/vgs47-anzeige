@@ -243,7 +243,7 @@
  },
  {
   "id": "ww",
-  "left": 89.58,
+  "left": 91.25,
   "top": 74.16,
   "anchor": "middle",
   "color": "#e879f9",
@@ -254,7 +254,7 @@
  },
  {
   "id": "zirk",
-  "left": 91.67,
+  "left": 91.25,
   "top": 81.76,
   "anchor": "middle",
   "color": "#e879f9",
@@ -264,9 +264,20 @@
   "dec": 1
  },
  {
+  "id": "kw_t",
+  "left": 91.25,
+  "top": 90.88,
+  "anchor": "middle",
+  "color": "#22d3ee",
+  "prefix": "",
+  "entity": "sensor.syr_connect_245124253_getcel",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
   "id": "wasser",
-  "left": 96.67,
-  "top": 98.18,
+  "left": 91.25,
+  "top": 96.05,
   "anchor": "middle",
   "color": "#22d3ee",
   "prefix": "",
