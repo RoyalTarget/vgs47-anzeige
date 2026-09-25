@@ -209,10 +209,32 @@
   "dec": 0
  },
  {
+  "id": "ent_f",
+  "left": 30.5,
+  "top": 90.43,
+  "anchor": "start",
+  "color": "#22d3ee",
+  "prefix": "",
+  "entity": "sensor.keller_ht_feuchte",
+  "unit": "%",
+  "dec": 0
+ },
+ {
+  "id": "ent_t",
+  "left": 30.5,
+  "top": 93.47,
+  "anchor": "start",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.keller_ht_temperatur",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
   "id": "ent_p",
-  "left": 30.42,
-  "top": 96.05,
-  "anchor": "middle",
+  "left": 30.5,
+  "top": 96.5,
+  "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "",
   "entity": "sensor.keller_entfeuchter_power",
