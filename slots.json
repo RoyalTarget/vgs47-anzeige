@@ -2,7 +2,7 @@
  {
   "id": "aussen",
   "left": 2.5,
-  "top": 48.61,
+  "top": 43.77,
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "Außen ",
@@ -13,7 +13,7 @@
  {
   "id": "innen",
   "left": 2.5,
-  "top": 52.08,
+  "top": 47.57,
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "Innen ",
@@ -24,7 +24,7 @@
  {
   "id": "p_th",
   "left": 2.5,
-  "top": 57.64,
+  "top": 53.65,
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "therm. ",
@@ -35,7 +35,7 @@
  {
   "id": "p_el",
   "left": 2.5,
-  "top": 61.11,
+  "top": 57.45,
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "elektr. ",
@@ -46,7 +46,7 @@
  {
   "id": "az",
   "left": 2.5,
-  "top": 64.58,
+  "top": 61.25,
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "AZ ",
@@ -57,7 +57,7 @@
  {
   "id": "az_heute",
   "left": 2.5,
-  "top": 68.06,
+  "top": 65.05,
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "AZ heute ",
@@ -68,7 +68,7 @@
  {
   "id": "strom",
   "left": 2.5,
-  "top": 71.53,
+  "top": 68.84,
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "Strom heute ",
@@ -79,7 +79,7 @@
  {
   "id": "wp_vl",
   "left": 10.0,
-  "top": 31.94,
+  "top": 25.53,
   "anchor": "middle",
   "color": "#ef4444",
   "prefix": "",
@@ -90,7 +90,7 @@
  {
   "id": "wp_rl",
   "left": 10.0,
-  "top": 35.42,
+  "top": 29.33,
   "anchor": "middle",
   "color": "#3b82f6",
   "prefix": "",
@@ -101,7 +101,7 @@
  {
   "id": "durchfl",
   "left": 10.0,
-  "top": 38.89,
+  "top": 33.13,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -112,7 +112,7 @@
  {
   "id": "puf_o",
   "left": 28.75,
-  "top": 27.78,
+  "top": 20.97,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -123,7 +123,7 @@
  {
   "id": "puf_m",
   "left": 28.75,
-  "top": 45.14,
+  "top": 39.97,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -134,7 +134,7 @@
  {
   "id": "druck",
   "left": 49.17,
-  "top": 96.81,
+  "top": 96.5,
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "",
@@ -145,7 +145,7 @@
  {
   "id": "hk_vl",
   "left": 63.33,
-  "top": 22.22,
+  "top": 14.89,
   "anchor": "middle",
   "color": "#ef4444",
   "prefix": "VL ",
@@ -156,7 +156,7 @@
  {
   "id": "hk_rl",
   "left": 63.33,
-  "top": 25.56,
+  "top": 18.54,
   "anchor": "middle",
   "color": "#3b82f6",
   "prefix": "RL ",
@@ -167,7 +167,7 @@
  {
   "id": "hk_q",
   "left": 63.33,
-  "top": 32.22,
+  "top": 25.84,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -178,7 +178,7 @@
  {
   "id": "hk_p",
   "left": 63.33,
-  "top": 28.89,
+  "top": 22.19,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -189,7 +189,7 @@
  {
   "id": "rl_wz",
   "left": 90.83,
-  "top": 50.28,
+  "top": 45.59,
   "anchor": "start",
   "color": "#f59e0b",
   "prefix": "RL WZ ",
@@ -200,7 +200,7 @@
  {
   "id": "hk_mix",
   "left": 63.33,
-  "top": 35.56,
+  "top": 29.48,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "Mischer ",
@@ -211,7 +211,7 @@
  {
   "id": "ent_p",
   "left": 31.25,
-  "top": 97.22,
+  "top": 96.96,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -222,7 +222,7 @@
  {
   "id": "bw_p",
   "left": 79.58,
-  "top": 94.86,
+  "top": 94.38,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -233,7 +233,7 @@
  {
   "id": "bw_sp",
   "left": 81.25,
-  "top": 87.78,
+  "top": 86.63,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -244,7 +244,7 @@
  {
   "id": "ww",
   "left": 89.58,
-  "top": 76.39,
+  "top": 74.16,
   "anchor": "middle",
   "color": "#e879f9",
   "prefix": "",
@@ -255,7 +255,7 @@
  {
   "id": "zirk",
   "left": 89.58,
-  "top": 88.19,
+  "top": 87.08,
   "anchor": "middle",
   "color": "#e879f9",
   "prefix": "",
@@ -266,7 +266,7 @@
  {
   "id": "wasser",
   "left": 96.67,
-  "top": 98.33,
+  "top": 98.18,
   "anchor": "middle",
   "color": "#22d3ee",
   "prefix": "",
