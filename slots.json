@@ -133,7 +133,7 @@
  },
  {
   "id": "druck",
-  "left": 54.17,
+  "left": 44.17,
   "top": 96.5,
   "anchor": "start",
   "color": "#e5e7eb",
@@ -254,8 +254,8 @@
  },
  {
   "id": "zirk",
-  "left": 89.58,
-  "top": 87.08,
+  "left": 91.67,
+  "top": 81.76,
   "anchor": "middle",
   "color": "#e879f9",
   "prefix": "",
