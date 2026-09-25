@@ -133,9 +133,9 @@
  },
  {
   "id": "druck",
-  "left": 44.17,
-  "top": 96.5,
-  "anchor": "start",
+  "left": 41.67,
+  "top": 71.73,
+  "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
   "entity": "sensor.cmi_systemdruck",
@@ -210,8 +210,8 @@
  },
  {
   "id": "ent_p",
-  "left": 31.25,
-  "top": 96.96,
+  "left": 30.42,
+  "top": 91.03,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
