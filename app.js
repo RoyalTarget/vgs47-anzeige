@@ -159,7 +159,7 @@ function zeigeKlima(s, a) {
   $("klima").innerHTML = g.map(([n, k]) => {
     const e = `climate.${k}_room_temperature`, at = a[e] || {};
     const [txt, cls] = MODUS[s[e]] || [s[e] ?? "–", ""];
-    const heute = num(s, `sensor.klima_${k}_heute`);
+    const heute = num(s, `sensor.klima_${k}_betrieb_heute`);
     return `<div class="kachel klima ${cls}"><div class="name">${n}</div><div class="modus">${txt}</div>`
       + `<div class="temp">${at.ist == null ? "–" : zahl(at.ist, 0) + " °C"}</div>`
       + `<div class="sub">Soll ${at.soll == null ? "–" : zahl(at.soll, 1) + " °C"} · heute ${heute === null ? "–" : zahl(heute, 1) + " kWh"}</div></div>`;
