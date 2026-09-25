@@ -54,6 +54,15 @@
   ]
  },
  {
+  "img": "tank_voll.svg",
+  "conds": [
+   [
+    "binary_sensor.entfeuchter_tank_voll",
+    "on"
+   ]
+  ]
+ },
+ {
   "img": "flow_wp_1.svg",
   "conds": [
    [
