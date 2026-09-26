@@ -239,7 +239,7 @@ function zeigeTage(s, k, h) {
   const alle = tagesListe(s, k, h), tage = alle.slice(-(window.innerWidth < 600 ? 7 : 10));
   const W = 700, H = 330, L = 34, R = 10, O = 78, U = 28, ph = H - O - U;
   const max = Math.max(4, ...tage.map((t) => t.summe)), schritt = max > 12 ? 4 : 2, ymax = Math.ceil(max / schritt) * schritt;
-  const y = (v) => O + ph - v / ymax * ph, bw = (W - L - R) / tage.length, FARB = ["#93c5fd", "#3b82f6", "#fca5a5", "#ef4444"];
+  const y = (v) => O + ph - v / ymax * ph, bw = (W - L - R) / tage.length, FARB = ["#3b82f6", "#1d4ed8", "#f87171", "#dc2626"];
   let svg = "";
   for (let v = 0; v <= ymax; v += schritt) svg += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#374151" stroke-dasharray="3 3"/>`
     + `<text x="${L - 6}" y="${y(v) + 4}" fill="#9ca3af" font-size="11" text-anchor="end">${v}</text>`;
