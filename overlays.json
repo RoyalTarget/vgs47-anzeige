@@ -58,7 +58,7 @@
   "conds": [
    [
     "sensor.entfeuchter_fullstand",
-    4,
+    0,
     15
    ]
   ]
