@@ -14,7 +14,6 @@
 </header>
 
 <main>
-  <div id="sonne" class="sonne" hidden>☀️ Gerade ist Sonnenstrom übrig – gute Zeit für Waschmaschine, Trockner oder Spülmaschine.</div>
   <section>
     <h2>Heizung</h2>
     <div class="karte schema-karte">
@@ -29,6 +28,29 @@
   <section>
     <h2>Klima</h2>
     <div id="klima" class="raster drei"></div>
+  </section>
+
+  <section>
+    <h2>Wärmepumpen – Strom pro Tag</h2>
+    <div class="karte">
+      <svg id="tage" viewBox="0 0 700 330" class="tage" aria-label="Strom pro Tag"></svg>
+      <div class="legende">
+        <span><i style="background:#93c5fd"></i>WP PV/Akku</span><span><i style="background:#3b82f6"></i>WP Netz</span>
+        <span><i style="background:#fca5a5"></i>BWWP PV/Akku</span><span><i style="background:#ef4444"></i>BWWP Netz</span>
+      </div>
+    </div>
+    <div class="karte donut-karte">
+      <svg id="donut" viewBox="0 0 220 220" class="donut" aria-label="Strom der letzten 30 Tage"></svg>
+      <div id="donut_text" class="donut-text"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>PV-Überschuss</h2>
+    <div class="raster zwei-fest pv-zeile">
+      <div class="karte"><svg id="pvtacho" viewBox="0 0 200 130" class="tacho" aria-label="ungenutzter PV-Strom"></svg></div>
+      <div class="karte" id="pvtext"></div>
+    </div>
   </section>
 
   <div class="zwei">
