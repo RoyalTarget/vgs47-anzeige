@@ -19,7 +19,7 @@ function baueSchema() {
   for (const s of slots) {
     if (!s.entity) continue;
     const el = document.createElement("div");
-    el.className = "wert " + s.anchor;
+    el.className = "wert " + s.anchor + (s.id.startsWith("rl_") ? " klein" : "");
     el.style.left = s.left + "%";
     el.style.top = s.top + "%";
     el.style.color = s.color;
