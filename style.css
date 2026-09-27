@@ -126,3 +126,5 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 #progtext .tab td:first-child, #progtext .tab th:first-child { text-align: left; }
 #progtext .tab td { text-align: right; }
 #progtext .hinweis { margin: 8px 0 0; font-size: 14px; }
+.prog-legende .au::before { border-color: #3b82f6; } .prog-legende .aup::before { border-color: #93c5fd; border-top-style: dashed; }
+.prog-legende .in::before { border-color: #ef4444; }
