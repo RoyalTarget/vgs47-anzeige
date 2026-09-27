@@ -187,34 +187,67 @@
   "dec": 2
  },
  {
-  "id": "rl_wz",
+  "id": "rl_wz_l",
   "left": 90.17,
   "top": 43.77,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "WZ 3: ",
+  "prefix": "WZ 3:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_wz",
+  "left": 97.17,
+  "top": 43.77,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
   "entity": "sensor.rl_wohnzimmer",
   "unit": "°C",
   "dec": 1
  },
  {
-  "id": "rl_wza",
+  "id": "rl_wza_l",
   "left": 90.17,
   "top": 47.42,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "WZ 4: ",
+  "prefix": "WZ 4:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_wza",
+  "left": 97.17,
+  "top": 47.42,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
   "entity": "sensor.rl_wz_aussen",
   "unit": "°C",
   "dec": 1
  },
  {
-  "id": "rl_flur",
+  "id": "rl_flur_l",
   "left": 90.17,
   "top": 51.06,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "Flur: ",
+  "prefix": "Flur:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_flur",
+  "left": 97.17,
+  "top": 51.06,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
   "entity": "sensor.rl_flur",
   "unit": "°C",
   "dec": 1
