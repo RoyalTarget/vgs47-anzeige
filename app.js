@@ -371,6 +371,42 @@ function zeigePrognose(d) {
   $("progkurve").innerHTML = svg;
 }
 
+// ---------- Temperaturen innen/außen + Vorhersage, vorgestern bis übermorgen ----------
+function zeigeTemperaturen(d) {
+  const pi = (d.pi || []).filter((p) => p.length >= 6), wt = d.wt || [];
+  const L = 44, R = 956, T = 12, B = 260;
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0); const x0 = t0.getTime() - 2 * 864e5, x1 = x0 + 5 * 864e5;
+  const X = (t) => L + (t - x0) / (x1 - x0) * (R - L), halb = 18e5;
+  const ip = pi.filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
+  const jetzt = Date.now();
+  const fp = wt.filter((p) => p[0] >= jetzt - 36e5 && p[0] <= x1);
+  const werte = ip.flatMap((p) => [p[4], p[5]]).concat(fp.map((p) => p[1])).filter((v) => typeof v === "number");
+  if (!werte.length) { $("tempkurve").innerHTML = ""; return; }
+  const lo = Math.floor(Math.min(...werte) / 5) * 5, hi = Math.ceil(Math.max(...werte) / 5) * 5;
+  const Y = (v) => B - (v - lo) / (hi - lo || 1) * (B - T);
+  const linie = (pts) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
+  let svg = "";
+  for (let v = lo; v <= hi; v += 5)
+    svg += `<line x1="${L}" x2="${R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#374151" stroke-dasharray="3 4"/>`
+      + `<text x="${L - 6}" y="${Y(v) + 4}" fill="#9ca3af" font-size="12" text-anchor="end">${v}</text>`;
+  svg += `<text x="${L - 6}" y="${T - 2}" fill="#9ca3af" font-size="11" text-anchor="end">°C</text>`;
+  const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  for (let i = 0; i <= 5; i++) {
+    const t = x0 + i * 864e5, dt = new Date(t);
+    svg += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${B}" stroke="#4b5563"/>`;
+    if (i < 5) svg += `<text x="${X(t + 432e5)}" y="${B + 22}" fill="#9ca3af" font-size="13" text-anchor="middle">${tage[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}.</text>`;
+  }
+  if (ip.length) {
+    const au = ip.map((p) => [X(p[0] + halb), Y(p[4])]);
+    svg += `<path d="${linie(au)}L${au[au.length - 1][0]},${B}L${au[0][0]},${B}Z" fill="#3b82f6" fill-opacity="0.2"/>`
+      + `<path d="${linie(au)}" fill="none" stroke="#3b82f6" stroke-width="2.2"/>`;
+  }
+  if (fp.length) svg += `<path d="${linie(fp.map((p) => [X(p[0]), Y(p[1])]))}" fill="none" stroke="#93c5fd" stroke-width="2.2" stroke-dasharray="7 5"/>`;
+  if (ip.length) svg += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Y(p[5])]))}" fill="none" stroke="#ef4444" stroke-width="2.5"/>`;
+  if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+  $("tempkurve").innerHTML = svg;
+}
+
 // ---------- Laden ----------
 async function holen() {
   try {
@@ -378,7 +414,7 @@ async function holen() {
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {});
-    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d);
+    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
