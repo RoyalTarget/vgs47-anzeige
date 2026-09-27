@@ -1,5 +1,245 @@
 [
  {
+  "img": "sp_puffer_oben_1.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_oben",
+    null,
+    30
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_oben_2.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_oben",
+    29.99,
+    38
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_oben_3.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_oben",
+    37.99,
+    45
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_oben_4.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_oben",
+    44.99,
+    50
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_oben_5.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_oben",
+    49.99,
+    55
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_oben_6.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_oben",
+    54.99,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_unten_1.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_mitte",
+    null,
+    30
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_unten_2.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_mitte",
+    29.99,
+    38
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_unten_3.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_mitte",
+    37.99,
+    45
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_unten_4.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_mitte",
+    44.99,
+    50
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_unten_5.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_mitte",
+    49.99,
+    55
+   ]
+  ]
+ },
+ {
+  "img": "sp_puffer_unten_6.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_puffer_mitte",
+    54.99,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_oben_1.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_warmwasser",
+    null,
+    30
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_oben_2.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_warmwasser",
+    29.99,
+    38
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_oben_3.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_warmwasser",
+    37.99,
+    45
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_oben_4.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_warmwasser",
+    44.99,
+    50
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_oben_5.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_warmwasser",
+    49.99,
+    55
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_oben_6.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_warmwasser",
+    54.99,
+    null
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_unten_1.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_speicher_mitte",
+    null,
+    30
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_unten_2.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_speicher_mitte",
+    29.99,
+    38
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_unten_3.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_speicher_mitte",
+    37.99,
+    45
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_unten_4.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_speicher_mitte",
+    44.99,
+    50
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_unten_5.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_speicher_mitte",
+    49.99,
+    55
+   ]
+  ]
+ },
+ {
+  "img": "sp_bwwp_unten_6.svg",
+  "conds": [
+   [
+    "sensor.cmi_t_speicher_mitte",
+    54.99,
+    null
+   ]
+  ]
+ },
+ {
   "img": "pump_pmg.svg",
   "conds": [
    [
