@@ -33,6 +33,7 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 .wert { position: absolute; font-weight: 600; white-space: nowrap; font-size: 1.3333cqw; line-height: 1; }
 .wert.start { transform: translate(0, -75%); }
 .wert.middle { transform: translate(-50%, -75%); }
+.wert.end { transform: translate(-100%, -75%); }
 
 .raster { display: grid; gap: 8px; }
 .drei { grid-template-columns: repeat(3, minmax(0, 1fr)); }
