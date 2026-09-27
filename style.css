@@ -113,3 +113,5 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 #pvtext h3 { margin: 0 0 6px; font-size: 20px; }
 #pvtext .grau { color: #9ca3af; font-size: 14px; }
 @media (max-width: 767px) { .pv-zeile { grid-template-columns: 1fr; } }
+
+.wert.klein { font-size: 1.0833cqw; }   /* RL je Kreis: 13 statt 16 wie die Verteiler-Beschriftung */
