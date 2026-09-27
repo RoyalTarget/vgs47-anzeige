@@ -17,9 +17,11 @@ function watt(v) {
 function baueSchema() {
   const w = $("werte");
   for (const s of slots) {
-    if (!s.entity) continue;
+    const beschriftung = !s.entity && s.id.endsWith("_l");
+    if (!s.entity && !beschriftung) continue;
     const el = document.createElement("div");
-    el.className = "wert " + s.anchor;
+    if (beschriftung) el.textContent = s.prefix;
+    el.className = "wert " + s.anchor + (s.id.startsWith("rl_") ? " rl" : "");
     el.style.left = s.left + "%";
     el.style.top = s.top + "%";
     el.style.color = s.color;
