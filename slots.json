@@ -192,7 +192,7 @@
   "top": 43.77,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "WZ i ",
+  "prefix": "WZ 3: ",
   "entity": "sensor.rl_wohnzimmer",
   "unit": "°C",
   "dec": 1
@@ -203,7 +203,7 @@
   "top": 47.42,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "WZ a ",
+  "prefix": "WZ 4: ",
   "entity": "sensor.rl_wz_aussen",
   "unit": "°C",
   "dec": 1
@@ -214,7 +214,7 @@
   "top": 51.06,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "Flur ",
+  "prefix": "Flur: ",
   "entity": "sensor.rl_flur",
   "unit": "°C",
   "dec": 1
