@@ -311,6 +311,66 @@ function zeigePV(s) {
   $("pvtext").innerHTML = h;
 }
 
+// ---------- PV-Prognose (VRM) + Ist, vorgestern bis übermorgen ----------
+function zeigePrognose(d) {
+  const pr = d.pr || [], pi = d.pi || [], pz = d.pz || {};
+  const f = (v, n = 1) => (v === undefined || v === null || isNaN(parseFloat(v))) ? "–" : zahl(parseFloat(v), n);
+  // Tabelle + Hinweis
+  const m = parseFloat(pz.morgen), rest = parseFloat(pz.rest);
+  let spitze = "mittags";
+  if (pz.spitze_morgen && !isNaN(Date.parse(pz.spitze_morgen)))
+    spitze = new Date(pz.spitze_morgen).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
+  let hinweis = "⛅ Morgen mittelmäßig – große Verbraucher in die Mittagsstunden legen.";
+  if (m >= 18) hinweis = `☀️ <b>Morgen sonnig</b> – Wäsche, Trockner & Spülmaschine am besten mittags (Spitze ${spitze}).`;
+  else if (m < 8) hinweis = `☁️ <b>Morgen wenig Sonne</b> – große Verbraucher lieber heute laufen lassen${rest >= 5 ? " (heute noch " + f(rest) + " kWh)" : ""}.`;
+  $("progtext").innerHTML = `<table class="tab"><tr><th></th><th>PV erwartet</th><th>davon noch</th><th>bisher</th><th>Verbrauch ≈</th></tr>`
+    + `<tr><td><b>Heute</b></td><td><b>${f(pz.heute)} kWh</b></td><td>${f(pz.rest)}</td><td>${f(pz.ist)}</td><td>${f(pz.vb_heute, 0)}</td></tr>`
+    + `<tr><td><b>Morgen</b></td><td><b>${f(pz.morgen)} kWh</b></td><td></td><td></td><td>${f(pz.vb_morgen, 0)}</td></tr></table>`
+    + `<p class="hinweis">${hinweis}</p>`;
+  // Kurve
+  const W = 1000, H = 330, L = 44, R = 956, T = 12, B = 290;
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0); const x0 = t0.getTime() - 2 * 864e5, x1 = x0 + 5 * 864e5;
+  const X = (t) => L + (t - x0) / (x1 - x0) * (R - L);
+  const halb = 18e5;
+  const fp = pr.filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
+  const ip = pi.filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
+  let max = 1;
+  fp.forEach((p) => { max = Math.max(max, p[1] / 1000, p[2] / 1000); });
+  ip.forEach((p) => { max = Math.max(max, p[1], p[2]); });
+  max = Math.ceil(max);
+  const Y = (v) => B - v / max * (B - T), Ys = (v) => B - v / 100 * (B - T);
+  const linie = (pts) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
+  let svg = "";
+  for (let i = 0; i <= max; i += (max > 6 ? 2 : 1))
+    svg += `<line x1="${L}" x2="${R}" y1="${Y(i)}" y2="${Y(i)}" stroke="#374151" stroke-dasharray="3 4"/>`
+      + `<text x="${L - 6}" y="${Y(i) + 4}" fill="#9ca3af" font-size="12" text-anchor="end">${i}</text>`;
+  for (let v = 0; v <= 100; v += 20)
+    svg += `<text x="${R + 6}" y="${Ys(v) + 4}" fill="#9ca3af" font-size="12">${v}</text>`;
+  svg += `<text x="${L - 6}" y="${T - 2}" fill="#9ca3af" font-size="11" text-anchor="end">kW</text>`
+    + `<text x="${R + 6}" y="${T - 2}" fill="#9ca3af" font-size="11">%</text>`;
+  const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  for (let i = 0; i <= 5; i++) {
+    const t = x0 + i * 864e5, dt = new Date(t);
+    svg += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${B}" stroke="#4b5563"/>`;
+    if (i < 5) svg += `<text x="${X(t + 432e5)}" y="${B + 22}" fill="#9ca3af" font-size="13" text-anchor="middle">${tage[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}.</text>`;
+  }
+  const flaeche = (idx, farbe, deck) => {
+    if (!ip.length) return "";
+    const pts = ip.map((p) => [X(p[0] + halb), Y(p[idx])]);
+    return `<path d="${linie(pts)}L${pts[pts.length - 1][0]},${B}L${pts[0][0]},${B}Z" fill="${farbe}" fill-opacity="${deck}"/>`
+      + `<path d="${linie(pts)}" fill="none" stroke="${farbe}" stroke-width="2"/>`;
+  };
+  svg += flaeche(2, "#ef4444", 0.25) + flaeche(1, "#f59e0b", 0.35);
+  if (fp.length) {
+    svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y(p[2] / 1000)]))}" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="7 5"/>`;
+    svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y(p[1] / 1000)]))}" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="7 5"/>`;
+  }
+  if (ip.length) svg += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Ys(p[3])]))}" fill="none" stroke="#3b82f6" stroke-width="2.5"/>`;
+  const jetzt = Date.now();
+  if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+  $("progkurve").innerHTML = svg;
+}
+
 // ---------- Laden ----------
 async function holen() {
   try {
@@ -318,7 +378,7 @@ async function holen() {
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {});
-    zeigeTage(s, d.k || {}, d.h); zeigePV(s);
+    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
