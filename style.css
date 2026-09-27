@@ -115,3 +115,14 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 @media (max-width: 767px) { .pv-zeile { grid-template-columns: 1fr; } }
 
 .wert.rl { font-size: 1.0833cqw; }   /* RL je Kreis: 13 wie die Verteiler-Beschriftung */
+
+/* PV-Prognose (27.09.2026) */
+.progkurve { width: 100%; height: auto; display: block; margin-top: 8px; }
+.prog-legende { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; font-size: 13px; color: var(--leise); margin-top: 4px; }
+.prog-legende .l::before { content: ""; display: inline-block; width: 18px; height: 0; vertical-align: middle; margin-right: 6px; border-top: 3px solid; }
+.prog-legende .pv::before { border-color: #f59e0b; } .prog-legende .pvp::before { border-color: #fbbf24; border-top-style: dashed; }
+.prog-legende .vb::before { border-color: #ef4444; } .prog-legende .vbp::before { border-color: #f87171; border-top-style: dashed; }
+.prog-legende .soc::before { border-color: #3b82f6; }
+#progtext .tab td:first-child, #progtext .tab th:first-child { text-align: left; }
+#progtext .tab td { text-align: right; }
+#progtext .hinweis { margin: 8px 0 0; font-size: 14px; }
