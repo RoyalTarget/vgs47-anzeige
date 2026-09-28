@@ -181,6 +181,14 @@ function zeigeWasser(s) {
 }
 
 // ---------- Großverbraucher & PV je Fläche ----------
+// BWWP aufgeteilt in Verdichter und Heizstab (28.09.2026, Heizstab ≈ 1,88 kW aus der Shelly-Leistung geschätzt)
+function bwwpTeile(s, k, w0, kw) {
+  const hzm = k["sensor.bwwp_heizstab_energie_monat"], bm = k["sensor.bwwp_energie_monat"];
+  const vm = hzm == null || bm == null ? "–" : zahl(Math.max(bm - hzm, 0), 2);
+  const an = s["binary_sensor.bwwp_heizstab"] === "on";
+  return `<tr class="teil"><td>↳ Verdichter</td><td>${w0("sensor.bwwp_verdichter_leistung")}</td><td>${kw("sensor.bwwp_verdichter_energie_heute")}</td><td>${vm}</td><td></td></tr>`
+    + `<tr class="teil${an ? " hz-an" : ""}"><td>↳ Heizstab ⚡</td><td>${w0("sensor.bwwp_heizstab_leistung")}</td><td>${kw("sensor.bwwp_heizstab_energie_heute")}</td><td>${kw("sensor.bwwp_heizstab_energie_monat")}</td><td></td></tr>`;
+}
 function zeigeTabellen(s, k) {
   const kw = (e) => (k[e] == null ? "–" : zahl(k[e], 2));
   const G = [
@@ -200,7 +208,8 @@ function zeigeTabellen(s, k) {
   ];
   const w0 = (e) => { const v = num(s, e); return v === null ? "–" : zahl(v, 0) + " W"; };
   $("gross").innerHTML = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Phase</th></tr>"
-    + G.map(([n, p, h, m, ph]) => `<tr><td>${n}</td><td>${w0(p)}</td><td>${kw(h)}</td><td>${kw(m)}</td><td>${ph}</td></tr>`).join("")
+    + G.map(([n, p, h, m, ph]) => `<tr><td>${n}</td><td>${w0(p)}</td><td>${kw(h)}</td><td>${kw(m)}</td><td>${ph}</td></tr>`
+      + (n === "BWWP" ? bwwpTeile(s, k, w0, kw) : "")).join("")
     + `<tr><td>Rest (ungemessen)</td><td>${w0("sensor.rest_ungemessen")}</td><td></td><td></td><td></td></tr>`
     + `<tr class="summe"><td>Haus gesamt</td><td>${w0("sensor.hausverbrauch")}</td><td></td><td></td><td></td></tr>`;
 
