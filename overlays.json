@@ -354,6 +354,15 @@
   ]
  },
  {
+  "img": "heizstab.svg",
+  "conds": [
+   [
+    "binary_sensor.bwwp_heizstab",
+    "on"
+   ]
+  ]
+ },
+ {
   "img": "tank_fill_1.svg",
   "conds": [
    [
