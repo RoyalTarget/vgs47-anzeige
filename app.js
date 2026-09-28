@@ -139,6 +139,10 @@ function zeigeBatterie(s) {
     svg += `<polyline points="${pt(66)} ${pt(94)}" stroke="#e5e7eb" stroke-width="4" stroke-linecap="round"/>`;
   }
   svg += `<text x="100" y="96" text-anchor="middle" fill="#e5e7eb" font-size="26">${soc === null ? "–" : zahl(soc, 1) + " %"}</text>`;
+  // Energie im Akku (30 kWh) und über der Reserve (28.09.2026)
+  const res = num(s, "sensor.venus_aktiver_soc_grenzwert");
+  if (soc !== null) svg += `<text x="100" y="128" text-anchor="middle" fill="#9ca3af" font-size="10">${zahl(soc * 0.3, 1)} von 30 kWh`
+    + (res !== null ? ` · ${zahl(Math.max(soc - res, 0) * 0.3, 1)} kWh über Reserve (${zahl(res, 0)} %)` : "") + `</text>`;
   $("tacho").innerHTML = svg;
   const b = num(s, "sensor.venus_dc_batterie_leistung");
   $("batt_laden").hidden = !(b > 50);
