@@ -7,6 +7,7 @@ const $ = (id) => document.getElementById(id);
 
 // ---------- Formatierung ----------
 const zahl = (v, dec) => Number(v).toLocaleString("de-DE", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+const zeitpunkt = (t) => new Date(String(t).replace(/(\.\d{3})\d+/, "$1")).getTime();   // Safari kennt keine Mikrosekunden
 const num = (s, e) => { const v = parseFloat(s[e]); return Number.isFinite(v) ? v : null; };
 function watt(v) {
   if (v === null) return "–";
@@ -412,6 +413,26 @@ function netzHeute(s, bez, e, akku, ent, soc) {
   return `<svg viewBox="0 0 460 210" style="width:100%;display:block;margin-top:10px" font-family="-apple-system,Helvetica,Arial,sans-serif">${g}</svg>`;
 }
 
+// ---------- „Wann starten?“ (29.09.2026, wie Dashboard) ----------
+function zeigeWann(d) {
+  const s = d.s || {}, w = d.ws || [], eur = (v) => (v === null || v === undefined ? "–" : zahl(v, 2) + " €");
+  let egal = true, html = "<tr><th></th><th>Empfehlung</th><th>jetzt</th><th>am besten</th><th>spart</th></tr>";
+  const heute = new Date().toDateString();
+  for (const [n, st, kj, kb, er, start, spanne, kwh] of w) {
+    if (spanne > 0.05) egal = false;
+    const morgen = start && new Date(zeitpunkt(start)).toDateString() !== heute ? " (morgen)" : "";
+    let emp;
+    if (st === "läuft") emp = "▶️ läuft";
+    else if (st === "jetzt") emp = `<span style="color:#22c55e">✓ jetzt</span>` + (spanne <= 0.02 ? ` <span class="grau">egal wann</span>` : "");
+    else if (!st || st === "unavailable" || st === "unknown") emp = "–";
+    else emp = `<span style="color:#f59e0b">🕒 ab ${st}${morgen}</span>` + ((er || 0) <= 0.02 ? ` <span class="grau">gleich teuer, mehr Sonne</span>` : "");
+    html += `<tr><td>${n}</td><td>${emp}</td><td>${eur(kj)}</td><td>${eur(kb)}</td><td>${(er || 0) > 0.005 ? eur(er) : "–"}</td></tr>`;
+  }
+  $("wann").innerHTML = html;
+  $("wann_fuss").innerHTML = (egal ? "Der Akku wird voraussichtlich nicht voll – die Kosten sind fast gleich, mittags ist trotzdem sicherer. · " : "")
+    + `Mehrkosten je Lauf · Strom ${zahl(num(s, "input_number.strompreis_bezug") ?? 0, 2)} ct, Einspeisung ${zahl(num(s, "input_number.einspeiseverguetung") ?? 0, 0)} ct · Verbrauch je Lauf wie der letzte (${w.map((x) => zahl(x[7] ?? 0, 2)).join(" / ")} kWh)`;
+}
+
 // ---------- Wärmequellen-Zeitleiste 48 h (29.09.2026) ----------
 // d.zl = [Quelle, Unix-Sekunden, 1/0] aus dem SQL-Helfer; Tag hell (d.sn = nächster Auf-/Untergang, Vortage −24 h)
 function zeigeZeitleiste(d) {
@@ -428,7 +449,7 @@ function zeigeZeitleiste(d) {
   let svg = "";
   // Tag hell
   if (d.sn && d.sn[0] && d.sn[1]) {
-    const auf = new Date(d.sn[0]).getTime(); let unter = new Date(d.sn[1]).getTime(); if (unter < auf) unter += 864e5;
+    const auf = zeitpunkt(d.sn[0]); let unter = zeitpunkt(d.sn[1]); if (unter < auf) unter += 864e5;
     const dauer = unter - auf;
     for (let a = auf - 4 * 864e5; a < jetzt + 864e5; a += 864e5) { const u = a + dauer; if (u < x0 || a > jetzt) continue;
       svg += `<rect x="${X(Math.max(a, x0))}" y="${T - 4}" width="${X(Math.min(u, jetzt)) - X(Math.max(a, x0))}" height="${3 * (H + 10) + 4}" fill="#cbd5e1" opacity="0.10"/>`; }
@@ -527,7 +548,7 @@ function zeigePrognose(d) {
 // ---------- Temperaturen innen/außen + Vorhersage, vorgestern bis übermorgen ----------
 function zeigeTemperaturen(d) {
   const pi = (d.pi || []).filter((p) => p.length >= 6), wt = d.wt || [];
-  const L = 44, R = 956, T = 12, B = 260;
+  const L = 44, R = 956, T = 26, B = 260;
   const t0 = new Date(); t0.setHours(0, 0, 0, 0); const x0 = t0.getTime() - 2 * 864e5, x1 = x0 + 5 * 864e5;
   const X = (t) => L + (t - x0) / (x1 - x0) * (R - L), halb = 18e5;
   const ip = pi.filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
@@ -542,7 +563,7 @@ function zeigeTemperaturen(d) {
   for (let v = lo; v <= hi; v += 5)
     svg += `<line x1="${L}" x2="${R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#374151" stroke-dasharray="3 4"/>`
       + `<text x="${L - 6}" y="${Y(v) + 4}" fill="#9ca3af" font-size="12" text-anchor="end">${v}</text>`;
-  svg += `<text x="${L - 6}" y="${T - 2}" fill="#9ca3af" font-size="11" text-anchor="end">°C</text>`;
+  svg += `<text x="${L - 6}" y="${T - 12}" fill="#9ca3af" font-size="11" text-anchor="end">°C</text>`;
   const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
   for (let i = 0; i <= 5; i++) {
     const t = x0 + i * 864e5, dt = new Date(t);
@@ -559,8 +580,10 @@ function zeigeTemperaturen(d) {
   if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
   if (lo < 0) svg += `<line x1="${L}" x2="${R}" y1="${Y(0)}" y2="${Y(0)}" stroke="#d4d4d8" stroke-width="1.5"/>`;
   // aktueller Außenwert (OAT) als Punkt am Ende der Außen-Kurve
-  if (ip.length) { const l = ip[ip.length - 1], ax = X(l[0] + halb), ay = Y(l[4]);
-    svg += `<circle cx="${ax}" cy="${ay}" r="19" fill="#3b82f6" stroke="#fff" stroke-width="2"/><text x="${ax}" y="${ay + 4}" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">${zahl(l[4], 1)}°</text>`; }
+  const oat = num(d.s || {}, "sensor.cmi_t_aussen");
+  if (oat !== null && jetzt > x0 && jetzt < x1) { const ax = X(jetzt), ay = Y(oat);
+    if (ip.length) { const l = ip[ip.length - 1]; svg += `<line x1="${X(l[0] + halb)}" y1="${Y(l[4])}" x2="${ax}" y2="${ay}" stroke="#3b82f6" stroke-width="2.2"/>`; }
+    svg += `<circle cx="${ax}" cy="${ay}" r="19" fill="#3b82f6" stroke="#fff" stroke-width="2"/><text x="${ax}" y="${ay + 4}" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">${zahl(oat, 1)}°</text>`; }
   $("tempkurve").innerHTML = svg;
 }
 
@@ -571,7 +594,7 @@ async function holen() {
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
-    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d);
+    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeWann(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
