@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202609291114">
+<link rel="stylesheet" href="style.css?v=202609291306">
 </head>
 <body>
 <header>
@@ -71,14 +71,26 @@
   </section>
 
   <section>
+    <h2>Haushaltsgeräte – wann lief was</h2>
+    <div class="karte">
+      <svg id="zeitleiste2" viewBox="0 0 1000 230" class="zeitleiste" aria-label="Laufzeiten Haushaltsgeräte"></svg>
+      <svg id="zeitleiste2_ueb" viewBox="0 0 1000 56" class="zeitleiste zl-ueb" aria-label="14 Tage – ziehen zum Verschieben"></svg>
+      <div class="zl-hinweis">Unten ziehen oder tippen = anderen Zeitraum zeigen (14 Tage) <button id="zeitleiste2_jetzt" class="zl-jetzt" hidden>↦ Jetzt</button></div>
+      <div class="prog-legende"><span class="l" style="--c:#06b6d4">Waschmaschine</span><span class="l" style="--c:#a855f7">Trockner</span><span class="l" style="--c:#22c55e">Spülmaschine</span><span class="l" style="--c:#f59e0b">Entfeuchter</span></div>
+    </div>
+  </section>
+
+  <section>
     <h2>Wann starten?</h2>
     <div class="karte"><table class="tab" id="wann"></table><div class="fuss" id="wann_fuss"></div></div>
   </section>
 
   <section>
-    <h2>Wärmequellen – wann lief was (48 h)</h2>
+    <h2>Wärmequellen – wann lief was</h2>
     <div class="karte">
       <svg id="zeitleiste" viewBox="0 0 1000 190" class="zeitleiste" aria-label="Laufzeiten WP, BWWP, LLWP"></svg>
+      <svg id="zeitleiste_ueb" viewBox="0 0 1000 50" class="zeitleiste zl-ueb" aria-label="14 Tage – ziehen zum Verschieben"></svg>
+      <div class="zl-hinweis">Unten ziehen oder tippen = anderen Zeitraum zeigen (14 Tage) <button id="zeitleiste_jetzt" class="zl-jetzt" hidden>↦ Jetzt</button></div>
       <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP Verdichter</span><span class="l" style="--c:#dc2626">BWWP + Heizstab</span><span class="l" style="--c:#facc15">LLWP</span></div>
     </div>
   </section>
@@ -132,6 +144,6 @@
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
-<script src="app.js?v=202609291114"></script>
+<script src="app.js?v=202609291306"></script>
 </body>
 </html>
