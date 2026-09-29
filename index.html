@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=202609291031">
 </head>
 <body>
 <header>
@@ -71,6 +71,11 @@
   </section>
 
   <section>
+    <h2>Wann starten?</h2>
+    <div class="karte"><table class="tab" id="wann"></table><div class="fuss" id="wann_fuss"></div></div>
+  </section>
+
+  <section>
     <h2>Wärmequellen – wann lief was (48 h)</h2>
     <div class="karte">
       <svg id="zeitleiste" viewBox="0 0 1000 170" class="zeitleiste" aria-label="Laufzeiten WP, BWWP, LLWP"></svg>
@@ -106,7 +111,7 @@
 
   <section>
     <h2>Großverbraucher</h2>
-    <div class="karte gross-karte"><table class="tab gross" id="gross"></table>
+    <div class="karte gross-karte"><div class="scroll"><table class="tab gross" id="gross"></table></div>
       <div class="fuss" id="gross_fuss"></div></div>
   </section>
   <section>
@@ -121,6 +126,6 @@
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
-<script src="app.js"></script>
+<script src="app.js?v=202609291031"></script>
 </body>
 </html>
