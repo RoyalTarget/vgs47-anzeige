@@ -497,7 +497,8 @@ function zeigeZeitleiste(d) {
   // Breite = echte Pixelbreite, damit Schrift und Balken auf dem Handy nicht winzig werden
   const W = Math.max(Math.round($("zeitleiste").getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
   $("zeitleiste").setAttribute("viewBox", `0 0 ${W} 170`);
-  const L = schmal ? 50 : 70, R = W - 8, T = 10, H = 34, jetzt = Date.now(), x0 = jetzt - 48 * 36e5;
+  // ohne Beschriftung links (29.09.2026), Legende unten reicht
+  const L = 8, R = W - 8, T = 10, H = 34, jetzt = Date.now(), x0 = jetzt - 48 * 36e5;
   const X = (t) => L + (t - x0) / (jetzt - x0) * (R - L);
   const Q = [["WP", ["wp_lauft"], ["#3b82f6"]], ["BWWP", ["bwwp_lauft", "bwwp_heizstab"], ["#f87171", "#dc2626"]], ["LLWP", ["klima_lauft"], ["#facc15"]]];
   const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
@@ -513,8 +514,7 @@ function zeigeZeitleiste(d) {
   }
   Q.forEach(([name, ents, farben], i) => {
     const y = T + i * (H + 10);
-    svg += `<text x="4" y="${y + H / 2 + 5}" fill="#e5e7eb" font-size="${schmal ? 13 : 15}">${name}</text>`
-      + `<rect x="${L}" y="${y + 6}" width="${R - L}" height="${H - 12}" fill="#4b5563"/>`;
+    svg += `<rect x="${L}" y="${y + 6}" width="${R - L}" height="${H - 12}" fill="#4b5563"/>`;
     ents.forEach((e, k) => {
       const ev = z.filter((r) => r[0] === e).map((r) => [r[1] * 1000, r[2]]);
       // Zustand vor dem ersten Eintrag: Gegenteil des ersten Wechsels
