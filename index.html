@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202609292150">
+<link rel="stylesheet" href="style.css?v=202609292200">
 </head>
 <body>
 <header>
@@ -60,6 +60,15 @@
     <div class="karte donut-karte">
       <svg id="donut" viewBox="0 0 220 220" class="donut" aria-label="Strom der letzten 30 Tage"></svg>
       <div id="donut_text" class="donut-text"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Woher kommt der Strom (48 h)</h2>
+    <div class="karte">
+      <svg id="herkunft" viewBox="0 0 1000 170" class="zeitleiste" aria-label="Stromherkunft: oben Haus bezieht PV/Akku/Netz, unten Akku lädt/Einspeisung"></svg>
+      <div class="zl-hinweis">Oben: woher das Haus seinen Strom bezieht (Anteile) · unten: Akku lädt / Einspeisung</div>
+      <div class="prog-legende"><span class="l" style="--c:#facc15">PV</span><span class="l" style="--c:#3b82f6">Akku</span><span class="l" style="--c:#f97316">Netz</span><span class="l" style="--c:#93c5fd">unten: Akku lädt</span><span class="l" style="--c:#22c55e">unten: Einspeisung</span></div>
     </div>
   </section>
 
@@ -145,6 +154,6 @@
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
-<script src="app.js?v=202609292150"></script>
+<script src="app.js?v=202609292200"></script>
 </body>
 </html>
