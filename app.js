@@ -644,10 +644,28 @@ function zeigePrognose(d) {
   };
   svg += flaeche(2, "#ef4444", 0.25) + flaeche(1, "#f59e0b", 0.35);
   if (fp.length) {
-    svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y(p[2] / 1000)]))}" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="7 5"/>`;
+    { const vem = new Map(d.ve || []);   // ab jetzt eigene Verbrauchsprognose statt VRM (29.09.2026)
+      svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y((vem.has(p[0]) ? vem.get(p[0]) : p[2]) / 1000)]))}" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="7 5"/>`; }
     svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y(p[1] / 1000)]))}" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="7 5"/>`;
   }
   if (ip.length) svg += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Ys(p[3])]))}" fill="none" stroke="#3b82f6" stroke-width="2.5"/>`;
+  // Akku-Prognose (29.09.2026, wie im Dashboard): PV-Prognose (heute mit Tageskorrektur) − eigene Verbrauchsprognose d.ve
+  // (sonst VRM), 30 kWh, Wirkungsgrad 0,95 je Richtung, Reserve live; gestrichelt hellblau
+  {
+    const s = d.s || {}, soc = num(s, "sensor.venus_dc_batterie_ladestand"), res = num(s, "sensor.venus_aktiver_soc_grenzwert") ?? 50;
+    const pvm = new Map(pr.map((p) => [p[0], p[1]])), ve = d.ve || [], vbm = new Map(ve.length >= 24 ? ve : pr.map((p) => [p[0], p[2]]));
+    if (soc !== null) {
+      const cap = 30, eta = 0.95, emin = res / 100 * cap, jn = Date.now(), h0 = Math.floor(jn / 36e5) * 36e5, tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
+      let prog = 0; for (const [t, w] of pvm) if (t >= tt0.getTime() && t < h0) prog += w || 0; prog += (pvm.get(h0) || 0) * ((jn - h0) / 36e5);
+      const ist = Math.max(num(s, "sensor.pv_ertrag_heute") ?? 0, num(s, "sensor.pv_ertrag_tag_max") ?? 0);
+      const k = prog >= 2000 ? Math.min(Math.max(ist * 1000 / prog, 0.5), 1.3) : 1, morgen = tt0.getTime() + 864e5;
+      let e = soc / 100 * cap; const pts = [[X(jn), Ys(soc)]];
+      for (let i = 0; i < 96; i++) { const ms = h0 + i * 36e5, l = i === 0 ? (h0 + 36e5 - jn) / 36e5 : 1; if (!vbm.has(ms) || ms + 36e5 > x1) break;
+        const dd = ((pvm.get(ms) || 0) * (ms < morgen ? k : 1) - (vbm.get(ms) || 0)) / 1000 * l;
+        e = dd >= 0 ? Math.min(e + dd * eta, cap) : Math.max(e + dd / eta, emin); pts.push([X(ms + 36e5), Ys(e / cap * 100)]); }
+      if (pts.length > 1) svg += `<path d="${linie(pts)}" fill="none" stroke="#93c5fd" stroke-width="2.2" stroke-dasharray="7 5"/>`;
+    }
+  }
   const jetzt = Date.now();
   if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
   $("progkurve").innerHTML = svg;
