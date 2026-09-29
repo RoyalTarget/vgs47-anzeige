@@ -413,6 +413,63 @@ function netzHeute(s, bez, e, akku, ent, soc) {
   return `<svg viewBox="0 0 460 210" style="width:100%;display:block;margin-top:10px" font-family="-apple-system,Helvetica,Arial,sans-serif">${g}</svg>`;
 }
 
+// ---------- Wasser-Grafiken (29.09.2026, wie Dashboard) ----------
+function zeigeWasserGrafik(d) {
+  const s = d.s || {}, j = new Date().getFullYear();
+  const breite = (id) => { const W = Math.max(Math.round($(id).getBoundingClientRect().width) || 1000, 300); return [W, W < 600]; };
+  // 1) Zapfungen heute: Balken je Zapfung, Höhe = Liter, rot warm / blau kalt, Tooltip per <title>
+  {
+    const [W, schmal] = breite("wheute"), H = 200, L = 40, R = W - 10, T = 12, B = H - 26;
+    $("wheute").setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0); const x0 = t0.getTime(), x1 = x0 + 864e5;
+    const X = (t) => L + (t - x0) / (x1 - x0) * (R - L);
+    const z = (d.zp || []).map((p) => { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) return null;
+      return [new Date(j, m[2] - 1, m[1], m[3], m[4]).getTime() + (p[1] || 0) * 3e4, p]; }).filter((e) => e && e[0] >= x0 && e[0] < x1);
+    const max = Math.max(20, ...z.map((e) => e[1][2] || 0)), top = Math.ceil(max / 20) * 20, Y = (v) => B - v / top * (B - T);
+    let g = "";
+    for (let v = 0; v <= top; v += top / 4) g += `<line x1="${L}" x2="${R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#374151" stroke-dasharray="3 4"/><text x="${L - 6}" y="${Y(v) + 4}" fill="#9ca3af" font-size="11" text-anchor="end">${Math.round(v)}</text>`;
+    for (let hh = 0; hh <= 24; hh += schmal ? 6 : 2) g += `<text x="${X(x0 + hh * 36e5)}" y="${H - 8}" fill="#9ca3af" font-size="11" text-anchor="${hh === 24 ? "end" : hh === 0 ? "start" : "middle"}">${String(hh).padStart(2, "0")}:00</text>`;
+    const jetzt = Date.now(); g += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+    const bw = schmal ? 4 : 7;
+    for (const [t, p] of z) { const col = p[3] ? "#ef4444" : "#3b82f6";
+      g += `<rect x="${X(t) - bw / 2}" y="${Y(p[2] || 0)}" width="${bw}" height="${Math.max(B - Y(p[2] || 0), 1.5)}" fill="${col}"><title>${p[0]} · ${p[1]} min · ${p[4] || (p[3] ? "warm" : "kalt")} · ${p[2]} l ${p[3] ? "warm" : "kalt"}${p[5] ? " · max " + p[5] + " l/h" : ""}</title></rect>`; }
+    g += `<line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="#6b7280"/><text x="${L - 6}" y="${T - 2}" fill="#9ca3af" font-size="10" text-anchor="end">l</text>`;
+    $("wheute").innerHTML = g;
+  }
+  // 2) Liter pro Tag, 14 Tage: gesamt aus Zählerstand-Differenz, warm/Duschen aus BWWP-Tageswerten, heute live
+  {
+    const [W, schmal] = breite("wtage"), H = 240, L = 44, R = W - 10, T = 28, B = H - 40;
+    $("wtage").setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const key = (dt) => dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+    const wd = d.wd || [], stand = {}; for (const [k, v] of wd) stand[k] = v;
+    const warm = {}, dusch = {}; for (const [k, w, n] of d.bt || []) { warm[k] = w; dusch[k] = n; }
+    const heute = key(new Date()); warm[heute] = num(s, "sensor.warmwasser_heute_liter") ?? 0; dusch[heute] = num(s, "sensor.duschen_heute") ?? 0;
+    const tage = []; for (let i = 13; i >= 0; i--) { const dt = new Date(); dt.setHours(12, 0, 0, 0); dt.setDate(dt.getDate() - i); tage.push(dt); }
+    const vals = tage.map((dt) => { const k = key(dt), vk = new Date(dt); vk.setDate(vk.getDate() - 1); const kv = key(vk);
+      let v1 = stand[k]; if (k === heute) v1 = num(s, "sensor.syr_connect_245124253_getvol") ?? v1;
+      const ges = v1 !== undefined && stand[kv] !== undefined ? Math.max((v1 - stand[kv]) * 1000, 0) : null;
+      const w = ges === null || warm[k] === undefined ? null : Math.min(warm[k], ges);
+      return { dt, k, ges, w, n: dusch[k] }; });
+    const max = Math.max(100, ...vals.map((v) => v.ges || 0)), top = Math.ceil(max / 200) * 200, Y = (v) => B - v / top * (B - T);
+    const sw = (R - L) / 14, bw = sw * 0.6;
+    let g = "";
+    for (let v = 0; v <= top; v += top / 4) g += `<line x1="${L}" x2="${R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#374151" stroke-dasharray="3 4"/><text x="${L - 6}" y="${Y(v) + 4}" fill="#9ca3af" font-size="11" text-anchor="end">${Math.round(v)}</text>`;
+    vals.forEach((v, i) => {
+      const x = L + i * sw + (sw - bw) / 2, cx = x + bw / 2;
+      if (v.ges !== null) {
+        const tip = `<title>${v.dt.getDate()}.${v.dt.getMonth() + 1}.: ${Math.round(v.ges)} l${v.w !== null ? " (warm " + Math.round(v.w) + " l)" : ""}${v.n ? " · " + v.n + " Duschen" : ""}</title>`;
+        if (v.w === null) g += `<rect x="${x}" y="${Y(v.ges)}" width="${bw}" height="${B - Y(v.ges)}" rx="3" fill="#6b7280">${tip}</rect>`;
+        else g += `<rect x="${x}" y="${Y(v.w)}" width="${bw}" height="${B - Y(v.w)}" fill="#ef4444">${tip}</rect><rect x="${x}" y="${Y(v.ges)}" width="${bw}" height="${Y(v.w) - Y(v.ges)}" fill="#3b82f6">${tip}</rect>`;
+        if (!schmal || i % 2 === 0 || i === 13) g += `<text x="${cx}" y="${Y(v.ges) - 6}" fill="#e5e7eb" font-size="${schmal ? 10 : 12}" font-weight="700" text-anchor="middle">${Math.round(v.ges)}</text>`;
+      }
+      if (!schmal || i % 2 === 1) g += `<text x="${cx}" y="${B + 16}" fill="#9ca3af" font-size="11" text-anchor="middle">${v.dt.getDate()}.${v.dt.getMonth() + 1}.</text>`;
+      if (v.n) g += `<text x="${cx}" y="${B + 32}" fill="#e5e7eb" font-size="11" text-anchor="middle">🚿${v.n}</text>`;
+    });
+    g += `<line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="#6b7280"/><text x="${L - 6}" y="${T - 10}" fill="#9ca3af" font-size="10" text-anchor="end">l</text>`;
+    $("wtage").innerHTML = g;
+  }
+}
+
 // ---------- „Wann starten?“ (29.09.2026, wie Dashboard) ----------
 function zeigeWann(d) {
   const s = d.s || {}, w = d.ws || [], eur = (v) => (v === null || v === undefined ? "–" : zahl(v, 2) + " €");
@@ -594,7 +651,7 @@ async function holen() {
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
-    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeWann(d);
+    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeWann(d); zeigeWasserGrafik(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
