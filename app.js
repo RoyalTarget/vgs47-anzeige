@@ -546,15 +546,8 @@ function sonnenhoehe(t) {
   const H = ((18.697374558 + 24.06570982441908 * n) * 15 + LON) * R - ra;
   return Math.asin(Math.sin(LAT) * Math.sin(de) + Math.cos(LAT) * Math.cos(de) * Math.cos(H)) / R;
 }
-function zeichneZL(id) {
-  const Q = ZL[id], jetzt = Date.now(), ende = zlEnde[id] ?? jetzt, x0 = ende - 48 * 36e5;
-  const svgEl = $(id), W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
-  const H = 34, T = 48, hoehe = T + Q.length * (H + 10) + 26;
-  svgEl.setAttribute("viewBox", `0 0 ${W} ${hoehe}`);
-  const L = 8, R = W - 8, X = (t) => L + (t - x0) / (ende - x0) * (R - L), y2 = T + Q.length * (H + 10);
-  const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  const tg = (t) => new Date(t).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
-  const dau = (ms) => { const m = Math.round(ms / 6e4); return m >= 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min" : m + " min"; };
+// Gemeinsamer Rahmen der Zeitleisten (29.09.2026): Dämmerung + Sonnenkurve bzw. Stunden, Mitternacht, Datum, Jetzt-Linie
+function zlHimmel(id, x0, ende, L, R, T, y2, X, hm) {
   let svg = "";
   // Dämmerung + Sonnenkurve (29.09.2026, wie Dashboard): Hintergrund weich nach Sonnenhöhe (−6°…+6°), darüber Band mit der Sonnenhöhe
   const N = Math.min(400, Math.max(40, Math.round((R - L) / 4))), pts = [];
@@ -572,6 +565,31 @@ function zeichneZL(id) {
     for (let i = 1; i < pts.length; i++) { const [xa, ha] = pts[i - 1], [xb, hb] = pts[i]; if ((ha < 0) === (hb < 0)) continue;
       const x = xa + (xb - xa) * ha / (ha - hb), auf = hb >= 0, t = x0 + (x - L) / (R - L) * (ende - x0);
       svg += `<text x="${x + (auf ? -4 : 4)}" y="${Y0 - 2}" fill="#fbbf24" fill-opacity="0.85" font-size="10" text-anchor="${auf ? "end" : "start"}">${auf ? "☀↑ " : ""}${hm(t)}${auf ? "" : " ↓"}</text>`; }
+  return svg;
+}
+function zlAchse(x0, ende, L, R, T, y2, schmal, X, tg) {
+  let svg = ""; const jetzt = Date.now();
+  const schritt = (schmal ? 6 : 3) * 36e5, t = new Date(x0); t.setMinutes(0, 0, 0); t.setHours(Math.ceil(t.getHours() / (schmal ? 6 : 3)) * (schmal ? 6 : 3));
+  for (let v = t.getTime(); v <= ende; v += schritt) { const h = new Date(v).getHours();
+    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/><text x="${X(v)}" y="${y2 + 18}" fill="#9ca3af" font-size="${schmal ? 11 : 12}" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
+  const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
+  for (let v = mn.getTime(); v < ende; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 26}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
+  for (let t0 = mn.getTime() - 864e5; t0 < ende; t0 += 864e5) { const a = Math.max(t0, x0), b = Math.min(t0 + 864e5, ende);
+    if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 30}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`; }
+  if (ende >= jetzt - 6e4) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T - 4}" y2="${y2}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+  return svg;
+}
+function zeichneZL(id) {
+  const Q = ZL[id], jetzt = Date.now(), ende = zlEnde[id] ?? jetzt, x0 = ende - 48 * 36e5;
+  const svgEl = $(id), W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
+  const H = 34, T = 48, hoehe = T + Q.length * (H + 10) + 26;
+  svgEl.setAttribute("viewBox", `0 0 ${W} ${hoehe}`);
+  const L = 8, R = W - 8, X = (t) => L + (t - x0) / (ende - x0) * (R - L), y2 = T + Q.length * (H + 10);
+  const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const tg = (t) => new Date(t).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+  const dau = (ms) => { const m = Math.round(ms / 6e4); return m >= 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min" : m + " min"; };
+  let svg = "";
+  svg += zlHimmel(id, x0, ende, L, R, T, y2, X, hm);
   Q.forEach(([name, codes, farben, zus], i) => {
     const y = T + i * (H + 10);
     svg += `<line x1="${L}" x2="${R}" y1="${y + H / 2}" y2="${y + H / 2}" stroke="#6b7280" stroke-width="1"/>`;   // dünne Linie je Zeile statt grauer Spur
@@ -583,14 +601,7 @@ function zeichneZL(id) {
       }
     });
   });
-  const schritt = (schmal ? 6 : 3) * 36e5, t = new Date(x0); t.setMinutes(0, 0, 0); t.setHours(Math.ceil(t.getHours() / (schmal ? 6 : 3)) * (schmal ? 6 : 3));
-  for (let v = t.getTime(); v <= ende; v += schritt) { const h = new Date(v).getHours();
-    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/><text x="${X(v)}" y="${y2 + 18}" fill="#9ca3af" font-size="${schmal ? 11 : 12}" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
-  const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
-  for (let v = mn.getTime(); v < ende; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 26}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
-  for (let t0 = mn.getTime() - 864e5; t0 < ende; t0 += 864e5) { const a = Math.max(t0, x0), b = Math.min(t0 + 864e5, ende);
-    if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 30}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`; }
-  if (ende >= jetzt - 6e4) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T - 4}" y2="${y2}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+  svg += zlAchse(x0, ende, L, R, T, y2, schmal, X, tg);
   svgEl.innerHTML = svg;
   // 14-Tage-Leiste unter dem Feld: antippen/ziehen = Fenster dorthin (29.09.2026)
   const u = $(id + "_ueb");
@@ -632,6 +643,45 @@ function zeichneZL(id) {
   }
 }
 
+
+// ---------- Woher kommt der Strom (29.09.2026) ----------
+// d.hk = 10-min-Mittel 48 h [Unix-s, Haus W, Akku W (+ = laden), Netz W (+ = Bezug)]. Oben Anteile PV/Akku/Netz am Haus,
+// unten Akku lädt / Einspeisung. Gleicher Rahmen wie die Zeitleisten (Dämmerung, Sonnenkurve), Tooltips per <title>.
+const HK_F = { pv: "#facc15", akku: "#3b82f6", netz: "#f97316", laden: "#93c5fd", einsp: "#22c55e" };
+let hkDaten = [];
+function zeigeHerkunft(d) {
+  hkDaten = (d.hk || []).map(([t, haus, batt, netz]) => {
+    const h = Math.max(haus, 0), n = Math.min(Math.max(netz, 0), h), a = Math.min(Math.max(-batt, 0), h - n);
+    return [t * 1000, Math.max(h - n - a, 0), a, n, Math.max(batt, 0), Math.max(-netz, 0), h];
+  });
+  if ($("herkunft")) zeichneHK();
+}
+function zeichneHK() {
+  const svgEl = $("herkunft"), W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
+  const jetzt = Date.now(), ende = jetzt, x0 = ende - 48 * 36e5, T = 48, y2 = T + 96, L = 8, R = W - 8;
+  svgEl.setAttribute("viewBox", `0 0 ${W} ${y2 + 26}`);
+  const X = (t) => L + (t - x0) / (ende - x0) * (R - L);
+  const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const tg = (t) => new Date(t).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+  const kw = (w) => (w / 1000).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kW";
+  const L1 = [T + 4, T + 60], L2 = [T + 68, T + 92], p = { pv: "", akku: "", netz: "", laden: "", einsp: "" };
+  let svg = zlHimmel("herkunft", x0, ende, L, R, T, y2, X, hm), tips = "";
+  for (const [y0, y1] of [L1, L2]) svg += `<rect x="${L}" y="${y0}" width="${R - L}" height="${y1 - y0}" fill="#0b1020" fill-opacity="0.35"/>`;
+  const r = (k, a, b, y0, y1) => { if (y1 - y0 > 0.2) p[k] += `M${a.toFixed(1)} ${y0.toFixed(1)}H${b.toFixed(1)}V${y1.toFixed(1)}H${a.toFixed(1)}Z`; };
+  for (const [t, pv, akku, netz, laden, einsp, haus] of hkDaten) {
+    if (t + 6e5 < x0 || t > ende) continue;
+    const a = Math.max(X(t), L), b = Math.min(X(t + 6e5) + 0.6, R); if (b <= a) continue;
+    const s = pv + akku + netz;
+    if (s > 20) { let y = L1[1]; for (const [k, v] of [["pv", pv], ["akku", akku], ["netz", netz]]) { const dy = v / s * (L1[1] - L1[0]); r(k, a, b, y - dy, y); y -= dy; } }
+    const u = laden + einsp;
+    if (u > 30) { let y = L2[1]; for (const [k, v] of [["laden", laden], ["einsp", einsp]]) { const dy = v / u * (L2[1] - L2[0]); r(k, a, b, y - dy, y); y -= dy; } }
+    const pz = (v) => (s > 0 ? " (" + Math.round(v / s * 100) + " %)" : "");
+    tips += `<rect x="${a}" y="${L1[0]}" width="${b - a}" height="${L2[1] - L1[0]}" fill="transparent"><title>${tg(t)} ${hm(t)} · Haus ${kw(haus)}\nPV ${kw(pv)}${pz(pv)} · Akku ${kw(akku)}${pz(akku)} · Netz ${kw(netz)}${pz(netz)}${laden > 30 ? "\nAkku lädt " + kw(laden) : ""}${einsp > 30 ? "\nEinspeisung " + kw(einsp) : ""}</title></rect>`;
+  }
+  for (const k of Object.keys(p)) if (p[k]) svg += `<path d="${p[k]}" fill="${HK_F[k]}" shape-rendering="crispEdges"/>`;
+  svg += zlAchse(x0, ende, L, R, T, y2, schmal, X, tg) + tips;
+  svgEl.innerHTML = svg;
+}
 
 // ---------- PV-Prognose (VRM) + Ist, vorgestern bis übermorgen ----------
 function zeigePrognose(d) {
@@ -766,7 +816,7 @@ async function holen() {
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
-    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeWann(d); zeigeWasserGrafik(d);
+    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
