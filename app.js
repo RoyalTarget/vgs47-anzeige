@@ -650,33 +650,42 @@ function zeichneZL(id) {
 const HK_F = { pv: "#facc15", akku: "#3b82f6", netz: "#f97316", laden: "#93c5fd", einsp: "#22c55e" };
 let hkDaten = [];
 function zeigeHerkunft(d) {
-  hkDaten = (d.hk || []).map(([t, haus, batt, netz]) => {
-    const h = Math.max(haus, 0), n = Math.min(Math.max(netz, 0), h), a = Math.min(Math.max(-batt, 0), h - n);
-    return [t * 1000, Math.max(h - n - a, 0), a, n, Math.max(batt, 0), Math.max(-netz, 0), h];
+  // wie Dashboard: gleitendes 30-min-Mittel (3 × 10 min), Anteile < 8 % weg, Rest auf 5 % gerundet; unten erst ab 150 W
+  const roh = (d.hk || []).slice().sort((x, y) => x[0] - y[0]);
+  hkDaten = roh.map((v, i) => {
+    const f = roh.filter((w, j) => Math.abs(j - i) <= 1 && Math.abs(w[0] - v[0]) <= 600);
+    const mw = (k) => f.reduce((x, w) => x + (w[k] || 0), 0) / f.length;
+    const h = Math.max(mw(1), 0), batt = mw(2), netz = mw(3), pvg = Math.max(mw(4), 0);
+    const n = Math.min(Math.max(netz, 0), h), a = Math.min(Math.max(-batt, 0), h - n);
+    let q = [Math.max(h - n - a, 0), a, n]; const s = q[0] + q[1] + q[2];
+    if (s > 0) { q = q.map((x) => (x / s < 0.08 ? 0 : x)); const s2 = q.reduce((x, y) => x + y, 0) || 1; q = q.map((x) => Math.round(x / s2 * 20) / 20 * s); }
+    const laden = batt >= 150 ? batt : 0, einsp = -netz >= 150 ? -netz : 0;
+    return [v[0] * 1000, q[0], q[1], q[2], laden, einsp, h, pvg];
   });
   if ($("herkunft")) zeichneHK();
 }
 function zeichneHK() {
   const svgEl = $("herkunft"), W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
-  const jetzt = Date.now(), ende = jetzt, x0 = ende - 48 * 36e5, T = 48, y2 = T + 96, L = 8, R = W - 8;
+  const jetzt = Date.now(), ende = jetzt, x0 = ende - 48 * 36e5, T = 48, y2 = T + 88, L = 8, R = W - 8;
   svgEl.setAttribute("viewBox", `0 0 ${W} ${y2 + 26}`);
   const X = (t) => L + (t - x0) / (ende - x0) * (R - L);
   const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
   const tg = (t) => new Date(t).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
   const kw = (w) => (w / 1000).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kW";
-  const L1 = [T + 4, T + 60], L2 = [T + 68, T + 92], p = { pv: "", akku: "", netz: "", laden: "", einsp: "" };
+  const L1 = [T + 6, T + 28], L2 = [T + 50, T + 72], p =   // gleich dick wie die anderen Zeitleisten
+    { pv: "", akku: "", netz: "", laden: "", einsp: "" };
   let svg = zlHimmel("herkunft", x0, ende, L, R, T, y2, X, hm), tips = "";
-  for (const [y0, y1] of [L1, L2]) svg += `<rect x="${L}" y="${y0}" width="${R - L}" height="${y1 - y0}" fill="#0b1020" fill-opacity="0.35"/>`;
+  for (const [y0, y1] of [L1, L2]) svg += `<line x1="${L}" x2="${R}" y1="${(y0 + y1) / 2}" y2="${(y0 + y1) / 2}" stroke="#6b7280" stroke-width="1"/>`;
   const r = (k, a, b, y0, y1) => { if (y1 - y0 > 0.2) p[k] += `M${a.toFixed(1)} ${y0.toFixed(1)}H${b.toFixed(1)}V${y1.toFixed(1)}H${a.toFixed(1)}Z`; };
-  for (const [t, pv, akku, netz, laden, einsp, haus] of hkDaten) {
+  for (const [t, pv, akku, netz, laden, einsp, haus, pvg] of hkDaten) {
     if (t + 6e5 < x0 || t > ende) continue;
     const a = Math.max(X(t), L), b = Math.min(X(t + 6e5) + 0.6, R); if (b <= a) continue;
     const s = pv + akku + netz;
     if (s > 20) { let y = L1[1]; for (const [k, v] of [["pv", pv], ["akku", akku], ["netz", netz]]) { const dy = v / s * (L1[1] - L1[0]); r(k, a, b, y - dy, y); y -= dy; } }
     const u = laden + einsp;
-    if (u > 30) { let y = L2[1]; for (const [k, v] of [["laden", laden], ["einsp", einsp]]) { const dy = v / u * (L2[1] - L2[0]); r(k, a, b, y - dy, y); y -= dy; } }
+    if (u > 0) { let y = L2[1]; for (const [k, v] of [["laden", laden], ["einsp", einsp]]) { const dy = v / u * (L2[1] - L2[0]); r(k, a, b, y - dy, y); y -= dy; } }
     const pz = (v) => (s > 0 ? " (" + Math.round(v / s * 100) + " %)" : "");
-    tips += `<rect x="${a}" y="${L1[0]}" width="${b - a}" height="${L2[1] - L1[0]}" fill="transparent"><title>${tg(t)} ${hm(t)} · Haus ${kw(haus)}\nPV ${kw(pv)}${pz(pv)} · Akku ${kw(akku)}${pz(akku)} · Netz ${kw(netz)}${pz(netz)}${laden > 30 ? "\nAkku lädt " + kw(laden) : ""}${einsp > 30 ? "\nEinspeisung " + kw(einsp) : ""}</title></rect>`;
+    tips += `<rect x="${a}" y="${L1[0]}" width="${b - a}" height="${L2[1] - L1[0]}" fill="transparent"><title>${tg(t)} ${hm(t)} · Haus ${kw(haus)}\nPV ${kw(pv)}${pz(pv)} · Akku ${kw(akku)}${pz(akku)} · Netz ${kw(netz)}${pz(netz)}${laden > 0 ? "\nAkku lädt " + kw(laden) + " (aus " + (pvg >= laden * 0.8 ? "PV" : pvg > 100 ? "PV + Netz" : "Netz") + ", PV gesamt " + kw(pvg) + ")" : ""}${einsp > 0 ? "\nEinspeisung " + kw(einsp) : ""}\n30-min-Mittel</title></rect>`;
   }
   for (const k of Object.keys(p)) if (p[k]) svg += `<path d="${p[k]}" fill="${HK_F[k]}" shape-rendering="crispEdges"/>`;
   svg += zlAchse(x0, ende, L, R, T, y2, schmal, X, tg) + tips;
