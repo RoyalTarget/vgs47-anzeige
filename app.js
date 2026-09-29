@@ -564,7 +564,7 @@ function zeichneZL(id) {
     const c = [20 + (82 - 20) * s, 27 + (72 - 27) * s, 54 + (34 - 54) * s].map(Math.round);
     stops += `<stop offset="${(i / N).toFixed(4)}" stop-color="rgb(${c})" stop-opacity="1"/>`; }
   svg += `<defs><linearGradient id="${id}_dd" x1="0" x2="1" y1="0" y2="0">${stops}</linearGradient></defs>`;
-  svg += `<rect x="${L}" y="${T - 4}" width="${R - L}" height="${y2 - T + 4}" fill="url(#${id}_dd)"/>`;
+  svg += `<rect x="${L}" y="${T - 10}" width="${R - L}" height="${y2 - T + 10}" fill="url(#${id}_dd)"/>`;   // ab Horizontlinie, ohne Lücke
   const Y0 = T - 10, SY = (h) => Y0 - Math.max(h, 0) / 65 * 16;
   svg += `<line x1="${L}" x2="${R}" y1="${Y0}" y2="${Y0}" stroke="#e5e7eb" stroke-opacity="0.15"/>`;
   svg += `<path d="M${pts[0][0].toFixed(1)} ${Y0}${pts.map(([x, h]) => `L${x.toFixed(1)} ${SY(h).toFixed(1)}`).join("")}L${pts[pts.length - 1][0].toFixed(1)} ${Y0}Z" fill="#facc15" fill-opacity="0.28" stroke="#fbbf24" stroke-width="1.2" stroke-opacity="0.8" stroke-linejoin="round"/>`;
