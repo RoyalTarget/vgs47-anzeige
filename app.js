@@ -644,8 +644,14 @@ function zeigePrognose(d) {
   };
   svg += flaeche(2, "#ef4444", 0.25) + flaeche(1, "#f59e0b", 0.35);
   if (fp.length) {
-    { const vem = new Map(d.ve || []);   // ab jetzt eigene Verbrauchsprognose statt VRM (29.09.2026)
-      svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y((vem.has(p[0]) ? vem.get(p[0]) : p[2]) / 1000)]))}" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="7 5"/>`; }
+    // Verbrauch: Victron (VRM) rot gestrichelt; eigene Prognose grün gestrichelt – Vergangenheit aus dem Archiv d.va
+    // (Stand Vorabend 23:08), ab der laufenden Stunde aktuell d.ve (29.09.2026)
+    svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y(p[2] / 1000)]))}" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="7 5"/>`;
+    { const h0 = Math.floor(Date.now() / 36e5) * 36e5, em = new Map();
+      (d.va || []).forEach((p) => { if (p[0] < h0) em.set(p[0], p[1]); });
+      (d.ve || []).forEach((p) => { if (p[0] >= h0) em.set(p[0], p[1]); });
+      const ep = [...em.entries()].sort((a, b) => a[0] - b[0]).filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
+      if (ep.length > 1) svg += `<path d="${linie(ep.map((p) => [X(p[0] + halb), Y(p[1] / 1000)]))}" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="7 5"/>`; }
     svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y(p[1] / 1000)]))}" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="7 5"/>`;
   }
   if (ip.length) svg += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Ys(p[3])]))}" fill="none" stroke="#3b82f6" stroke-width="2.5"/>`;
