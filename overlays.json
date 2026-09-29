@@ -472,6 +472,78 @@
   ]
  },
  {
+  "img": "bald_wp.svg",
+  "conds": [
+   [
+    "binary_sensor.bald_start_wp",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "start_wp.svg",
+  "conds": [
+   [
+    "binary_sensor.gerade_gestartet_wp",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "bald_hk.svg",
+  "conds": [
+   [
+    "binary_sensor.bald_start_heizkreis",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "start_hk.svg",
+  "conds": [
+   [
+    "binary_sensor.gerade_gestartet_heizkreis",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "bald_bwwp.svg",
+  "conds": [
+   [
+    "binary_sensor.bald_start_bwwp",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "start_bwwp.svg",
+  "conds": [
+   [
+    "binary_sensor.gerade_gestartet_bwwp",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "bald_entf.svg",
+  "conds": [
+   [
+    "binary_sensor.bald_start_entfeuchter",
+    "on"
+   ]
+  ]
+ },
+ {
+  "img": "start_entf.svg",
+  "conds": [
+   [
+    "binary_sensor.gerade_gestartet_entfeuchter",
+    "on"
+   ]
+  ]
+ },
+ {
   "img": "flow_wp_1.svg",
   "conds": [
    [
