@@ -132,3 +132,15 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 /* BWWP-Unterzeilen Verdichter/Heizstab (28.09.2026) */
 tr.teil td { color: #9ca3af; font-size: 0.92em; }
 tr.teil.hz-an td { color: #facc15; }
+
+/* Großverbraucher gegliedert (29.09.2026) */
+.gross td .eur { display: block; font-size: 10.5px; color: var(--leise); font-weight: 400; }
+.gross tr.gruppe td { background: rgba(59,130,246,0.16); border-top: 3px solid rgba(96,165,250,0.7); font-weight: 600; }
+.gross tr.pvabzug td { background: rgba(34,197,94,0.16); border-top: 3px solid rgba(34,197,94,0.8); color: #86efac; font-weight: 600; }
+.gross tr.haus td { background: rgba(250,204,21,0.14); border-top: 3px solid rgba(250,204,21,0.8); font-weight: 600; }
+.gross tr.teil td { color: #9ca3af; font-size: 0.92em; }
+.gross tr.teil.hz td:first-child { color: #facc15; }
+.gross tr.teil.hz.an td { color: #facc15; }
+@media (max-width: 600px) { .gross { font-size: 12px; } .gross th, .gross td { padding: 4px 3px; } .gross td .eur { font-size: 9.5px; } }
+.zeitleiste { width: 100%; display: block; }
+.prog-legende .l[style]::before { border-color: var(--c); border-top-width: 8px; width: 14px; }
