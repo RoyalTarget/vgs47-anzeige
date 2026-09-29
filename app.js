@@ -552,28 +552,19 @@ function zeichneZL(id) {
     if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 12}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`; }
   if (ende >= jetzt - 6e4) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T - 4}" y2="${y2}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
   svgEl.innerHTML = svg;
-  // 14-Tage-Leiste zum Verschieben
-  const u = $(id + "_ueb"); if (!u) return;
-  const UW = Math.max(Math.round(u.getBoundingClientRect().width) || 1000, 300), UH = 14 + Q.length * 6;
-  u.setAttribute("viewBox", `0 0 ${UW} ${UH + 16}`);
-  const u0 = jetzt - 14 * 864e5, UX = (tt) => 8 + (tt - u0) / (jetzt - u0) * (UW - 16);
-  let g = `<rect x="8" y="2" width="${UW - 16}" height="${UH}" fill="#27272a" rx="3"/>`;
-  Q.forEach(([, codes, farben], i) => codes.forEach((c, k) => { for (const [a, b] of zlSeg[c] || []) { if (b < u0) continue;
-    g += `<rect x="${UX(Math.max(a, u0))}" y="${6 + i * 6}" width="${Math.max(UX(b) - UX(Math.max(a, u0)), 1)}" height="4" fill="${farben[k]}"/>`; } }));
-  for (let v = new Date(u0).setHours(24, 0, 0, 0); v < jetzt; v += 864e5) { const dt = new Date(v);
-    g += `<line x1="${UX(v)}" x2="${UX(v)}" y1="2" y2="${UH + 2}" stroke="#52525b"/>`;
-    if (!schmal || dt.getDate() % 2 === 0) g += `<text x="${UX(v + 432e5)}" y="${UH + 14}" fill="#9ca3af" font-size="10" text-anchor="middle">${dt.getDate()}.${dt.getMonth() + 1}.</text>`; }
-  g += `<rect x="${UX(x0)}" y="1" width="${UX(ende) - UX(x0)}" height="${UH + 2}" fill="#e5e7eb" fill-opacity="0.12" stroke="#e5e7eb" stroke-width="1.5" rx="3"/>`;
-  u.innerHTML = g;
-  if (!u.__zl) {   // Ziehen/Tippen: Fenster um den Zeigerpunkt zentrieren
-    u.__zl = true; let zieht = false;
-    const setze = (ev) => { const r = u.getBoundingClientRect(), tt = u0 + (ev.clientX - r.left - 8 * r.width / UW) / ((UW - 16) * r.width / UW) * (jetzt - u0);
-      const erst = Math.min(...Object.values(zlSeg).flat().map((s) => s[0]), Date.now());   // frühester Datenpunkt
-      const e2 = Math.min(Math.max(tt + 24 * 36e5, jetzt - 13 * 864e5, erst + 48 * 36e5), Date.now()); zlEnde[id] = e2 >= Date.now() - 30 * 6e4 ? null : e2; zeichneZL(id);
-      const b = $(id + "_jetzt"); if (b) b.hidden = zlEnde[id] === null; };
-    u.addEventListener("pointerdown", (ev) => { zieht = true; u.setPointerCapture(ev.pointerId); setze(ev); });
-    u.addEventListener("pointermove", (ev) => { if (zieht) setze(ev); });
-    u.addEventListener("pointerup", () => { zieht = false; });
+  // Ziehen/Wischen im Feld verschiebt das Fenster (29.09.2026), begrenzt auf Datenbeginn und jetzt
+  if (!svgEl.__zl) {
+    svgEl.__zl = true; svgEl.style.touchAction = "pan-y"; svgEl.style.cursor = "grab"; let dr = null;
+    svgEl.addEventListener("pointerdown", (ev) => { dr = { x: ev.clientX, ende: zlEnde[id] ?? Date.now(), moved: false }; svgEl.setPointerCapture(ev.pointerId); });
+    svgEl.addEventListener("pointermove", (ev) => { if (!dr) return; const dx = ev.clientX - dr.x; if (Math.abs(dx) > 5) dr.moved = true; if (!dr.moved) return;
+      const breite = svgEl.getBoundingClientRect().width - 16, jetzt2 = Date.now();
+      const erst = Math.min(...Object.values(zlSeg).flat().map((s) => s[0]), jetzt2);
+      const e2 = Math.min(Math.max(dr.ende - dx / breite * 48 * 36e5, erst + 48 * 36e5, jetzt2 - 14 * 864e5), jetzt2);
+      zlEnde[id] = e2 >= jetzt2 - 6e4 ? null : e2; const b = $(id + "_jetzt"); if (b) b.hidden = zlEnde[id] === null;
+      if (!svgEl.__raf) svgEl.__raf = requestAnimationFrame(() => { svgEl.__raf = null; zeichneZL(id); }); });
+    const aus = () => { dr = null; };
+    svgEl.addEventListener("pointerup", aus); svgEl.addEventListener("pointercancel", aus);
+    svgEl.addEventListener("dblclick", () => { zlEnde[id] = null; const b = $(id + "_jetzt"); if (b) b.hidden = true; zeichneZL(id); });
     const b = $(id + "_jetzt"); if (b) b.addEventListener("click", () => { zlEnde[id] = null; b.hidden = true; zeichneZL(id); });
   }
 }
