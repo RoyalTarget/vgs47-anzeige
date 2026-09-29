@@ -488,6 +488,25 @@ function zeigeWann(d) {
     html += `<tr><td>${n}</td><td>${emp}</td><td>${eur(kj)}</td><td>${eur(kb)}</td><td>${(er || 0) > 0.005 ? eur(er) : "–"}</td></tr>`;
   }
   $("wann").innerHTML = html;
+  // Kurzansicht wie im Dashboard (29.09.2026): Gratis-Fenster (d.af aus sensor.akku_prognose) + eine Zeile je Gerät
+  const tagTxt = (t) => { const x = new Date(zeitpunkt(t)), h = new Date(); const m = new Date(); m.setDate(m.getDate() + 1);
+    return x.toDateString() === h.toDateString() ? "heute" : x.toDateString() === m.toDateString() ? "morgen" : ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][x.getDay()]; };
+  const uhr = (t) => new Date(zeitpunkt(t)).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const f = d.af;
+  let k = f ? `<div class="fenster">☀️ <b>Gratis-Fenster ${tagTxt(f.start)} ${uhr(f.start)}–${uhr(f.ende)}</b> · ≈ ${zahl(f.kwh, 0)} kWh übrig – Akku voll, große Verbraucher dorthin legen</div>`
+    : `<div class="fenster grau">🔋 Kein Gratis-Fenster in Sicht – Akku wird voraussichtlich nicht voll, jede kWh kostet ungefähr gleich</div>`;
+  for (const [n, st, kj, kb, er, start, spanne, kwh, u0] of w) {
+    const zeit = start ? uhr(start) + (new Date(zeitpunkt(start)).toDateString() === heute ? "" : " morgen") : "";
+    let t;
+    if (st === "läuft") t = "▶️ läuft";
+    else if (!st || st === "unavailable" || st === "unknown") t = "–";
+    else if ((er || 0) >= 0.10 && zeit) t = `⏳ <b>ab ${zeit}</b> · spart ${eur(er)}`;
+    else if ((u0 || 0) >= (kwh || 1) * 0.8) t = "🟢 <b>jetzt</b> – Sonne reicht";
+    else if (st === "jetzt") t = "🟢 <b>jetzt</b>";
+    else t = `⚪ egal – kostet so oder so ≈ ${eur(kj)}` + (zeit ? ` · <span class="grau">☀️ mehr Sonne ab ${zeit}</span>` : "");
+    k += `<div>${n}&nbsp;&nbsp;${t}</div>`;
+  }
+  $("wann_kurz").innerHTML = k;
   $("wann_fuss").innerHTML = (egal ? "Der Akku wird voraussichtlich nicht voll – die Kosten sind fast gleich, mittags ist trotzdem sicherer. · " : "")
     + `Mehrkosten je Lauf · Strom ${zahl(num(s, "input_number.strompreis_bezug") ?? 0, 2)} ct, Einspeisung ${zahl(num(s, "input_number.einspeiseverguetung") ?? 0, 0)} ct · Verbrauch je Lauf wie der letzte (${w.map((x) => zahl(x[7] ?? 0, 2)).join(" / ")} kWh)`;
 }
