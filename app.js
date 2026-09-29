@@ -141,8 +141,8 @@ function zeigeBatterie(s) {
   svg += `<text x="100" y="96" text-anchor="middle" fill="#e5e7eb" font-size="26">${soc === null ? "–" : zahl(soc, 1) + " %"}</text>`;
   // Energie im Akku (30 kWh) und über der Reserve (28.09.2026)
   const res = num(s, "sensor.venus_aktiver_soc_grenzwert");
-  if (soc !== null) svg += `<text x="100" y="128" text-anchor="middle" fill="#9ca3af" font-size="10">${zahl(soc * 0.3, 1)} von 30 kWh`
-    + (res !== null ? ` · ${zahl(Math.max(soc - res, 0) * 0.3, 1)} kWh über Reserve (${zahl(res, 0)} %)` : "") + `</text>`;
+  if (soc !== null) svg += `<text x="100" y="126" text-anchor="middle" fill="#9ca3af" font-size="10.5">${zahl(soc * 0.3, 1)} von 30 kWh</text>`
+    + (res !== null ? `<text x="100" y="140" text-anchor="middle" fill="#9ca3af" font-size="10.5">${zahl(Math.max(soc - res, 0) * 0.3, 1)} kWh über Reserve (${zahl(res, 0)} %)</text>` : "");
   $("tacho").innerHTML = svg;
   const b = num(s, "sensor.venus_dc_batterie_leistung");
   $("batt_laden").hidden = !(b > 50);
@@ -185,38 +185,82 @@ function zeigeWasser(s) {
 }
 
 // ---------- Großverbraucher & PV je Fläche ----------
-// BWWP aufgeteilt in Verdichter und Heizstab (28.09.2026, Heizstab ≈ 1,88 kW aus der Shelly-Leistung geschätzt)
-function bwwpTeile(s, k, w0, kw) {
-  const hzm = k["sensor.bwwp_heizstab_energie_monat"], bm = k["sensor.bwwp_energie_monat"];
-  const vm = hzm == null || bm == null ? "–" : zahl(Math.max(bm - hzm, 0), 2);
-  const an = s["binary_sensor.bwwp_heizstab"] === "on";
-  return `<tr class="teil"><td>↳ Verdichter</td><td>${w0("sensor.bwwp_verdichter_leistung")}</td><td>${kw("sensor.bwwp_verdichter_energie_heute")}</td><td>${vm}</td><td></td></tr>`
-    + `<tr class="teil${an ? " hz-an" : ""}"><td>↳ Heizstab ⚡</td><td>${w0("sensor.bwwp_heizstab_leistung")}</td><td>${kw("sensor.bwwp_heizstab_energie_heute")}</td><td>${kw("sensor.bwwp_heizstab_energie_monat")}</td><td></td></tr>`;
-}
-function zeigeTabellen(s, k) {
-  const kw = (e) => (k[e] == null ? "–" : zahl(k[e], 2));
+function zeigeTabellen(s, k, lp) {
+  {
+  // Großverbraucher gegliedert wie im Dashboard (29.09.2026): Gruppen mit Summe, € (Bezugspreis live), Ø/Tag über Tage mit Messung
+  // (ab Folgemonat inkl. Vormonat lp), Jahr ≈ = Ø/Tag × 365; grüne Zeile = Anteil aus PV/Akku, Haus-€ = nur Netzbezug
+  const preis = (num(s, "input_number.strompreis_bezug") ?? 0) / 100;
+  const jetztMs = Date.now(), ms = new Date(); ms.setDate(1); ms.setHours(0, 0, 0, 0);
+  const pms = new Date(ms); pms.setMonth(pms.getMonth() - 1);
+  const avg = (m, l, start) => {
+    if (m === null || m === undefined) return null;
+    const st = start ? new Date(start).getTime() : null;
+    const tage = (jetztMs - Math.max(ms.getTime(), st ?? 0)) / 864e5;
+    const pt = (l || 0) > 0 ? (ms.getTime() - Math.max(pms.getTime(), st ?? 0)) / 864e5 : 0;
+    return tage + Math.max(pt, 0) < 0.5 ? null : (m + (l || 0)) / (tage + Math.max(pt, 0));
+  };
   const G = [
-    ["Wärmepumpe", "sensor.cmi_wp_leistung_elektrisch", "sensor.cmi_wp_energie_heute", "sensor.wp_energie_monat", "L1–L3"],
-    ["BWWP", "sensor.keller_bwwp_shelly_leistung", "sensor.keller_bwwp_shelly_bwwp_energie_heute", "sensor.bwwp_energie_monat", "L2"],
-    ["Entfeuchter", "sensor.keller_entfeuchter_power", "sensor.entfeuchter_energie_heute", "sensor.entfeuchter_energie_monat", "L2"],
-    ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung", "sensor.spulmaschine_energie_heute", "sensor.spulmaschine_energie_monat", "L1"],
-    ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung", "sensor.waschmaschine_energie_heute", "sensor.waschmaschine_energie_monat", "L2"],
-    ["Trockner", "sensor.keller_miele_trockner_leistung", "sensor.trockner_energie_heute", "sensor.trockner_energie_monat", "L3"],
-    ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "L2"],
-    ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "L2"],
-    ["Klima Wintergarten ≈", "sensor.klima_wintergarten_leistung_geschatzt", "sensor.klima_wintergarten_heute", "sensor.klima_wintergarten_monat", "L2"],
-    ["Klima Emil ≈", "sensor.klima_emil_leistung_geschatzt", "sensor.klima_emil_heute", "sensor.klima_emil_monat", "L2"],
-    ["Klima Dachspitz ≈", "sensor.klima_dachspitz_leistung_geschatzt", "sensor.klima_dachspitz_heute", "sensor.klima_dachspitz_monat", "L2"],
-    ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.nerdaxe_energie_heute", "sensor.nerdaxe_energie_monat", "L2"],
-    ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "L2"],
-  ];
-  const w0 = (e) => { const v = num(s, e); return v === null ? "–" : zahl(v, 0) + " W"; };
-  $("gross").innerHTML = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Phase</th></tr>"
-    + G.map(([n, p, h, m, ph]) => `<tr><td>${n}</td><td>${w0(p)}</td><td>${kw(h)}</td><td>${kw(m)}</td><td>${ph}</td></tr>`
-      + (n === "BWWP" ? bwwpTeile(s, k, w0, kw) : "")).join("")
-    + `<tr><td>Rest (ungemessen)</td><td>${w0("sensor.rest_ungemessen")}</td><td></td><td></td><td></td></tr>`
-    + `<tr class="summe"><td>Haus gesamt</td><td>${w0("sensor.hausverbrauch")}</td><td></td><td></td><td></td></tr>`;
+    ["🔥 Heizen", [["Wärmepumpe", "sensor.cmi_wp_leistung_elektrisch", "sensor.cmi_wp_energie_heute", "sensor.wp_energie_monat", "2026-09-22T17:14"],
+      ["Klima Wintergarten ≈", "sensor.klima_wintergarten_leistung_geschatzt", "sensor.klima_wintergarten_heute", "sensor.klima_wintergarten_monat", null],
+      ["Klima Emil ≈", "sensor.klima_emil_leistung_geschatzt", "sensor.klima_emil_heute", "sensor.klima_emil_monat", null],
+      ["Klima Dachspitz ≈", "sensor.klima_dachspitz_leistung_geschatzt", "sensor.klima_dachspitz_heute", "sensor.klima_dachspitz_monat", null]]],
+    ["🚿 Warmwasser", [["BWWP", "sensor.keller_bwwp_shelly_leistung", "sensor.keller_bwwp_shelly_bwwp_energie_heute", "sensor.bwwp_energie_monat", "2026-09-22T17:14"],
+      ["↳ Verdichter", "sensor.bwwp_verdichter_leistung", "sensor.bwwp_verdichter_energie_heute", "verdichter", "2026-09-22T17:14", "teil"],
+      ["↳ Heizstab ⚡", "sensor.bwwp_heizstab_leistung", "sensor.bwwp_heizstab_energie_heute", "sensor.bwwp_heizstab_energie_monat", "2026-09-22T17:14", "teil hz"]]],
+    ["🏠 Haushaltsgeräte", [["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung", "sensor.spulmaschine_energie_heute", "sensor.spulmaschine_energie_monat", "2026-09-22T17:37"],
+      ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung", "sensor.waschmaschine_energie_heute", "sensor.waschmaschine_energie_monat", "2026-09-24T02:30"],
+      ["Trockner", "sensor.keller_miele_trockner_leistung", "sensor.trockner_energie_heute", "sensor.trockner_energie_monat", "2026-09-24T02:30"],
+      ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
+      ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"]]],
+    ["🔌 Sonstiges", [["Entfeuchter", "sensor.keller_entfeuchter_power", "sensor.entfeuchter_energie_heute", "sensor.entfeuchter_energie_monat", "2026-09-24T02:30"],
+      ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.nerdaxe_energie_heute", "sensor.nerdaxe_energie_monat", "2026-09-24T02:30"],
+      ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "2026-09-24T02:30"]]]];
+  const kv = (e) => (k[e] === undefined ? null : k[e]);
+  const w0 = (v) => (v === null ? "–" : zahl(v, 0) + " W");
+  const eur = (v) => zahl(v, 2) + " €";
+  const zelle = (v, n = 2, e) => v === null ? "–" : `${zahl(v, n)}<span class="eur">${eur(e ?? v * preis)}</span>`;
+  const jahr = (a, e) => a === null ? "–" : `${zahl(a * 365, 0)}<span class="eur">${zahl((e ?? a * preis) * 365, 0)} €</span>`;
+  const zeile = (cls, n, p, h, m, av, eh, em, ea) => `<tr class="${cls}"><td>${n}</td><td>${w0(p)}</td><td>${zelle(h, 2, eh)}</td><td>${zelle(m, 2, em)}</td><td>${zelle(av, 2, ea)}</td><td>${jahr(av, ea)}</td></tr>`;
+  let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>Jahr ≈</th></tr>";
+  let sp = 0, sh = 0, sa = 0; const gruppen = [];
+  for (const [gn, items] of G) {
+    let gp = 0, gh = 0, gm = 0, ga = 0, zeilen = "";
+    for (const [n, p, h, m, st, cls] of items) {
+      let mv, l;
+      if (m === "verdichter") { const b = kv("sensor.bwwp_energie_monat"), z = kv("sensor.bwwp_heizstab_energie_monat");
+        mv = b === null || z === null ? null : Math.max(b - z, 0); l = (lp["sensor.bwwp_energie_monat"] || 0) - (lp["sensor.bwwp_heizstab_energie_monat"] || 0);
+      } else { mv = kv(m); l = lp[m] || 0; }
+      const pv = num(s, p), hv = kv(h), av = avg(mv, l, st);
+      if (!cls) { gp += pv ?? 0; gh += hv ?? 0; gm += mv ?? 0; ga += av ?? 0; }
+      zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : ""), n, pv, hv, mv, av);
+    }
+    gruppen.push([gn, gp, gh, gm, ga, zeilen]); sp += gp; sh += gh; sa += ga;
+  }
+  const hp = num(s, "sensor.hausverbrauch"), hh = kv("sensor.hausverbrauch_heute"), hm = kv("sensor.hausverbrauch_monat");
+  const haStart = "2026-09-22T15:00", ha = avg(hm, lp["sensor.hausverbrauch_monat"] || 0, haStart);
+  const ra = ha === null ? null : Math.max(ha - sa, 0), rh = hh === null ? null : Math.max(hh - sh, 0);
+  const rm = ra === null ? null : ra * (jetztMs - Math.max(ms.getTime(), new Date(haStart).getTime())) / 864e5;
+  const rp = num(s, "sensor.rest_ungemessen");
+  for (const [gn, gp, gh, gm, ga, zeilen] of gruppen) {
+    const x = gn.includes("Sonstiges");
+    html += zeile("gruppe", gn, gp + (x ? rp ?? 0 : 0), gh + (x ? rh ?? 0 : 0), gm + (x ? rm ?? 0 : 0), ga + (x ? ra ?? 0 : 0)) + zeilen
+      + (x ? zeile("", "Rest (ungemessen)", rp, rh, rm, ra) : "");
+  }
+  // Netzbezug: heute = EM540 − Mitternachtsstand, Monat = utility_meter
+  const np = Math.max(num(s, "sensor.em_540_netzmessgeraet_leistung") ?? 0, 0);
+  const nh = Math.max((num(s, "sensor.em_540_netzmessgeraet_verbrauch") ?? 0) - (num(s, "input_number.em540_bezug_mitternacht") ?? 0), 0);
+  const nm = kv("sensor.netzbezug_monat"), na = avg(nm, lp["sensor.netzbezug_monat"] || 0, haStart);
+  const g = (a, b) => (a === null || b === null ? null : Math.max(a - b, 0));
+  const gh2 = g(hh, nh), gm2 = g(hm, nm), ga2 = g(ha, na);
+  html += zeile("pvabzug", "☀️ davon aus PV/Akku<span class=\"eur\">kostet nichts</span>", hp === null ? null : Math.max(hp - np, 0),
+      gh2, gm2, ga2, gh2 === null ? null : -gh2 * preis, gm2 === null ? null : -gm2 * preis, ga2 === null ? null : -ga2 * preis)
+    + zeile("haus", "Haus gesamt<span class=\"eur\">€ = nur Netzbezug</span>", hp, hh, hm, ha, nh * preis, nm === null ? null : nm * preis, na === null ? null : na * preis);
+  $("gross").innerHTML = html;
+  $("gross_fuss").innerHTML = `kWh · € = kWh × ${zahl(preis * 100, 2)} ct (je Gerät ohne PV-Abzug) · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal, die Hochrechnung aus wenigen Tagen ist dafür zu niedrig · ≈ geschätzt`;
 
+  }
+  const kw = (e) => (k[e] == null ? "–" : zahl(k[e], 2));
+  const w0 = (e) => { const v = num(s, e); return v === null ? "–" : zahl(v, 0) + " W"; };
   const F = [
     ["Dach Ost", "MPPT1", "sensor.mppt1_1_dach_ost_leistung_pv_ertrag", "sensor.mppt1_1_dach_ost_ertrag_heute", "sensor.mppt1_1_dach_ost_maximalleistung_heute"],
     ["Dach West", "MPPT3", "sensor.mppt3_6_dach_west_leistung_pv_ertrag", "sensor.mppt3_6_dach_west_ertrag_heute", "sensor.mppt3_6_dach_west_maximalleistung_heute"],
@@ -321,8 +365,104 @@ function zeigePV(s) {
   else if (ent > 100) h = kopf("#f59e0b", "⛅ PV reicht nicht – Rest aus dem Akku", `PV ${kw(pv)} kW · Akku gibt ${kw(ent)} kW · ${soctxt}`);
   else if (akku > 100 && soc < 97) h = kopf("#22c55e", "🔋 Sonne lädt den Akku", `+${kw(akku)} kW in den Akku · ${soctxt} – ins Netz geht erst etwas, wenn er voll ist`);
   else h = kopf("#22c55e", "✓ Alles wird selbst verbraucht", `PV ${kw(pv)} kW · Einspeisung ${zahl(e, 0)} W · ${soctxt}`);
-  $("pvtext").innerHTML = h;
+  $("pvtext").innerHTML = h + netzHeute(s, bez, e, akku, ent, soc);
 }
+
+// „Netz heute“ im VSI-Stil (29.09.2026, wie Dashboard): Säule von 0 bis Wert, oben Bezug, unten Einspeisung, log bis 40 kWh;
+// rechts Symbol der aktuellen Lage (Strommast/Akku/Haus)
+function netzHeute(s, bez, e, akku, ent, soc) {
+  const bz = Math.max((num(s, "sensor.em_540_netzmessgeraet_verbrauch") ?? 0) - (num(s, "input_number.em540_bezug_mitternacht") ?? 0), 0);
+  const ez = Math.max((num(s, "sensor.em_540_netzmessgeraet_einspeisung") ?? 0) - (num(s, "input_number.em540_einspeisung_mitternacht") ?? 0), 0);
+  const pb = (num(s, "input_number.strompreis_bezug") ?? 0) / 100, pe = (num(s, "input_number.einspeiseverguetung") ?? 0) / 100;
+  const c = 105, hh = 92, f = (v) => Math.min(Math.log(1 + v) / Math.log(41), 1);
+  const farbe = (v) => (v < 2 ? "#22c55e" : v < 5 ? "#facc15" : v < 10 ? "#f97316" : "#ef4444");
+  let g = `<rect x="30" y="${c - hh - 4}" width="24" height="${2 * hh + 8}" rx="6" fill="#262626" stroke="#3f3f46"/>`;
+  for (const [v, sg] of [[bz, -1], [ez, 1]]) { const d = hh * f(v); g += `<rect x="42" y="${sg < 0 ? c - d : c}" width="12" height="${d}" fill="${farbe(v)}"/>`; }
+  for (const m of [1, 2, 5, 10, 20, 40]) for (const y of [c - hh * f(m), c + hh * f(m)])
+    g += `<line x1="30" x2="38" y1="${y}" y2="${y}" stroke="#d4d4d8" stroke-width="1.5"/><text x="25" y="${y + 4}" font-size="11" fill="#a1a1aa" text-anchor="end">${m}</text>`;
+  g += `<line x1="26" x2="58" y1="${c}" y2="${c}" stroke="#fafafa" stroke-width="2.5"/><text x="22" y="${c + 4}" font-size="12" font-weight="700" fill="#fafafa" text-anchor="end">0</text>`;
+  const txt = (y, t, sz, col, w = 400) => `<text x="90" y="${y}" font-size="${sz}" font-weight="${w}" fill="${col}">${t}</text>`;
+  g += txt(40, "▲ Netzbezug heute", 15, "#a1a1aa") + txt(74, zahl(bz, 1) + " kWh", 30, farbe(bz), 700) + txt(96, "≈ " + zahl(bz * pb, 2) + " € Kosten", 16, "#d4d4d8")
+    + txt(130, "▼ Einspeisung heute", 15, "#a1a1aa") + txt(164, zahl(ez, 1) + " kWh", 30, farbe(ez), 700) + txt(186, "≈ " + zahl(ez * pe, 2) + " € Vergütung", 16, "#d4d4d8");
+  // Lage-Symbol
+  const cx = 380; let lage, sc, cap;
+  if (bez > 150) [lage, sc, cap] = ["netz", "#f97316", "aus dem Netz"];
+  else if (e > 150) [lage, sc, cap] = ["netz", "#facc15", "ins Netz"];
+  else if (akku > 100) [lage, sc, cap] = ["akku", "#22c55e", "Akku lädt"];
+  else if (ent > 100) [lage, sc, cap] = ["akku", "#60a5fa", "Akku entlädt"];
+  else [lage, sc, cap] = ["haus", "#22c55e", "alles selbst verbraucht"];
+  g += `<style>@keyframes vp{0%,100%{opacity:1}50%{opacity:.35}}.vp{animation:vp 1.6s ease-in-out infinite}</style>`;
+  if (lage === "netz") {
+    const up = bez > 150;
+    g += `<g fill="none" stroke="${sc}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M${cx - 18},150 L${cx - 5},62 L${cx},50 L${cx + 5},62 L${cx + 18},150"/>`
+      + `<path d="M${cx - 30},80 H${cx + 30} M${cx - 22},98 H${cx + 22}"/><path d="M${cx - 8},80 L${cx + 10},98 M${cx + 8},80 L${cx - 10},98 M${cx - 11},98 L${cx + 14},125 M${cx + 11},98 L${cx - 14},125 M${cx - 14},125 L${cx + 17},148 M${cx + 14},125 L${cx - 17},148"/>`
+      + `<path d="M${cx - 30},80 v8 M${cx + 30},80 v8 M${cx - 22},98 v8 M${cx + 22},98 v8" stroke-width="2"/></g>`
+      + `<g class="vp" fill="${sc}"><path d="M${cx + 42},${up ? 70 : 130} l-9,${up ? 14 : -14} h6 v${up ? 26 : -26} h6 v${up ? -26 : 26} h6 z"/></g>`;
+  } else if (lage === "akku") {
+    const h = 80 * Math.min(Math.max(soc, 0), 100) / 100;
+    g += `<rect x="${cx - 10}" y="52" width="20" height="8" rx="2" fill="${sc}"/><rect x="${cx - 26}" y="60" width="52" height="92" rx="8" fill="none" stroke="${sc}" stroke-width="3"/>`
+      + `<rect x="${cx - 20}" y="${146 - h}" width="40" height="${h}" rx="4" fill="${sc}" opacity="0.35"/>`
+      + (akku > 100 ? `<path class="vp" d="M${cx + 4},72 L${cx - 10},108 L${cx + 1},108 L${cx - 4},138 L${cx + 12},98 L${cx + 1},98 Z" fill="${sc}"/>`
+        : `<g class="vp" fill="${sc}"><path d="M${cx + 44},130 l-9,-14 h6 v-26 h6 v26 h6 z"/></g>`);
+  } else {
+    g += `<g fill="none" stroke="${sc}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M${cx - 34},98 L${cx},66 L${cx + 34},98"/><path d="M${cx - 26},92 V150 H${cx + 26} V92"/><path d="M${cx - 12},122 l8,9 l17,-19" stroke-width="3.5"/></g>`
+      + `<g class="vp"><circle cx="${cx + 30}" cy="52" r="8" fill="#facc15"/><path d="M${cx + 30},38 v-5 M${cx + 44},52 h5 M${cx + 40},42 l4,-4 M${cx + 20},42 l-4,-4 M${cx + 40},62 l4,4" stroke="#facc15" stroke-width="2.5" stroke-linecap="round"/></g>`;
+  }
+  g += `<text x="${cx}" y="182" font-size="13" fill="#a1a1aa" text-anchor="middle">${cap}</text>`;
+  return `<svg viewBox="0 0 460 210" style="width:100%;display:block;margin-top:10px" font-family="-apple-system,Helvetica,Arial,sans-serif">${g}</svg>`;
+}
+
+// ---------- Wärmequellen-Zeitleiste 48 h (29.09.2026) ----------
+// d.zl = [Quelle, Unix-Sekunden, 1/0] aus dem SQL-Helfer; Tag hell (d.sn = nächster Auf-/Untergang, Vortage −24 h)
+function zeigeZeitleiste(d) {
+  const z = (d.zl || []).slice().sort((a, b) => a[1] - b[1]);
+  // Breite = echte Pixelbreite, damit Schrift und Balken auf dem Handy nicht winzig werden
+  const W = Math.max(Math.round($("zeitleiste").getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
+  $("zeitleiste").setAttribute("viewBox", `0 0 ${W} 170`);
+  const L = schmal ? 50 : 70, R = W - 8, T = 10, H = 34, jetzt = Date.now(), x0 = jetzt - 48 * 36e5;
+  const X = (t) => L + (t - x0) / (jetzt - x0) * (R - L);
+  const Q = [["WP", ["wp_lauft"], ["#3b82f6"]], ["BWWP", ["bwwp_lauft", "bwwp_heizstab"], ["#f87171", "#dc2626"]], ["LLWP", ["klima_lauft"], ["#facc15"]]];
+  const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const tg = (t) => new Date(t).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+  const dau = (ms) => { const m = Math.round(ms / 6e4); return m >= 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min" : m + " min"; };
+  let svg = "";
+  // Tag hell
+  if (d.sn && d.sn[0] && d.sn[1]) {
+    const auf = new Date(d.sn[0]).getTime(); let unter = new Date(d.sn[1]).getTime(); if (unter < auf) unter += 864e5;
+    const dauer = unter - auf;
+    for (let a = auf - 4 * 864e5; a < jetzt + 864e5; a += 864e5) { const u = a + dauer; if (u < x0 || a > jetzt) continue;
+      svg += `<rect x="${X(Math.max(a, x0))}" y="${T - 4}" width="${X(Math.min(u, jetzt)) - X(Math.max(a, x0))}" height="${3 * (H + 10) + 4}" fill="#cbd5e1" opacity="0.10"/>`; }
+  }
+  Q.forEach(([name, ents, farben], i) => {
+    const y = T + i * (H + 10);
+    svg += `<text x="4" y="${y + H / 2 + 5}" fill="#e5e7eb" font-size="${schmal ? 13 : 15}">${name}</text>`
+      + `<rect x="${L}" y="${y + 6}" width="${R - L}" height="${H - 12}" fill="#4b5563"/>`;
+    ents.forEach((e, k) => {
+      const ev = z.filter((r) => r[0] === e).map((r) => [r[1] * 1000, r[2]]);
+      // Zustand vor dem ersten Eintrag: Gegenteil des ersten Wechsels
+      const st = ev.length ? [[x0, ev[0][1] ? 0 : 1]].concat(ev) : [];
+      for (let j = 0; j < st.length; j++) {
+        if (!st[j][1]) continue;
+        const a = Math.max(st[j][0], x0); let b = jetzt;
+        for (let m = j + 1; m < st.length; m++) if (!st[m][1]) { b = st[m][0]; break; }
+        if (j > 0 && st[j - 1][1]) continue;   // Fortsetzung desselben Laufs
+        if (b <= x0) continue;
+        svg += `<rect x="${X(a)}" y="${y + 6}" width="${Math.max(X(b) - X(a), 1.5)}" height="${H - 12}" fill="${farben[k]}"><title>${name}${k ? " Heizstab" : ""}: ${tg(a)} ${hm(a)}–${b >= jetzt - 6e4 ? "läuft" : hm(b)} (${dau(b - a)})</title></rect>`;
+      }
+    });
+  });
+  // Zeitachse: Striche auf Ortszeit alle 3 h, Mitternacht mit Datum
+  const y2 = T + 3 * (H + 10);
+  const t = new Date(x0); t.setMinutes(0, 0, 0); t.setHours(Math.ceil(t.getHours() / 3) * 3);
+  const schritt = (schmal ? 6 : 3) * 36e5; t.setHours(Math.ceil(t.getHours() / (schmal ? 6 : 3)) * (schmal ? 6 : 3));
+  for (let v = t.getTime(); v <= jetzt; v += schritt) {
+    const dt = new Date(v), mitternacht = dt.getHours() === 0;
+    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/>`
+      + `<text x="${X(v)}" y="${y2 + 18}" fill="${mitternacht ? "#e5e7eb" : "#9ca3af"}" font-size="${schmal ? 11 : 12}" font-weight="${mitternacht ? 700 : 400}" text-anchor="middle">${mitternacht ? (schmal ? new Date(v).getDate() + "." + (new Date(v).getMonth() + 1) + "." : tg(v)) : String(dt.getHours()).padStart(2, "0") + ":00"}</text>`;
+  }
+  $("zeitleiste").innerHTML = svg;
+}
+
 
 // ---------- PV-Prognose (VRM) + Ist, vorgestern bis übermorgen ----------
 function zeigePrognose(d) {
@@ -395,7 +535,7 @@ function zeigeTemperaturen(d) {
   const fp = wt.filter((p) => p[0] >= jetzt - 36e5 && p[0] <= x1);
   const werte = ip.flatMap((p) => [p[4], p[5]]).concat(fp.map((p) => p[1])).filter((v) => typeof v === "number");
   if (!werte.length) { $("tempkurve").innerHTML = ""; return; }
-  const lo = Math.floor(Math.min(...werte) / 5) * 5, hi = Math.ceil(Math.max(...werte) / 5) * 5;
+  const lo = Math.min(0, Math.floor(Math.min(...werte) / 5) * 5), hi = Math.max(30, Math.ceil(Math.max(...werte) / 5) * 5);   // ab 0 °C (29.09.2026)
   const Y = (v) => B - (v - lo) / (hi - lo || 1) * (B - T);
   const linie = (pts) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
   let svg = "";
@@ -417,6 +557,10 @@ function zeigeTemperaturen(d) {
   if (fp.length) svg += `<path d="${linie(fp.map((p) => [X(p[0]), Y(p[1])]))}" fill="none" stroke="#93c5fd" stroke-width="2.2" stroke-dasharray="7 5"/>`;
   if (ip.length) svg += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Y(p[5])]))}" fill="none" stroke="#ef4444" stroke-width="2.5"/>`;
   if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+  if (lo < 0) svg += `<line x1="${L}" x2="${R}" y1="${Y(0)}" y2="${Y(0)}" stroke="#d4d4d8" stroke-width="1.5"/>`;
+  // aktueller Außenwert (OAT) als Punkt am Ende der Außen-Kurve
+  if (ip.length) { const l = ip[ip.length - 1], ax = X(l[0] + halb), ay = Y(l[4]);
+    svg += `<circle cx="${ax}" cy="${ay}" r="19" fill="#3b82f6" stroke="#fff" stroke-width="2"/><text x="${ax}" y="${ay + 4}" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">${zahl(l[4], 1)}°</text>`; }
   $("tempkurve").innerHTML = svg;
 }
 
@@ -426,8 +570,8 @@ async function holen() {
     const r = await fetch(DATEN + "?t=" + Date.now(), { cache: "no-store" });
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
-    zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {});
-    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d);
+    zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
+    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
