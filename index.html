@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202609291031">
+<link rel="stylesheet" href="style.css?v=202609291045">
 </head>
 <body>
 <header>
@@ -122,10 +122,16 @@
   <section>
     <h2>Wasser</h2>
     <div id="wasser" class="raster vier"></div>
+    <div class="karte" style="margin-top:10px"><h3 style="margin:0 0 4px">Wasser heute – jede Zapfung</h3>
+      <svg id="wheute" viewBox="0 0 1000 200" class="zeitleiste" aria-label="Zapfungen heute"></svg>
+      <div class="prog-legende"><span class="l" style="--c:#ef4444">warm</span><span class="l" style="--c:#3b82f6">kalt</span></div></div>
+    <div class="karte" style="margin-top:10px"><h3 style="margin:0 0 4px">Wasser pro Tag (14 Tage) · 🚿 = Duschen</h3>
+      <svg id="wtage" viewBox="0 0 1000 240" class="zeitleiste" aria-label="Wasser pro Tag"></svg>
+      <div class="prog-legende"><span class="l" style="--c:#ef4444">warm</span><span class="l" style="--c:#3b82f6">kalt</span><span class="l" style="--c:#6b7280">gesamt (ohne Aufteilung)</span></div></div>
   </section>
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
-<script src="app.js?v=202609291031"></script>
+<script src="app.js?v=202609291045"></script>
 </body>
 </html>
