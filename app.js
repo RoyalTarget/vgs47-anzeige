@@ -127,7 +127,7 @@ function bogen(a0, a1, r) {
   const [x0, y0] = p(a0), [x1, y1] = p(a1);
   return `M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
 }
-function zeigeBatterie(s) {
+function zeigeBatterie(s, ap) {
   const soc = num(s, "sensor.venus_dc_batterie_ladestand");
   const w = (p) => 180 - p * 1.8;
   let svg = `<path d="${bogen(w(0), w(20), 80)}" stroke="#db4437" stroke-width="18" fill="none"/>`
@@ -144,6 +144,8 @@ function zeigeBatterie(s) {
   const res = num(s, "sensor.venus_aktiver_soc_grenzwert");
   if (soc !== null) svg += `<text x="100" y="126" text-anchor="middle" fill="#9ca3af" font-size="10.5">${zahl(soc * 0.3, 1)} von 30 kWh</text>`
     + (res !== null ? `<text x="100" y="140" text-anchor="middle" fill="#9ca3af" font-size="10.5">${zahl(Math.max(soc - res, 0) * 0.3, 1)} kWh über Reserve (${zahl(res, 0)} %)</text>` : "");
+  // Akku-Zeiten (29.09.2026): Text aus sensor.akku_prognose, in HA fertig formatiert (d.ap)
+  if (ap) svg += `<text x="100" y="156" text-anchor="middle" fill="#9ca3af" font-size="10.5">⏱ ${ap.replace(/[<>&]/g, "")}</text>`;
   $("tacho").innerHTML = svg;
   const b = num(s, "sensor.venus_dc_batterie_leistung");
   $("batt_laden").hidden = !(b > 50);
@@ -725,7 +727,7 @@ async function holen() {
     const r = await fetch(DATEN + "?t=" + Date.now(), { cache: "no-store" });
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
-    zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
+    zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeWann(d); zeigeWasserGrafik(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
