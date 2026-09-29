@@ -541,8 +541,10 @@ function zeigeZeitleiste(d) {
   // Mitternacht: dünne weiße Linie + Datum darüber (29.09.2026)
   const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
   for (let v = mn.getTime(); v < jetzt; v += 864e5)
-    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 8}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`
-      + `<text x="${X(v)}" y="${T - 12}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(v)}</text>`;
+    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 8}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
+  // Datum mittig über dem sichtbaren Teil jedes Tages (ab 70 px)
+  for (let t0 = mn.getTime() - 864e5; t0 < jetzt; t0 += 864e5) { const a = Math.max(t0, x0), b = Math.min(t0 + 864e5, jetzt);
+    if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 12}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`; }
   $("zeitleiste").innerHTML = svg;
 }
 
