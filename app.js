@@ -561,8 +561,8 @@ function zeichneZL(id) {
   let stops = "";
   for (let i = 0; i <= N; i++) { const t = x0 + (ende - x0) * i / N, h = sonnenhoehe(t); pts.push([X(t), h]);
     const b = Math.min(Math.max((h + 6) / 12, 0), 1), s = b * b * (3 - 2 * b);
-    const c = [23 + (203 - 23) * s, 37 + (213 - 37) * s, 84 + (225 - 84) * s].map(Math.round);
-    stops += `<stop offset="${(i / N).toFixed(4)}" stop-color="rgb(${c})" stop-opacity="${(0.5 - 0.36 * s).toFixed(3)}"/>`; }
+    const c = [26 + (52 - 26) * s, 32 + (54 - 32) * s, 56 + (57 - 56) * s].map(Math.round);
+    stops += `<stop offset="${(i / N).toFixed(4)}" stop-color="rgb(${c})" stop-opacity="1"/>`; }
   svg += `<defs><linearGradient id="${id}_dd" x1="0" x2="1" y1="0" y2="0">${stops}</linearGradient></defs>`;
   svg += `<rect x="${L}" y="${T - 4}" width="${R - L}" height="${y2 - T + 4}" fill="url(#${id}_dd)"/>`;
   const Y0 = T - 10, SY = (h) => Y0 - Math.max(h, 0) / 65 * 16;
@@ -574,7 +574,7 @@ function zeichneZL(id) {
       svg += `<text x="${x + (auf ? -4 : 4)}" y="${Y0 - 2}" fill="#fbbf24" fill-opacity="0.85" font-size="10" text-anchor="${auf ? "end" : "start"}">${auf ? "☀↑ " : ""}${hm(t)}${auf ? "" : " ↓"}</text>`; }
   Q.forEach(([name, codes, farben, zus], i) => {
     const y = T + i * (H + 10);
-    svg += `<rect x="${L}" y="${y + 6}" width="${R - L}" height="${H - 12}" fill="#343945"/>`;
+    svg += `<line x1="${L}" x2="${R}" y1="${y + H / 2}" y2="${y + H / 2}" stroke="#6b7280" stroke-width="1"/>`;   // dünne Linie je Zeile statt grauer Spur
     codes.forEach((c, k) => {
       for (const [a, b, lauf] of zlSeg[c] || []) {
         if (b <= x0 || a >= ende) continue;
