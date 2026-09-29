@@ -561,7 +561,7 @@ function zeichneZL(id) {
   let stops = "";
   for (let i = 0; i <= N; i++) { const t = x0 + (ende - x0) * i / N, h = sonnenhoehe(t); pts.push([X(t), h]);
     const b = Math.min(Math.max((h + 6) / 12, 0), 1), s = b * b * (3 - 2 * b);
-    const c = [20 + (34 - 20) * s, 27 + (31 - 27) * s, 54 + (26 - 54) * s].map(Math.round);
+    const c = [20 + (82 - 20) * s, 27 + (72 - 27) * s, 54 + (34 - 54) * s].map(Math.round);
     stops += `<stop offset="${(i / N).toFixed(4)}" stop-color="rgb(${c})" stop-opacity="1"/>`; }
   svg += `<defs><linearGradient id="${id}_dd" x1="0" x2="1" y1="0" y2="0">${stops}</linearGradient></defs>`;
   svg += `<rect x="${L}" y="${T - 4}" width="${R - L}" height="${y2 - T + 4}" fill="url(#${id}_dd)"/>`;
