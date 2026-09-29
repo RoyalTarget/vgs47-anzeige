@@ -513,7 +513,7 @@ function zeigeWann(d) {
 
 // ---------- Zeitleisten 48 h mit Verschieben über 14 Tage (29.09.2026) ----------
 // d.zl = [Kürzel, Unix-s, 1/0] aus dem SQL-Helfer (15 Tage). Oben 48 h, darunter 14-Tage-Leiste: ziehen/tippen verschiebt,
-// „Jetzt“ springt zurück. Tag hell (d.sn), Mitternacht Linie + Datum mittig, Tooltips per <title>.
+// „Jetzt“ springt zurück. Dämmerung + Sonnenkurve (sonnenhoehe), Mitternacht Linie + Datum mittig, Tooltips per <title>.
 const ZL = {
   zeitleiste: [["WP", ["wp"], ["#3b82f6"]], ["BWWP", ["bw", "hz"], ["#f87171", "#dc2626"], ["", " Heizstab"]], ["LLWP", ["ll"], ["#facc15"]]],
   zeitleiste2: [["Waschmaschine", ["wa"], ["#06b6d4"]], ["Trockner", ["tr"], ["#a855f7"]], ["Spülmaschine", ["sp"], ["#22c55e"]], ["Entfeuchter", ["en"], ["#f59e0b"]]],
@@ -537,25 +537,44 @@ function zeigeZeitleiste(d) {
   zlSeg = seg; window.__zlSonne = d.sn;
   for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id);
 }
+// Sonnenhöhe in Grad (Näherung ±0,5°) – Ort grob München, bewusst ohne genaue Adresse
+function sonnenhoehe(t) {
+  const R = Math.PI / 180, LAT = 48.14 * R, LON = 11.58, n = (t - 946728000000) / 864e5;
+  const L = (280.46 + 0.9856474 * n) * R, G = (357.528 + 0.9856003 * n) * R;
+  const la = L + (1.915 * Math.sin(G) + 0.02 * Math.sin(2 * G)) * R, ep = (23.439 - 4e-7 * n) * R;
+  const ra = Math.atan2(Math.cos(ep) * Math.sin(la), Math.cos(la)), de = Math.asin(Math.sin(ep) * Math.sin(la));
+  const H = ((18.697374558 + 24.06570982441908 * n) * 15 + LON) * R - ra;
+  return Math.asin(Math.sin(LAT) * Math.sin(de) + Math.cos(LAT) * Math.cos(de) * Math.cos(H)) / R;
+}
 function zeichneZL(id) {
   const Q = ZL[id], jetzt = Date.now(), ende = zlEnde[id] ?? jetzt, x0 = ende - 48 * 36e5;
   const svgEl = $(id), W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
-  const H = 34, T = 30, hoehe = T + Q.length * (H + 10) + 26;
+  const H = 34, T = 48, hoehe = T + Q.length * (H + 10) + 26;
   svgEl.setAttribute("viewBox", `0 0 ${W} ${hoehe}`);
   const L = 8, R = W - 8, X = (t) => L + (t - x0) / (ende - x0) * (R - L), y2 = T + Q.length * (H + 10);
   const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
   const tg = (t) => new Date(t).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
   const dau = (ms) => { const m = Math.round(ms / 6e4); return m >= 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min" : m + " min"; };
   let svg = "";
-  const sn = window.__zlSonne;
-  if (sn && sn[0] && sn[1]) {   // Tag hell
-    const auf = zeitpunkt(sn[0]); let unter = zeitpunkt(sn[1]); if (unter < auf) unter += 864e5; const dauer = unter - auf;
-    for (let a = auf - 16 * 864e5; a < ende + 864e5; a += 864e5) { const u = a + dauer; if (u < x0 || a > ende) continue;
-      svg += `<rect x="${X(Math.max(a, x0))}" y="${T - 4}" width="${X(Math.min(u, ende)) - X(Math.max(a, x0))}" height="${Q.length * (H + 10) + 4}" fill="#cbd5e1" opacity="0.10"/>`; }
-  }
+  // Dämmerung + Sonnenkurve (29.09.2026, wie Dashboard): Hintergrund weich nach Sonnenhöhe (−6°…+6°), darüber Band mit der Sonnenhöhe
+  const N = Math.min(400, Math.max(40, Math.round((R - L) / 4))), pts = [];
+  let stops = "";
+  for (let i = 0; i <= N; i++) { const t = x0 + (ende - x0) * i / N, h = sonnenhoehe(t); pts.push([X(t), h]);
+    const b = Math.min(Math.max((h + 6) / 12, 0), 1), s = b * b * (3 - 2 * b);
+    const c = [23 + (203 - 23) * s, 37 + (213 - 37) * s, 84 + (225 - 84) * s].map(Math.round);
+    stops += `<stop offset="${(i / N).toFixed(4)}" stop-color="rgb(${c})" stop-opacity="${(0.5 - 0.36 * s).toFixed(3)}"/>`; }
+  svg += `<defs><linearGradient id="${id}_dd" x1="0" x2="1" y1="0" y2="0">${stops}</linearGradient></defs>`;
+  svg += `<rect x="${L}" y="${T - 4}" width="${R - L}" height="${y2 - T + 4}" fill="url(#${id}_dd)"/>`;
+  const Y0 = T - 10, SY = (h) => Y0 - Math.max(h, 0) / 65 * 16;
+  svg += `<line x1="${L}" x2="${R}" y1="${Y0}" y2="${Y0}" stroke="#e5e7eb" stroke-opacity="0.15"/>`;
+  svg += `<path d="M${pts[0][0].toFixed(1)} ${Y0}${pts.map(([x, h]) => `L${x.toFixed(1)} ${SY(h).toFixed(1)}`).join("")}L${pts[pts.length - 1][0].toFixed(1)} ${Y0}Z" fill="#facc15" fill-opacity="0.28" stroke="#fbbf24" stroke-width="1.2" stroke-opacity="0.8" stroke-linejoin="round"/>`;
+  if ((R - L) / 2 >= 220)   // Auf-/Untergangszeit, wenn ein Tag mind. 220 px breit ist
+    for (let i = 1; i < pts.length; i++) { const [xa, ha] = pts[i - 1], [xb, hb] = pts[i]; if ((ha < 0) === (hb < 0)) continue;
+      const x = xa + (xb - xa) * ha / (ha - hb), auf = hb >= 0, t = x0 + (x - L) / (R - L) * (ende - x0);
+      svg += `<text x="${x + (auf ? -4 : 4)}" y="${Y0 - 2}" fill="#fbbf24" fill-opacity="0.85" font-size="10" text-anchor="${auf ? "end" : "start"}">${auf ? "☀↑ " : ""}${hm(t)}${auf ? "" : " ↓"}</text>`; }
   Q.forEach(([name, codes, farben, zus], i) => {
     const y = T + i * (H + 10);
-    svg += `<rect x="${L}" y="${y + 6}" width="${R - L}" height="${H - 12}" fill="#4b5563"/>`;
+    svg += `<rect x="${L}" y="${y + 6}" width="${R - L}" height="${H - 12}" fill="#343945"/>`;
     codes.forEach((c, k) => {
       for (const [a, b, lauf] of zlSeg[c] || []) {
         if (b <= x0 || a >= ende) continue;
@@ -568,9 +587,9 @@ function zeichneZL(id) {
   for (let v = t.getTime(); v <= ende; v += schritt) { const h = new Date(v).getHours();
     svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/><text x="${X(v)}" y="${y2 + 18}" fill="#9ca3af" font-size="${schmal ? 11 : 12}" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
   const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
-  for (let v = mn.getTime(); v < ende; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 8}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
+  for (let v = mn.getTime(); v < ende; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 26}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
   for (let t0 = mn.getTime() - 864e5; t0 < ende; t0 += 864e5) { const a = Math.max(t0, x0), b = Math.min(t0 + 864e5, ende);
-    if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 12}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`; }
+    if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 30}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`; }
   if (ende >= jetzt - 6e4) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T - 4}" y2="${y2}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
   svgEl.innerHTML = svg;
   // 14-Tage-Leiste unter dem Feld: antippen/ziehen = Fenster dorthin (29.09.2026)
