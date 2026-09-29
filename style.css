@@ -156,7 +156,7 @@ tr.teil.hz-an td { color: #facc15; }
 .prog-legende .l[style]::before { border-color: var(--c); border-top-width: 8px; width: 14px; }
 
 #wann td:nth-child(2) { text-align: left; white-space: normal; }
-#wann .grau { color: var(--leise); }
+#wann .grau, #wann_kurz .grau { color: var(--leise); }
 
 /* Zeitleisten verschieben (29.09.2026) */
 .zl-ueb { margin-top: 6px; cursor: grab; touch-action: none; }
