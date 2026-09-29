@@ -70,6 +70,14 @@
     </div>
   </section>
 
+  <section>
+    <h2>Wärmequellen – wann lief was (48 h)</h2>
+    <div class="karte">
+      <svg id="zeitleiste" viewBox="0 0 1000 170" class="zeitleiste" aria-label="Laufzeiten WP, BWWP, LLWP"></svg>
+      <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP Verdichter</span><span class="l" style="--c:#dc2626">BWWP + Heizstab</span><span class="l" style="--c:#facc15">LLWP</span></div>
+    </div>
+  </section>
+
   <div class="zwei">
     <section>
       <h2>Energie</h2>
@@ -81,7 +89,7 @@
     <section>
       <h2>Batterie</h2>
       <div class="karte">
-        <svg id="tacho" viewBox="0 0 200 134" class="tacho" aria-label="Batterie-Ladestand"></svg>
+        <svg id="tacho" viewBox="0 0 200 146" class="tacho" aria-label="Batterie-Ladestand"></svg>
       </div>
       <div class="karte streifen">
         <img src="img/batt_bg.svg" alt="" class="bg">
@@ -96,17 +104,15 @@
     </section>
   </div>
 
-  <div class="zwei">
-    <section>
-      <h2>Großverbraucher</h2>
-      <div class="karte"><table class="tab" id="gross"></table>
-        <div class="fuss">heute / Monat in kWh · ≈ geschätzt</div></div>
-    </section>
-    <section>
-      <h2>PV je Fläche</h2>
-      <div class="karte"><table class="tab" id="pvflaeche"></table></div>
-    </section>
-  </div>
+  <section>
+    <h2>Großverbraucher</h2>
+    <div class="karte gross-karte"><table class="tab gross" id="gross"></table>
+      <div class="fuss" id="gross_fuss"></div></div>
+  </section>
+  <section>
+    <h2>PV je Fläche</h2>
+    <div class="karte"><table class="tab" id="pvflaeche"></table></div>
+  </section>
 
   <section>
     <h2>Wasser</h2>
