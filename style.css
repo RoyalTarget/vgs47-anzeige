@@ -163,3 +163,8 @@ tr.teil.hz-an td { color: #facc15; }
 .zl-hinweis { font-size: 12px; color: var(--leise); text-align: center; margin: 2px 0 4px; }
 .zl-jetzt { margin-left: 8px; background: #3f3f46; color: #e5e7eb; border: 1px solid #52525b; border-radius: 6px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
 .prog-legende .socp::before { border-color: #93c5fd; border-top-style: dashed; }
+
+/* „Wann starten?“ Kurzansicht (29.09.2026) */
+.wann-kurz { line-height: 1.9; margin-bottom: 6px; }
+.wann-kurz .fenster { margin-bottom: 6px; }
+.wann-det summary { color: #9ca3af; cursor: pointer; margin: 4px 0 6px; }
