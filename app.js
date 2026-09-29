@@ -496,9 +496,9 @@ function zeigeZeitleiste(d) {
   const z = (d.zl || []).slice().sort((a, b) => a[1] - b[1]);
   // Breite = echte Pixelbreite, damit Schrift und Balken auf dem Handy nicht winzig werden
   const W = Math.max(Math.round($("zeitleiste").getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
-  $("zeitleiste").setAttribute("viewBox", `0 0 ${W} 170`);
+  $("zeitleiste").setAttribute("viewBox", `0 0 ${W} 190`);
   // ohne Beschriftung links (29.09.2026), Legende unten reicht
-  const L = 8, R = W - 8, T = 10, H = 34, jetzt = Date.now(), x0 = jetzt - 48 * 36e5;
+  const L = 8, R = W - 8, T = 30, H = 34, jetzt = Date.now(), x0 = jetzt - 48 * 36e5;
   const X = (t) => L + (t - x0) / (jetzt - x0) * (R - L);
   const Q = [["WP", ["wp_lauft"], ["#3b82f6"]], ["BWWP", ["bwwp_lauft", "bwwp_heizstab"], ["#f87171", "#dc2626"]], ["LLWP", ["klima_lauft"], ["#facc15"]]];
   const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
@@ -538,6 +538,11 @@ function zeigeZeitleiste(d) {
     svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/>`
       + `<text x="${X(v)}" y="${y2 + 18}" fill="${mitternacht ? "#e5e7eb" : "#9ca3af"}" font-size="${schmal ? 11 : 12}" font-weight="${mitternacht ? 700 : 400}" text-anchor="middle">${mitternacht ? (schmal ? new Date(v).getDate() + "." + (new Date(v).getMonth() + 1) + "." : tg(v)) : String(dt.getHours()).padStart(2, "0") + ":00"}</text>`;
   }
+  // Mitternacht: dünne weiße Linie + Datum darüber (29.09.2026)
+  const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
+  for (let v = mn.getTime(); v < jetzt; v += 864e5)
+    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 8}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`
+      + `<text x="${X(v)}" y="${T - 12}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(v)}</text>`;
   $("zeitleiste").innerHTML = svg;
 }
 
