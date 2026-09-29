@@ -114,7 +114,7 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 #pvtext .grau { color: #9ca3af; font-size: 14px; }
 @media (max-width: 767px) { .pv-zeile { grid-template-columns: 1fr; } }
 
-.wert.rl { font-size: 1.0833cqw; }   /* RL je Kreis: 13 wie die Verteiler-Beschriftung */
+.wert.rl { font-size: 0.9cqw; }   /* RL je Kreis: 13 wie die Verteiler-Beschriftung */
 
 /* PV-Prognose (27.09.2026) */
 .progkurve { width: 100%; height: auto; display: block; margin-top: 8px; }
@@ -141,6 +141,19 @@ tr.teil.hz-an td { color: #facc15; }
 .gross tr.teil td { color: #9ca3af; font-size: 0.92em; }
 .gross tr.teil.hz td:first-child { color: #facc15; }
 .gross tr.teil.hz.an td { color: #facc15; }
-@media (max-width: 600px) { .gross { font-size: 12px; } .gross th, .gross td { padding: 4px 3px; } .gross td .eur { font-size: 9.5px; } }
+/* Handy: eigener Scrollbereich, Kopfzeile + Namensspalte fest (29.09.2026) */
+@media (max-width: 700px) {
+  .gross-karte .scroll { max-height: 72vh; overflow: auto; -webkit-overflow-scrolling: touch; }
+  .gross { width: max-content; min-width: 100%; font-size: 12.5px; border-collapse: separate; border-spacing: 0; }
+  .gross th, .gross td { padding: 5px 6px; }
+  .gross th { position: sticky; top: 0; z-index: 3; background: var(--karte); box-shadow: 0 2px 0 rgba(255,255,255,0.2); }
+  .gross td:first-child, .gross th:first-child { position: sticky; left: 0; z-index: 2; background: var(--karte); max-width: 130px; white-space: normal; box-shadow: 2px 0 0 rgba(255,255,255,0.15); }
+  .gross th:first-child { z-index: 4; }
+  .gross tr.gruppe td:first-child { background: #1e2a3f; } .gross tr.pvabzug td:first-child { background: #1a3325; } .gross tr.haus td:first-child { background: #34301a; }
+  .gross td .eur { font-size: 10px; }
+}
 .zeitleiste { width: 100%; display: block; }
 .prog-legende .l[style]::before { border-color: var(--c); border-top-width: 8px; width: 14px; }
+
+#wann td:nth-child(2) { text-align: left; white-space: normal; }
+#wann .grau { color: var(--leise); }
