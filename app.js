@@ -490,62 +490,92 @@ function zeigeWann(d) {
     + `Mehrkosten je Lauf · Strom ${zahl(num(s, "input_number.strompreis_bezug") ?? 0, 2)} ct, Einspeisung ${zahl(num(s, "input_number.einspeiseverguetung") ?? 0, 0)} ct · Verbrauch je Lauf wie der letzte (${w.map((x) => zahl(x[7] ?? 0, 2)).join(" / ")} kWh)`;
 }
 
-// ---------- Wärmequellen-Zeitleiste 48 h (29.09.2026) ----------
-// d.zl = [Quelle, Unix-Sekunden, 1/0] aus dem SQL-Helfer; Tag hell (d.sn = nächster Auf-/Untergang, Vortage −24 h)
+// ---------- Zeitleisten 48 h mit Verschieben über 14 Tage (29.09.2026) ----------
+// d.zl = [Kürzel, Unix-s, 1/0] aus dem SQL-Helfer (15 Tage). Oben 48 h, darunter 14-Tage-Leiste: ziehen/tippen verschiebt,
+// „Jetzt“ springt zurück. Tag hell (d.sn), Mitternacht Linie + Datum mittig, Tooltips per <title>.
+const ZL = {
+  zeitleiste: [["WP", ["wp"], ["#3b82f6"]], ["BWWP", ["bw", "hz"], ["#f87171", "#dc2626"], ["", " Heizstab"]], ["LLWP", ["ll"], ["#facc15"]]],
+  zeitleiste2: [["Waschmaschine", ["wa"], ["#06b6d4"]], ["Trockner", ["tr"], ["#a855f7"]], ["Spülmaschine", ["sp"], ["#22c55e"]], ["Entfeuchter", ["en"], ["#f59e0b"]]],
+};
+const zlEnde = {};            // Fensterende je Leiste (ms), null = live
+let zlSeg = {};               // Kürzel → [[von, bis, läuft]]
 function zeigeZeitleiste(d) {
-  const z = (d.zl || []).slice().sort((a, b) => a[1] - b[1]);
-  // Breite = echte Pixelbreite, damit Schrift und Balken auf dem Handy nicht winzig werden
-  const W = Math.max(Math.round($("zeitleiste").getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
-  $("zeitleiste").setAttribute("viewBox", `0 0 ${W} 190`);
-  // ohne Beschriftung links (29.09.2026), Legende unten reicht
-  const L = 8, R = W - 8, T = 30, H = 34, jetzt = Date.now(), x0 = jetzt - 48 * 36e5;
-  const X = (t) => L + (t - x0) / (jetzt - x0) * (R - L);
-  const Q = [["WP", ["wp_lauft"], ["#3b82f6"]], ["BWWP", ["bwwp_lauft", "bwwp_heizstab"], ["#f87171", "#dc2626"]], ["LLWP", ["klima_lauft"], ["#facc15"]]];
+  const z = (d.zl || []).slice().sort((a, b) => a[1] - b[1]), jetzt = Date.now(), seg = {};
+  const codes = [...new Set(z.map((r) => r[0]))];
+  for (const c of codes) {
+    const ev = z.filter((r) => r[0] === c).map((r) => [r[1] * 1000, r[2]]);
+    const st = ev.length ? [[ev[0][0] - 1, ev[0][1] ? 0 : 1]].concat(ev) : [];
+    seg[c] = [];
+    for (let j = 0; j < st.length; j++) {
+      if (!st[j][1] || (j > 0 && st[j - 1][1])) continue;
+      let b = jetzt, lauf = true;
+      for (let m = j + 1; m < st.length; m++) if (!st[m][1]) { b = st[m][0]; lauf = false; break; }
+      seg[c].push([st[j][0], b, lauf]);
+    }
+  }
+  zlSeg = seg; window.__zlSonne = d.sn;
+  for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id);
+}
+function zeichneZL(id) {
+  const Q = ZL[id], jetzt = Date.now(), ende = zlEnde[id] ?? jetzt, x0 = ende - 48 * 36e5;
+  const svgEl = $(id), W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
+  const H = 34, T = 30, hoehe = T + Q.length * (H + 10) + 26;
+  svgEl.setAttribute("viewBox", `0 0 ${W} ${hoehe}`);
+  const L = 8, R = W - 8, X = (t) => L + (t - x0) / (ende - x0) * (R - L), y2 = T + Q.length * (H + 10);
   const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
   const tg = (t) => new Date(t).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
   const dau = (ms) => { const m = Math.round(ms / 6e4); return m >= 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min" : m + " min"; };
   let svg = "";
-  // Tag hell
-  if (d.sn && d.sn[0] && d.sn[1]) {
-    const auf = zeitpunkt(d.sn[0]); let unter = zeitpunkt(d.sn[1]); if (unter < auf) unter += 864e5;
-    const dauer = unter - auf;
-    for (let a = auf - 4 * 864e5; a < jetzt + 864e5; a += 864e5) { const u = a + dauer; if (u < x0 || a > jetzt) continue;
-      svg += `<rect x="${X(Math.max(a, x0))}" y="${T - 4}" width="${X(Math.min(u, jetzt)) - X(Math.max(a, x0))}" height="${3 * (H + 10) + 4}" fill="#cbd5e1" opacity="0.10"/>`; }
+  const sn = window.__zlSonne;
+  if (sn && sn[0] && sn[1]) {   // Tag hell
+    const auf = zeitpunkt(sn[0]); let unter = zeitpunkt(sn[1]); if (unter < auf) unter += 864e5; const dauer = unter - auf;
+    for (let a = auf - 16 * 864e5; a < ende + 864e5; a += 864e5) { const u = a + dauer; if (u < x0 || a > ende) continue;
+      svg += `<rect x="${X(Math.max(a, x0))}" y="${T - 4}" width="${X(Math.min(u, ende)) - X(Math.max(a, x0))}" height="${Q.length * (H + 10) + 4}" fill="#cbd5e1" opacity="0.10"/>`; }
   }
-  Q.forEach(([name, ents, farben], i) => {
+  Q.forEach(([name, codes, farben, zus], i) => {
     const y = T + i * (H + 10);
     svg += `<rect x="${L}" y="${y + 6}" width="${R - L}" height="${H - 12}" fill="#4b5563"/>`;
-    ents.forEach((e, k) => {
-      const ev = z.filter((r) => r[0] === e).map((r) => [r[1] * 1000, r[2]]);
-      // Zustand vor dem ersten Eintrag: Gegenteil des ersten Wechsels
-      const st = ev.length ? [[x0, ev[0][1] ? 0 : 1]].concat(ev) : [];
-      for (let j = 0; j < st.length; j++) {
-        if (!st[j][1]) continue;
-        const a = Math.max(st[j][0], x0); let b = jetzt;
-        for (let m = j + 1; m < st.length; m++) if (!st[m][1]) { b = st[m][0]; break; }
-        if (j > 0 && st[j - 1][1]) continue;   // Fortsetzung desselben Laufs
-        if (b <= x0) continue;
-        svg += `<rect x="${X(a)}" y="${y + 6}" width="${Math.max(X(b) - X(a), 1.5)}" height="${H - 12}" fill="${farben[k]}"><title>${name}${k ? " Heizstab" : ""}: ${tg(a)} ${hm(a)}–${b >= jetzt - 6e4 ? "läuft" : hm(b)} (${dau(b - a)})</title></rect>`;
+    codes.forEach((c, k) => {
+      for (const [a, b, lauf] of zlSeg[c] || []) {
+        if (b <= x0 || a >= ende) continue;
+        const aa = Math.max(a, x0), bb = Math.min(b, ende);
+        svg += `<rect x="${X(aa)}" y="${y + 6}" width="${Math.max(X(bb) - X(aa), 1.5)}" height="${H - 12}" fill="${farben[k]}"><title>${name}${zus ? zus[k] : ""}: ${tg(a)} ${hm(a)}–${lauf ? "läuft" : hm(b)} (${dau(b - a)})</title></rect>`;
       }
     });
   });
-  // Zeitachse: Striche auf Ortszeit alle 3 h, Mitternacht mit Datum
-  const y2 = T + 3 * (H + 10);
-  const t = new Date(x0); t.setMinutes(0, 0, 0); t.setHours(Math.ceil(t.getHours() / 3) * 3);
-  const schritt = (schmal ? 6 : 3) * 36e5; t.setHours(Math.ceil(t.getHours() / (schmal ? 6 : 3)) * (schmal ? 6 : 3));
-  for (let v = t.getTime(); v <= jetzt; v += schritt) {
-    const dt = new Date(v), mitternacht = dt.getHours() === 0;
-    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/>`
-      + `<text x="${X(v)}" y="${y2 + 18}" fill="${mitternacht ? "#e5e7eb" : "#9ca3af"}" font-size="${schmal ? 11 : 12}" font-weight="${mitternacht ? 700 : 400}" text-anchor="middle">${mitternacht ? (schmal ? new Date(v).getDate() + "." + (new Date(v).getMonth() + 1) + "." : tg(v)) : String(dt.getHours()).padStart(2, "0") + ":00"}</text>`;
-  }
-  // Mitternacht: dünne weiße Linie + Datum darüber (29.09.2026)
+  const schritt = (schmal ? 6 : 3) * 36e5, t = new Date(x0); t.setMinutes(0, 0, 0); t.setHours(Math.ceil(t.getHours() / (schmal ? 6 : 3)) * (schmal ? 6 : 3));
+  for (let v = t.getTime(); v <= ende; v += schritt) { const h = new Date(v).getHours();
+    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/><text x="${X(v)}" y="${y2 + 18}" fill="#9ca3af" font-size="${schmal ? 11 : 12}" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
   const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
-  for (let v = mn.getTime(); v < jetzt; v += 864e5)
-    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 8}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
-  // Datum mittig über dem sichtbaren Teil jedes Tages (ab 70 px)
-  for (let t0 = mn.getTime() - 864e5; t0 < jetzt; t0 += 864e5) { const a = Math.max(t0, x0), b = Math.min(t0 + 864e5, jetzt);
+  for (let v = mn.getTime(); v < ende; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 8}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
+  for (let t0 = mn.getTime() - 864e5; t0 < ende; t0 += 864e5) { const a = Math.max(t0, x0), b = Math.min(t0 + 864e5, ende);
     if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 12}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`; }
-  $("zeitleiste").innerHTML = svg;
+  if (ende >= jetzt - 6e4) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T - 4}" y2="${y2}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+  svgEl.innerHTML = svg;
+  // 14-Tage-Leiste zum Verschieben
+  const u = $(id + "_ueb"); if (!u) return;
+  const UW = Math.max(Math.round(u.getBoundingClientRect().width) || 1000, 300), UH = 14 + Q.length * 6;
+  u.setAttribute("viewBox", `0 0 ${UW} ${UH + 16}`);
+  const u0 = jetzt - 14 * 864e5, UX = (tt) => 8 + (tt - u0) / (jetzt - u0) * (UW - 16);
+  let g = `<rect x="8" y="2" width="${UW - 16}" height="${UH}" fill="#27272a" rx="3"/>`;
+  Q.forEach(([, codes, farben], i) => codes.forEach((c, k) => { for (const [a, b] of zlSeg[c] || []) { if (b < u0) continue;
+    g += `<rect x="${UX(Math.max(a, u0))}" y="${6 + i * 6}" width="${Math.max(UX(b) - UX(Math.max(a, u0)), 1)}" height="4" fill="${farben[k]}"/>`; } }));
+  for (let v = new Date(u0).setHours(24, 0, 0, 0); v < jetzt; v += 864e5) { const dt = new Date(v);
+    g += `<line x1="${UX(v)}" x2="${UX(v)}" y1="2" y2="${UH + 2}" stroke="#52525b"/>`;
+    if (!schmal || dt.getDate() % 2 === 0) g += `<text x="${UX(v + 432e5)}" y="${UH + 14}" fill="#9ca3af" font-size="10" text-anchor="middle">${dt.getDate()}.${dt.getMonth() + 1}.</text>`; }
+  g += `<rect x="${UX(x0)}" y="1" width="${UX(ende) - UX(x0)}" height="${UH + 2}" fill="#e5e7eb" fill-opacity="0.12" stroke="#e5e7eb" stroke-width="1.5" rx="3"/>`;
+  u.innerHTML = g;
+  if (!u.__zl) {   // Ziehen/Tippen: Fenster um den Zeigerpunkt zentrieren
+    u.__zl = true; let zieht = false;
+    const setze = (ev) => { const r = u.getBoundingClientRect(), tt = u0 + (ev.clientX - r.left - 8 * r.width / UW) / ((UW - 16) * r.width / UW) * (jetzt - u0);
+      const erst = Math.min(...Object.values(zlSeg).flat().map((s) => s[0]), Date.now());   // frühester Datenpunkt
+      const e2 = Math.min(Math.max(tt + 24 * 36e5, jetzt - 13 * 864e5, erst + 48 * 36e5), Date.now()); zlEnde[id] = e2 >= Date.now() - 30 * 6e4 ? null : e2; zeichneZL(id);
+      const b = $(id + "_jetzt"); if (b) b.hidden = zlEnde[id] === null; };
+    u.addEventListener("pointerdown", (ev) => { zieht = true; u.setPointerCapture(ev.pointerId); setze(ev); });
+    u.addEventListener("pointermove", (ev) => { if (zieht) setze(ev); });
+    u.addEventListener("pointerup", () => { zieht = false; });
+    const b = $(id + "_jetzt"); if (b) b.addEventListener("click", () => { zlEnde[id] = null; b.hidden = true; zeichneZL(id); });
+  }
 }
 
 
