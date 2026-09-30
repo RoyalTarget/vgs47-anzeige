@@ -38,6 +38,13 @@ function baueSchema() {
     img.id = "ov_" + i;
     o.appendChild(img);
   });
+  // Schaltkriterien (30.09.2026): unsichtbare Zonen über den Geräten, Text per Mouse-over/Antippen (data-tip, Payload sk)
+  const Y0 = 62, SW = 1200, SH = 658;
+  for (const [k, x0, y0, x1, y1] of [["wp", 40, 80, 200, 200], ["puffer", 290, 128, 402, 402], ["hk", 718, 338, 802, 462],
+      ["bwwp", 898, 488, 1012, 702], ["entf", 288, 606, 442, 702], ["zirk", 1030, 595, 1060, 625]]) {
+    const z = document.createElement("div"); z.className = "sk-zone"; z.id = "sk_" + k;
+    Object.assign(z.style, { left: x0 / SW * 100 + "%", top: (y0 - Y0) / SH * 100 + "%", width: (x1 - x0) / SW * 100 + "%", height: (y1 - y0) / SH * 100 + "%" });
+    w.appendChild(z); }
 }
 
 function bedingung(c, s) {
@@ -49,7 +56,7 @@ function bedingung(c, s) {
   return true;
 }
 
-function zeigeSchema(s) {
+function zeigeSchema(s, sk) {
   for (const sl of slots) {
     if (!sl.entity) continue;
     let v = num(s, sl.entity), unit = sl.unit, dec = sl.dec;
@@ -59,6 +66,7 @@ function zeigeSchema(s) {
     $("slot_" + sl.id).textContent = (sl.prefix || "") + txt;
   }
   overlays.forEach((ov, i) => { $("ov_" + i).hidden = !ov.conds.every((c) => bedingung(c, s)); });
+  for (const [k, t] of Object.entries(sk || {})) { const z = $("sk_" + k); if (z && t) z.setAttribute("data-tip", escH(t).replace(/\n/g, "<br>")); }
 }
 
 // ---------- Energiefluss ----------
@@ -1066,7 +1074,7 @@ async function holen() {
     const r = await fetch(DATEN + "?t=" + Date.now(), { cache: "no-store" });
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
-    zeigeSchema(s); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
+    zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
