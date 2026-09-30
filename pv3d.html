@@ -43,7 +43,7 @@ const G7 = Math.tan(7 * Math.PI / 180);              // Gaubendach 7°
 const GZ = 8.03;                                      // Gaubendach vorne (über der Außenwand)
 const GTIEF = (GZ - TR) / (NEIG - G7);               // Gaubendach trifft Hauptdach (≈ 2,74 m)
 const GAUBE_SO = [1.40, 4.40], GAUBE_NW = [0.98, 3.98];
-const MB = 1.134, ML = 1.762, MD = 0.035, PMOD = 425;   // Trina Vertex S+ (≈ Maße), Nennleistung je Modul (Annahme)
+const MB = 1.15, ML = 1.80, MD = 0.035, PMOD = 425;   // Modulmaße laut Nutzer 1,80 × 1,15 m; Nennleistung je Modul (Annahme)
 const AUSRICHTUNG = -135;                             // Drehung: Südwest-Giebel (+x) zeigt nach 225° (Bauplan, gedreht ≈ 45°)
 
 // ---------- Flächen ----------
@@ -129,18 +129,15 @@ gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
 // Südwest-Giebel (Nutzer 30.09.2026): oben zwei ganz kleine Fenster, darunter die 8 Module, darunter zwei Fenstertüren,
 // die unten auf der Dachterrasse der Garage enden. Lage/Höhen aus der Südwest-Ansicht (Maßstab ≈ 84 px/m).
 const fenster = (y, z, b, h) => { const f = new THREE.Mesh(new THREE.PlaneGeometry(b, h), matFenster); f.position.copy(P(B + 0.02, y, z)); f.rotation.y = Math.PI / 2; inner.add(f); };
-for (const y of [3.56, 5.8]) fenster(y, 3.72, 0.95, 1.95);          // Fenstertüren (OG) auf die Garagenterrasse
-for (const y of [4.2, 5.3]) fenster(y, 9.0, 0.5, 0.5);              // kleine Giebelfenster
-// Garage vor dem Giebel (3,12 m tief) mit Holz-Dachterrasse + Geländer
+for (const y of [3.55, 5.95]) fenster(y, 3.66, 1.0, 2.0);           // Fenstertüren (OG) auf die Garagenterrasse, direkt unter dem Modulfeld
+for (const y of [3.55, 5.95]) fenster(y, 7.35, 0.9, 0.6);           // kleine Giebelfenster, direkt über dem Modulfeld (Foto 30.09.2026)
+// Garage vor dem Giebel (3,12 m tief) mit Holz-Dachterrasse (ohne Geländer, Nutzer 30.09.2026)
 const GAR = [2.5, 8.4], GH = 2.6;
 kiste(B, B + 3.12, GAR[0], GAR[1], 0, GH, matWand);
 kiste(B, B + 3.12, GAR[0], GAR[1], GH, GH + 0.08, new THREE.MeshStandardMaterial({ color: 0x8b6b4a, roughness: 0.9 }));
-{ const hl = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.6 }), gl = new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0.18, side: THREE.DoubleSide });
-  const g = (x0, x1, y0, y1) => { kiste(x0, x1, y0, y1, GH + 0.08, GH + 1.0, gl).castShadow = false; kiste(x0, x1, y0, y1, GH + 0.98, GH + 1.04, hl); };   // Glasfüllung + Handlauf
-  g(B + 3.08, B + 3.12, GAR[0], GAR[1]); g(B, B + 3.12, GAR[0], GAR[0] + 0.04); g(B, B + 3.12, GAR[1] - 0.04, GAR[1]); }
 // Stahlkamin an der Gartenecke des Giebels (neben der Garage)
 { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 11.2, 20), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7, roughness: 0.3 }));
-  k.position.copy(P(B + 0.35, 2.2, 5.6)); k.castShadow = true; inner.add(k); }
+  k.position.copy(P(B + 0.3, -0.45, 5.6));   // außerhalb der Gartenecke (Foto) k.castShadow = true; inner.add(k); }
 // Windfang Straßenseite (Dach 7°, +2,85) und Wintergarten Gartenseite (Glas)
 const WF = [1.2, 3.9], WFT = 1.9;
 kiste(WF[0], WF[1], T, T + WFT, 0, 2.62, matWand);
@@ -175,19 +172,21 @@ function modul(key, mitte, u, v, bu, bv, aussen = [0, 0, 1]) {   // aussen = Ric
 for (const [key, [xa, xb], so] of [['gaube_ost', GAUBE_SO, true], ['gaube_west', GAUBE_NW, false]]) {
   const xm = (xa + xb) / 2, dm = 1.25, y = so ? dm : T - dm, z = GZ + G7 * dm;
   const v = so ? [0, 1, G7] : [0, -1, G7];
-  for (const dx of [-1.16, 0, 1.16]) modul(key, [xm + dx, y, z], so ? [1, 0, 0] : [-1, 0, 0], v, MB, ML);
+  for (const dx of [-1.17, 0, 1.17]) modul(key, [xm + dx, y, z], so ? [1, 0, 0] : [-1, 0, 0], v, MB, ML);
 }
 // Dachflächen: 2 quer oberhalb der Gauben (zwischen Gaubendach und Glasaufbau)
 for (const [key, [xa, xb], so] of [['dach_ost', GAUBE_SO, true], ['dach_west', GAUBE_NW, false]]) {
   const xm = (xa + xb) / 2, dm = GTIEF + 0.12 + MB * Math.cos(Math.atan(NEIG)) / 2, y = so ? dm : T - dm;
   const v = so ? [0, 1, NEIG] : [0, -1, NEIG];
-  for (const dx of [-0.9, 0.9]) modul(key, [xm + dx, y, zDach(y)], so ? [1, 0, 0] : [-1, 0, 0], v, ML, MB);
+  for (const dx of [-0.92, 0.92]) modul(key, [xm + dx, y, zDach(y)], so ? [1, 0, 0] : [-1, 0, 0], v, ML, MB);
 }
-// Fassade Südwest-Giebel: 2 Reihen × 4 hochkant, mittig zwischen Fenstertüren (bis +4,8) und kleinen Giebelfenstern
-for (const [key, zm] of [['fassade_oben', 7.33], ['fassade_unten', 5.55]])
-  for (const ym of [3.04, 4.18, 5.32, 6.46]) modul(key, [B + 0.02, ym, zm], [0, 1, 0], [0, 0, 1], MB, ML, [1, 0, 0]);
+// Fassade Südwest-Giebel (Foto 30.09.2026): 2 Reihen × 4 QUER, fast giebelbreit (7,3 m), zwischen Fenstertüren (bis +4,7)
+// und den kleinen Giebelfenstern; obere Ecken berühren die Dachkante; Stütze am Gartenende
+for (const [key, zm] of [['fassade_oben', 6.45], ['fassade_unten', 5.28]])
+  for (const ym of [2.005, 3.835, 5.665, 7.495]) modul(key, [B + 0.02, ym, zm], [0, 1, 0], [0, 0, 1], ML, MB, [1, 0, 0]);
+kiste(B + 0.05, B + 0.12, 1.1, 1.17, 0, 4.72, matBlech);
 // Balkonkraftwerk: 2 hochkant auf dem Windfangdach (7°, zur Straße geneigt)
-for (const dx of [-0.58, 0.58]) { const xm = (WF[0] + WF[1]) / 2, d = WFT / 2 + 0.05;
+for (const dx of [-0.59, 0.59]) { const xm = (WF[0] + WF[1]) / 2, d = WFT / 2 + 0.05;
   modul('bkw', [xm + dx, T + d, 2.85 - G7 * d], [-1, 0, 0], [0, 1, -G7], MB, ML); }
 
 // Wert-Schilder über den Flächen
@@ -199,7 +198,7 @@ function schild(key, pos) {
   inner.add(s); schilder[key] = { c, t, s };
 }
 schild('gaube_ost', [2.9, 0.4, 9.4]); schild('dach_ost', [2.9, 2.6, 10.6]); schild('gaube_west', [2.48, T - 0.4, 9.4]); schild('dach_west', [2.48, T - 2.6, 10.6]);
-schild('fassade_oben', [B + 0.7, 8.1, 8.0]); schild('fassade_unten', [B + 0.7, 8.1, 5.4]); schild('bkw', [2.55, T + 1.2, 4.0]);
+schild('fassade_oben', [B + 0.8, 8.9, 7.0]); schild('fassade_unten', [B + 0.8, 8.9, 5.0]); schild('bkw', [2.55, T + 1.2, 4.0]);
 function schildMalen(key, txt, farbe) {
   const { c, t } = schilder[key], g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
   g.fillStyle = 'rgba(17,20,24,0.85)'; g.strokeStyle = farbe; g.lineWidth = 3;
