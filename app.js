@@ -497,7 +497,7 @@ function zeigeWann(d) {
   const uhr = (t) => new Date(zeitpunkt(t)).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
   const f = d.af;
   let k = f ? `<div class="fenster">☀️ <b>Gratis-Fenster ${tagTxt(f.start)} ${uhr(f.start)}–${uhr(f.ende)}</b> · ≈ ${zahl(f.kwh, 0)} kWh übrig – Akku voll, große Verbraucher dorthin legen</div>`
-    : `<div class="fenster grau">🔋 Kein Gratis-Fenster in Sicht – Akku wird voraussichtlich nicht voll, jede kWh kostet ungefähr gleich</div>`;
+    : `<div class="fenster grau">🔋 Kein Gratis-Fenster in Sicht – ${d.am && d.am[0] != null && d.am[1] ? `Akku kommt ${tagTxt(d.am[1])} nur bis ≈ ${zahl(d.am[0], 0)} % (${uhr(d.am[1])})` : "Akku wird voraussichtlich nicht voll"}, jede kWh kostet ungefähr gleich</div>`;
   for (const [n, st, kj, kb, er, start, spanne, kwh, u0] of w) {
     const zeit = start ? uhr(start) + (new Date(zeitpunkt(start)).toDateString() === heute ? "" : " morgen") : "";
     let t;
