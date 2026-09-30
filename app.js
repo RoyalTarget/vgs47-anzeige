@@ -365,7 +365,9 @@ function zeigePV(s) {
   } else if (pv < 30) {
     h = bez > 150 ? kopf("#60a5fa", "🌙 Keine Sonne – Strom aus dem Netz", `Netz ${kw(bez)} kW · ${soctxt}`)
       : kopf("#60a5fa", "🌙 Keine Sonne – Haus läuft aus dem Akku", `Akku gibt ${kw(ent)} kW · ${soctxt}` + (res > 0 ? `, Reserve ${zahl(res, 0)} %` : ""));
-  } else if (bez > 150) h = kopf("#f59e0b", "⛅ PV reicht nicht – Rest aus dem Netz", `PV ${kw(pv)} kW · Netz ${kw(bez)} kW · ${soctxt}`);
+  } else if (bez > 150 && akku > 100 && res > 0 && soc <= res + 3) h = kopf("#60a5fa", "🔋 Akku an der Reserve – PV lädt ihn, Haus aus dem Netz",
+      `PV ${kw(pv)} kW · +${kw(akku)} kW in den Akku · Netz ${kw(bez)} kW · ${soctxt} – der Victron gibt erst ab ≈ ${zahl(res + 3, 0)} % wieder Strom ans Haus`);
+  else if (bez > 150) h = kopf("#f59e0b", "⛅ PV reicht nicht – Rest aus dem Netz", `PV ${kw(pv)} kW · Netz ${kw(bez)} kW · ${soctxt}`);
   else if (ent > 100) h = kopf("#f59e0b", "⛅ PV reicht nicht – Rest aus dem Akku", `PV ${kw(pv)} kW · Akku gibt ${kw(ent)} kW · ${soctxt}`);
   else if (akku > 100 && soc < 97) h = kopf("#22c55e", "🔋 Sonne lädt den Akku", `+${kw(akku)} kW in den Akku · ${soctxt} – ins Netz geht erst etwas, wenn er voll ist`);
   else h = kopf("#22c55e", "✓ Alles wird selbst verbraucht", `PV ${kw(pv)} kW · Einspeisung ${zahl(e, 0)} W · ${soctxt}`);
@@ -709,20 +711,26 @@ function zeigePrognose(d) {
     + `<tr><td><b>Heute</b></td><td><b>${f(pz.heute)} kWh</b></td><td>${f(pz.rest)}</td><td>${f(pz.ist)}</td><td>${f(pz.vb_heute, 0)}</td></tr>`
     + `<tr><td><b>Morgen</b></td><td><b>${f(pz.morgen)} kWh</b></td><td></td><td></td><td>${f(pz.vb_morgen, 0)}</td></tr></table>`
     + `<p class="hinweis">${hinweis}</p>`;
-  // Kurve
+  // Kurve (30.09.2026: blätterbar −4 … +7 Tage, Standard vorgestern … übermorgen; Ziehen im Feld / Tagesleiste darunter,
+  // Doppelklick = Standard). Messwerte durchgezogen, Prognosen ab jetzt kräftig gestrichelt, Vergangenheit blass.
+  window.__progD = d;
   const W = 1000, H = 330, L = 44, R = 956, T = 12, B = 290;
-  const t0 = new Date(); t0.setHours(0, 0, 0, 0); const x0 = t0.getTime() - 2 * 864e5, x1 = x0 + 5 * 864e5;
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  const LO = t0.getTime() - 4 * 864e5, HI = t0.getTime() + 8 * 864e5, FEN = 5 * 864e5;
+  if (!window.__progWin) window.__progWin = { std: true, von: 0 };
+  let x0 = window.__progWin.std ? t0.getTime() - 2 * 864e5 : window.__progWin.von;
+  x0 = Math.min(Math.max(x0, LO), HI - FEN); const x1 = x0 + FEN;
   const X = (t) => L + (t - x0) / (x1 - x0) * (R - L);
-  const halb = 18e5;
-  const fp = pr.filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
-  const ip = pi.filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
+  const halb = 18e5, jetzt = Date.now(), h0 = Math.floor(jetzt / 36e5) * 36e5;
+  const fp = pr.filter((p) => p[0] + halb >= x0 - 36e5 && p[0] + halb <= x1 + 36e5);
+  const ip = pi.filter((p) => p[0] + halb >= x0 - 36e5 && p[0] + halb <= x1 + 36e5);
   let max = 1;
   fp.forEach((p) => { max = Math.max(max, p[1] / 1000, p[2] / 1000); });
   ip.forEach((p) => { max = Math.max(max, p[1], p[2]); });
   max = Math.ceil(max);
   const Y = (v) => B - v / max * (B - T), Ys = (v) => B - v / 100 * (B - T);
   const linie = (pts) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
-  let svg = "";
+  let svg = `<defs><clipPath id="pkclip"><rect x="${L}" y="0" width="${R - L}" height="${B + 1}"/></clipPath></defs>`;
   for (let i = 0; i <= max; i += (max > 6 ? 2 : 1))
     svg += `<line x1="${L}" x2="${R}" y1="${Y(i)}" y2="${Y(i)}" stroke="#374151" stroke-dasharray="3 4"/>`
       + `<text x="${L - 6}" y="${Y(i) + 4}" fill="#9ca3af" font-size="12" text-anchor="end">${i}</text>`;
@@ -731,50 +739,102 @@ function zeigePrognose(d) {
   svg += `<text x="${L - 6}" y="${T - 2}" fill="#9ca3af" font-size="11" text-anchor="end">kW</text>`
     + `<text x="${R + 6}" y="${T - 2}" fill="#9ca3af" font-size="11">%</text>`;
   const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-  for (let i = 0; i <= 5; i++) {
-    const t = x0 + i * 864e5, dt = new Date(t);
-    svg += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${B}" stroke="#4b5563"/>`;
-    if (i < 5) svg += `<text x="${X(t + 432e5)}" y="${B + 22}" fill="#9ca3af" font-size="13" text-anchor="middle">${tage[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}.</text>`;
-  }
+  { const m0 = new Date(x0); m0.setHours(0, 0, 0, 0);
+    for (let t = m0.getTime(); t <= x1; t += 864e5) {
+      if (t >= x0) svg += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${B}" stroke="#4b5563"/>`;
+      const a = Math.max(t, x0), b = Math.min(t + 864e5, x1), dt = new Date(t);
+      if (X(b) - X(a) > 60) svg += `<text x="${(X(a) + X(b)) / 2}" y="${B + 22}" fill="${t === t0.getTime() ? '#e5e7eb' : '#9ca3af'}" font-size="13" ${t === t0.getTime() ? 'font-weight="700"' : ''} text-anchor="middle">${tage[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}.</text>`;
+    } }
+  let g = "";
   const flaeche = (idx, farbe, deck) => {
     if (!ip.length) return "";
     const pts = ip.map((p) => [X(p[0] + halb), Y(p[idx])]);
     return `<path d="${linie(pts)}L${pts[pts.length - 1][0]},${B}L${pts[0][0]},${B}Z" fill="${farbe}" fill-opacity="${deck}"/>`
       + `<path d="${linie(pts)}" fill="none" stroke="${farbe}" stroke-width="2"/>`;
   };
-  svg += flaeche(2, "#ef4444", 0.25) + flaeche(1, "#f59e0b", 0.35);
+  g += flaeche(2, "#ef4444", 0.25) + flaeche(1, "#f59e0b", 0.35);
+  // Prognose geteilt: Vergangenheit dünn/blass, ab der laufenden Stunde kräftig
+  const zwei = (pts, farbe, blass, breite) => {
+    const alt = pts.filter((p) => p[0] < h0 + 36e5), neu = pts.filter((p) => p[0] + 36e5 >= h0);
+    let s = "";
+    if (alt.length > 1) s += `<path d="${linie(alt.map((p) => [X(p[0] + halb), Y(p[1])]))}" fill="none" stroke="${blass}" stroke-width="1.2" stroke-dasharray="4 4"/>`;
+    if (neu.length > 1) s += `<path d="${linie(neu.map((p) => [X(p[0] + halb), Y(p[1])]))}" fill="none" stroke="${farbe}" stroke-width="${breite}" stroke-dasharray="7 5"/>`;
+    return s;
+  };
   if (fp.length) {
-    // Verbrauch: Victron (VRM) rot gestrichelt; eigene Prognose grün gestrichelt – Vergangenheit aus dem Archiv d.va
-    // (Stand Vorabend 23:08), ab der laufenden Stunde aktuell d.ve (29.09.2026)
-    svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y(p[2] / 1000)]))}" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="7 5"/>`;
-    { const h0 = Math.floor(Date.now() / 36e5) * 36e5, em = new Map();
+    g += zwei(fp.map((p) => [p[0], p[2] / 1000]), "#f87171", "#7f3b3b", 2);
+    { const em = new Map();
       (d.va || []).forEach((p) => { if (p[0] < h0) em.set(p[0], p[1]); });
       (d.ve || []).forEach((p) => { if (p[0] >= h0) em.set(p[0], p[1]); });
-      const ep = [...em.entries()].sort((a, b) => a[0] - b[0]).filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
-      if (ep.length > 1) svg += `<path d="${linie(ep.map((p) => [X(p[0] + halb), Y(p[1] / 1000)]))}" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="7 5"/>`; }
-    svg += `<path d="${linie(fp.map((p) => [X(p[0] + halb), Y(p[1] / 1000)]))}" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="7 5"/>`;
+      const ep = [...em.entries()].sort((a, b) => a[0] - b[0]).filter((p) => p[0] + halb >= x0 - 36e5 && p[0] + halb <= x1 + 36e5).map((p) => [p[0], p[1] / 1000]);
+      g += zwei(ep, "#22c55e", "#1f6b3a", 2); }
+    g += zwei(fp.map((p) => [p[0], p[1] / 1000]), "#fbbf24", "#7c6320", 2.5);
   }
-  if (ip.length) svg += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Ys(p[3])]))}" fill="none" stroke="#3b82f6" stroke-width="2.5"/>`;
-  // Akku-Prognose (29.09.2026, wie im Dashboard): PV-Prognose (heute mit Tageskorrektur) − eigene Verbrauchsprognose d.ve
+  if (ip.length) g += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Ys(p[3])]))}" fill="none" stroke="#3b82f6" stroke-width="2.5"/>`;
+  // Akku-Prognose nur Zukunft (wie im Dashboard): PV-Prognose (heute mit Tageskorrektur) − eigene Verbrauchsprognose d.ve
   // (sonst VRM), 30 kWh, Wirkungsgrad 0,95 je Richtung, Reserve live; gestrichelt hellblau
   {
     const s = d.s || {}, soc = num(s, "sensor.venus_dc_batterie_ladestand"), res = num(s, "sensor.venus_aktiver_soc_grenzwert") ?? 50;
     const pvm = new Map(pr.map((p) => [p[0], p[1]])), ve = d.ve || [], vbm = new Map(ve.length >= 24 ? ve : pr.map((p) => [p[0], p[2]]));
     if (soc !== null) {
-      const cap = 30, eta = 0.95, emin = res / 100 * cap, jn = Date.now(), h0 = Math.floor(jn / 36e5) * 36e5, tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
+      const cap = 30, eta = 0.95, emin = res / 100 * cap, jn = jetzt, tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
       let prog = 0; for (const [t, w] of pvm) if (t >= tt0.getTime() && t < h0) prog += w || 0; prog += (pvm.get(h0) || 0) * ((jn - h0) / 36e5);
       const ist = Math.max(num(s, "sensor.pv_ertrag_heute") ?? 0, num(s, "sensor.pv_ertrag_tag_max") ?? 0);
       const k = prog >= 2000 ? Math.min(Math.max(ist * 1000 / prog, 0.5), 1.3) : 1, morgen = tt0.getTime() + 864e5;
       let e = soc / 100 * cap; const pts = [[X(jn), Ys(soc)]];
-      for (let i = 0; i < 96; i++) { const ms = h0 + i * 36e5, l = i === 0 ? (h0 + 36e5 - jn) / 36e5 : 1; if (!vbm.has(ms) || ms + 36e5 > x1) break;
+      for (let i = 0; i < 192; i++) { const ms = h0 + i * 36e5, l = i === 0 ? (h0 + 36e5 - jn) / 36e5 : 1; if (!vbm.has(ms) || ms > x1 + 36e5) break;
         const dd = ((pvm.get(ms) || 0) * (ms < morgen ? k : 1) - (vbm.get(ms) || 0)) / 1000 * l;
         e = dd >= 0 ? Math.min(e + dd * eta, cap) : Math.max(e + dd / eta, emin); pts.push([X(ms + 36e5), Ys(e / cap * 100)]); }
-      if (pts.length > 1) svg += `<path d="${linie(pts)}" fill="none" stroke="#93c5fd" stroke-width="2.2" stroke-dasharray="7 5"/>`;
+      if (pts.length > 1) g += `<path d="${linie(pts)}" fill="none" stroke="#93c5fd" stroke-width="2.2" stroke-dasharray="7 5"/>`;
     }
   }
-  const jetzt = Date.now();
-  if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
-  $("progkurve").innerHTML = svg;
+  if (jetzt > x0 && jetzt < x1) g += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+  svg += `<g clip-path="url(#pkclip)">${g}</g>`;
+  const el = $("progkurve");
+  el.innerHTML = svg;
+  // Tagesleiste darunter: PV je Tag (gemessen kräftig, Prognose hell gestrichelt), Verbrauch roter Strich, Rahmen = Ausschnitt
+  { const tg = (arr, idx, f, nur) => { const o = {}; for (const p of arr) { if (nur && !nur(p[0])) continue; const dt = new Date(p[0]); const k = dt.getFullYear() * 1e4 + (dt.getMonth() + 1) * 100 + dt.getDate();
+        o[k] = (o[k] || 0) + (p[idx] || 0) * f; } return o; };
+    const key = (t) => { const dt = new Date(t); return dt.getFullYear() * 1e4 + (dt.getMonth() + 1) * 100 + dt.getDate(); };
+    const pvI = tg(pi, 1, 1), vbI = tg(pi, 2, 1), pvP = tg(pr, 1, 0.001), vbP = tg(d.ve || [], 1, 0.001);
+    const UW = 1000, UH = 34, U = (t) => 8 + (t - LO) / (HI - LO) * (UW - 16), heute = t0.getTime();
+    const tl = []; for (let t = LO; t < HI; t += 864e5) tl.push(t);
+    const pvW = (t) => { const k = key(t), a = pvI[k] ?? 0, p = pvP[k] ?? 0; return t < heute ? [a, 0] : t === heute ? [a, Math.max(p - a, 0)] : [0, p]; };
+    const vbW = (t) => { const k = key(t); return t < heute ? vbI[k] : (vbP[k] ?? vbI[k]); };
+    let mx = 10; tl.forEach((t) => { const [a, b] = pvW(t); mx = Math.max(mx, a + b, vbW(t) || 0); });
+    const UY = (v) => 2 + UH - v / mx * UH, bw = (UW - 16) / tl.length - 4;
+    let u = `<rect x="8" y="2" width="${UW - 16}" height="${UH}" rx="3" fill="#27272a"/>`;
+    tl.forEach((t) => { const x = U(t) + 2, [a, b] = pvW(t), v = vbW(t), dt = new Date(t);
+      if (a > 0) u += `<rect x="${x}" y="${UY(a)}" width="${bw}" height="${UH + 2 - UY(a)}" fill="#f59e0b"/>`;
+      if (b > 0) u += `<rect x="${x}" y="${UY(a + b)}" width="${bw}" height="${UY(a) - UY(a + b)}" fill="#fbbf24" fill-opacity="0.35" stroke="#fbbf24" stroke-opacity="0.7" stroke-dasharray="2 2"/>`;
+      if (v) u += `<line x1="${x}" x2="${x + bw}" y1="${UY(v)}" y2="${UY(v)}" stroke="#ef4444" stroke-width="2" ${t > heute ? 'stroke-dasharray="3 2"' : ''}/>`;
+      u += `<text x="${x + bw / 2}" y="${UH + 17}" fill="${t === heute ? '#e5e7eb' : '#9ca3af'}" font-size="12" ${t === heute ? 'font-weight="700"' : ''} text-anchor="middle">${tage[dt.getDay()]} ${dt.getDate()}.</text>`; });
+    u += `<line x1="${U(jetzt)}" x2="${U(jetzt)}" y1="1" y2="${UH + 3}" stroke="#e5e7eb" stroke-width="1.5"/>`;
+    u += `<rect x="${U(x0)}" y="1" width="${U(x1) - U(x0)}" height="${UH + 2}" rx="3" fill="#e5e7eb" fill-opacity="0.10" stroke="#e5e7eb" stroke-width="1.5"/>`;
+    let ub = $("progueb");
+    if (!ub) { ub = document.createElementNS("http://www.w3.org/2000/svg", "svg"); ub.id = "progueb"; ub.setAttribute("viewBox", "0 0 1000 58");
+      ub.style.cssText = "display:block;width:100%;height:auto;margin-top:4px;cursor:pointer;touch-action:none"; el.after(ub);
+      let zieht = false;
+      const hin = (ev) => { const r = ub.getBoundingClientRect(), tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
+        const lo = tt0.getTime() - 4 * 864e5, hi = tt0.getTime() + 8 * 864e5, fx = (ev.clientX - r.left) / r.width * 1000;
+        const t = lo + (fx - 8) / (1000 - 16) * (hi - lo); window.__progWin = { std: false, von: t - 2.5 * 864e5 }; zeigePrognose(window.__progD); };
+      ub.addEventListener("pointerdown", (ev) => { zieht = true; hin(ev); try { ub.setPointerCapture(ev.pointerId); } catch (e) {} });
+      ub.addEventListener("pointermove", (ev) => { if (zieht) hin(ev); });
+      ub.addEventListener("pointerup", () => { zieht = false; }); ub.addEventListener("pointercancel", () => { zieht = false; });
+      ub.addEventListener("dblclick", () => { window.__progWin = { std: true, von: 0 }; zeigePrognose(window.__progD); }); }
+    ub.innerHTML = u; }
+  // Ziehen im Feld (einmalig anmelden)
+  if (!el.__drag) { el.__drag = true; el.style.touchAction = "pan-y"; el.style.cursor = "grab";
+    let dr = null;
+    el.addEventListener("pointerdown", (ev) => { const w = window.__progWin, tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
+      dr = { x: ev.clientX, von: w.std ? tt0.getTime() - 2 * 864e5 : w.von, moved: false }; });
+    el.addEventListener("pointermove", (ev) => { if (!dr) return; const dx = ev.clientX - dr.x; if (Math.abs(dx) > 5) dr.moved = true; if (!dr.moved) return;
+      const r = el.getBoundingClientRect(), pw = r.width * (956 - 44) / 1000;
+      window.__progWin = { std: false, von: dr.von - dx / pw * 5 * 864e5 };
+      if (!el.__raf) el.__raf = requestAnimationFrame(() => { el.__raf = null; zeigePrognose(window.__progD); }); });
+    const ende = () => { dr = null; };
+    el.addEventListener("pointerup", ende); el.addEventListener("pointerleave", ende); el.addEventListener("pointercancel", ende);
+    el.addEventListener("dblclick", () => { window.__progWin = { std: true, von: 0 }; zeigePrognose(window.__progD); }); }
 }
 
 // ---------- Temperaturen innen/außen + Vorhersage, vorgestern bis übermorgen ----------
