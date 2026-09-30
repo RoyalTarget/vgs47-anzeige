@@ -300,7 +300,11 @@ function kreis(cx, cy, r, p) {
   return t;
 }
 function zeigeTage(s, k, h) {
-  const alle = tagesListe(s, k, h), tage = alle.slice(-(window.innerWidth < 600 ? 7 : 10));
+  // blätterbar (30.09.2026): Standard die letzten 10 (Handy 7) Tage, Leiste darunter über alle Tage (bis 35), Griffe = zoomen
+  window.__tageArgs = [s, k, h];
+  const alle = tagesListe(s, k, h), N = alle.length, STD = Math.min(window.innerWidth < 600 ? 7 : 10, N), tw = window.__tageWin || { std: true };
+  const nT = tw.std ? STD : Math.min(Math.max(Math.round(tw.n), 3), N), eT = tw.std ? N : Math.min(Math.max(Math.round(tw.e), nT), N);
+  const tage = alle.slice(eT - nT, eT), WT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
   const W = 700, H = 330, L = 34, R = 10, O = 78, U = 28, ph = H - O - U;
   const max = Math.max(4, ...tage.map((t) => t.summe)), schritt = max > 12 ? 4 : 2, ymax = Math.ceil(max / schritt) * schritt;
   const y = (v) => O + ph - v / ymax * ph, bw = (W - L - R) / tage.length, FARB = ["#3b82f6", "#1d4ed8", "#f87171", "#dc2626"];
@@ -312,9 +316,13 @@ function zeigeTage(s, k, h) {
     let acc = 0;
     t.teile.forEach((v, j) => { if (v <= 0) return; const y1 = y(acc + v), y0 = y(acc); acc += v;
       svg += `<rect x="${x0.toFixed(1)}" y="${y1.toFixed(1)}" width="${b.toFixed(1)}" height="${(y0 - y1).toFixed(1)}" fill="${FARB[j]}"/>`; });
-    const d = new Date(t.d + "T12:00:00");
-    svg += `<text x="${cx}" y="${H - 8}" fill="#9ca3af" font-size="12" text-anchor="middle">${d.getDate()}.${d.getMonth() + 1}.</text>`;
-    if (t.summe > 0) {
+    const d = new Date(t.d + "T12:00:00"), jede = Math.ceil(36 / bw);
+    if ((tage.length - 1 - i) % jede === 0) svg += `<text x="${cx}" y="${H - 8}" fill="#9ca3af" font-size="12" text-anchor="middle">${d.getDate()}.${d.getMonth() + 1}.</text>`;
+    // Mouse-over je Tag (ganze Spalte)
+    svg += `<rect x="${(L + i * bw).toFixed(1)}" y="${O - 70}" width="${bw.toFixed(1)}" height="${ph + 70}" fill="transparent"><title>${WT[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.\n`
+      + `WP ${f1(t.teile[0] + t.teile[1])} kWh (PV/Akku ${f1(t.teile[0])} · Netz ${f1(t.teile[1])})\nBWWP ${f1(t.teile[2] + t.teile[3])} kWh (PV/Akku ${f1(t.teile[2])} · Netz ${f1(t.teile[3])})\n`
+      + `Gesamt ${f1(t.summe)} kWh · gratis ${f1(t.gratis)} kWh${t.summe > 0 ? " (" + Math.round(t.gratis / t.summe * 100) + " %)" : ""}</title></rect>`;
+    if (t.summe > 0 && bw >= 30) {
       const top = y(t.summe), lw = 40;
       svg += `<rect x="${cx - lw / 2}" y="${top - 24}" width="${lw}" height="18" rx="3" fill="#111827" stroke="#e5e7eb"/>`
         + `<text x="${cx}" y="${top - 10.5}" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">${f1(t.summe)}</text>`;
@@ -323,6 +331,17 @@ function zeigeTage(s, k, h) {
     }
   });
   $("tage").innerHTML = svg;
+  { let u = $("tage_ueb");
+    if (!u) { u = document.createElementNS("http://www.w3.org/2000/svg", "svg"); u.id = "tage_ueb"; u.setAttribute("class", "zeitleiste zl-ueb");
+      u.style.cssText = "display:block;width:100%;height:auto;margin-top:4px"; $("tage").after(u);
+      doppel($("tage"), () => { window.__tageWin = { std: true }; zeigeTage(...window.__tageArgs); }); }
+    const mx = Math.max(1, ...alle.map((t) => t.summe));
+    leiste(u, { lo: 0, hi: N, a: eT - nT, b: eT, minw: 3, UH: 24,
+      inhalt: (UX, UW, UH) => alle.map((t, i) => { const x = UX(i) + 1, w = Math.max(UX(i + 1) - UX(i) - 2, 1), hg = (UH - 4) * t.summe / mx, hp = t.summe > 0 ? hg * t.gratis / t.summe : 0, dt = new Date(t.d + "T12:00:00");
+        return `<rect x="${x}" y="${UH + 1 - hg}" width="${w}" height="${hg - hp}" fill="#ef4444" fill-opacity="0.8"/><rect x="${x}" y="${UH + 1 - hp}" width="${w}" height="${hp}" fill="#22c55e" fill-opacity="0.8"/>`
+          + (dt.getDay() === 1 || i === N - 1 ? `<text x="${x + w / 2}" y="${UH + 15}" fill="#9ca3af" font-size="10" text-anchor="middle">${dt.getDate()}.${dt.getMonth() + 1}.</text>` : ""); }).join(""),
+      setze: (a, b) => { window.__tageWin = { std: false, n: b - a, e: b }; zeigeTage(...window.__tageArgs); },
+      std: () => { window.__tageWin = { std: true }; zeigeTage(...window.__tageArgs); } }); }
 
   // 30-Tage-Kreis
   const m = alle.slice(-30), g = m.reduce((a, t) => a + t.gratis, 0), sum = m.reduce((a, t) => a + t.summe, 0), p = sum > 0 ? g / sum : 0;
@@ -565,7 +584,7 @@ function zlHimmel(id, x0, ende, L, R, T, y2, X, hm) {
   const Y0 = T - 10, SY = (h) => Y0 - Math.max(h, 0) / 65 * 16;
   svg += `<line x1="${L}" x2="${R}" y1="${Y0}" y2="${Y0}" stroke="#e5e7eb" stroke-opacity="0.15"/>`;
   svg += `<path d="M${pts[0][0].toFixed(1)} ${Y0}${pts.map(([x, h]) => `L${x.toFixed(1)} ${SY(h).toFixed(1)}`).join("")}L${pts[pts.length - 1][0].toFixed(1)} ${Y0}Z" fill="#facc15" fill-opacity="0.28" stroke="#fbbf24" stroke-width="1.2" stroke-opacity="0.8" stroke-linejoin="round"/>`;
-  if ((R - L) / 2 >= 220)   // Auf-/Untergangszeit, wenn ein Tag mind. 220 px breit ist
+  if ((R - L) / Math.max((ende - x0) / 864e5, 0.01) >= 220)   // Auf-/Untergangszeit, wenn ein Tag mind. 220 px breit ist
     for (let i = 1; i < pts.length; i++) { const [xa, ha] = pts[i - 1], [xb, hb] = pts[i]; if ((ha < 0) === (hb < 0)) continue;
       const x = xa + (xb - xa) * ha / (ha - hb), auf = hb >= 0, t = x0 + (x - L) / (R - L) * (ende - x0);
       svg += `<text x="${x + (auf ? -4 : 4)}" y="${Y0 - 2}" fill="#fbbf24" fill-opacity="0.85" font-size="10" text-anchor="${auf ? "end" : "start"}">${auf ? "☀↑ " : ""}${hm(t)}${auf ? "" : " ↓"}</text>`; }
@@ -573,13 +592,16 @@ function zlHimmel(id, x0, ende, L, R, T, y2, X, hm) {
 }
 function zlAchse(x0, ende, L, R, T, y2, schmal, X, tg) {
   let svg = ""; const jetzt = Date.now();
-  const schritt = (schmal ? 6 : 3) * 36e5, t = new Date(x0); t.setMinutes(0, 0, 0); t.setHours(Math.ceil(t.getHours() / (schmal ? 6 : 3)) * (schmal ? 6 : 3));
-  for (let v = t.getTime(); v <= ende; v += schritt) { const h = new Date(v).getHours();
+  // Stundenraster passend zur Fensterbreite (30.09.2026: Fenster jetzt 3 h … 14 Tage): Abstand ≥ 45 px (schmal 50 px), ab 24 h nur Datum
+  const pxh = (R - L) / Math.max((ende - x0) / 36e5, 0.1), sh = [1, 2, 3, 6, 12, 24].find((h) => h * pxh >= (schmal ? 50 : 45)) || 24;
+  const schritt = sh * 36e5, t = new Date(x0); t.setMinutes(0, 0, 0); t.setHours(Math.ceil(t.getHours() / sh) * sh);
+  for (let v = t.getTime(); sh < 24 && v <= ende; v += schritt) { const h = new Date(v).getHours();
     svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/><text x="${X(v)}" y="${y2 + 18}" fill="#9ca3af" font-size="${schmal ? 11 : 12}" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
   const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
   for (let v = mn.getTime(); v < ende; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 26}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
   for (let t0 = mn.getTime() - 864e5; t0 < ende; t0 += 864e5) { const a = Math.max(t0, x0), b = Math.min(t0 + 864e5, ende);
-    if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 30}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`; }
+    if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 30}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`;
+    else if (X(b) - X(a) >= 22) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 30}" fill="#e5e7eb" font-size="11" font-weight="700" text-anchor="middle">${new Date(t0 + 432e5).getDate()}.</text>`; }
   if (ende >= jetzt - 6e4) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T - 4}" y2="${y2}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
   return svg;
 }
@@ -592,6 +614,90 @@ function doppel(e, fn) { let t0 = 0, x0 = 0, xd = 0;
 // gelbe Griffe links/rechts am Rahmen = Leiste ist zoombar (wie Videoschnitt bei Apple)
 const griffe = (xa, xb, h) => `<rect x="${xa - 3.5}" y="0" width="7" height="${h + 4}" rx="2" fill="#facc15"/><rect x="${xb - 3.5}" y="0" width="7" height="${h + 4}" rx="2" fill="#facc15"/>`
   + `<line x1="${xa}" x2="${xa}" y1="${h / 2 - 4}" y2="${h / 2 + 8}" stroke="#1c1c1c" stroke-width="1.4"/><line x1="${xb}" x2="${xb}" y1="${h / 2 - 4}" y2="${h / 2 + 8}" stroke="#1c1c1c" stroke-width="1.4"/>`;
+
+// ---------- Mouse-over (30.09.2026) ----------
+// Sofort sichtbar (Maus) bzw. per Antippen (iPhone). SVG-<title> werden automatisch in data-tip umgebaut (der Browser-Tooltip
+// käme erst nach ~1 s und am iPhone nie). Kurven mit kreuz(): senkrechte Linie + alle Werte zu diesem Zeitpunkt.
+const TIP = document.createElement("div"); TIP.id = "tip"; document.body.appendChild(TIP);
+let tipUhr = null;
+const escH = (t) => t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+function tipZeig(html, cx, cy, dauer) {
+  TIP.innerHTML = html; TIP.style.display = "block"; const w = TIP.offsetWidth, h = TIP.offsetHeight;
+  TIP.style.left = Math.min(Math.max(cx - w / 2, 6), window.innerWidth - w - 6) + "px";
+  TIP.style.top = (cy - h - 16 < 6 ? cy + 20 : cy - h - 16) + "px";
+  clearTimeout(tipUhr); if (dauer) tipUhr = setTimeout(tipWeg, dauer); }
+function tipWeg() { TIP.style.display = "none"; clearTimeout(tipUhr); document.querySelectorAll(".kz-linie").forEach((l) => l.remove()); }
+function titelUmbau(n) {
+  const l = n.tagName === "title" ? [n] : (n.querySelectorAll ? n.querySelectorAll("title") : []);
+  for (const t of l) { const p = t.parentNode; if (!p || !p.closest || !p.closest("svg")) continue;
+    p.setAttribute("data-tip", escH(t.textContent).replace(/\n/g, "<br>")); t.remove(); } }
+new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) titelUmbau(n); })
+  .observe(document.body, { childList: true, subtree: true });
+titelUmbau(document.body);
+const tipZiel = (ev) => { const e = document.elementFromPoint(ev.clientX, ev.clientY); return e && e.closest ? e.closest("[data-tip]") : null; };
+const kzZiel = (ev) => { const e = document.elementFromPoint(ev.clientX, ev.clientY), s = e && e.closest ? e.closest("svg") : null; return s && s.__kz ? s : null; };
+document.addEventListener("pointermove", (ev) => { if (ev.pointerType !== "mouse" || ev.buttons) return;
+  const k = kzZiel(ev); if (k) { kreuzZeig(k, ev); return; }
+  document.querySelectorAll(".kz-linie").forEach((l) => l.remove());
+  const e = tipZiel(ev); if (e) tipZeig(e.getAttribute("data-tip"), ev.clientX, ev.clientY); else if (TIP.style.display === "block") tipWeg(); }, { passive: true });
+let tipDown = null;
+document.addEventListener("pointerdown", (ev) => { tipDown = [ev.clientX, ev.clientY]; }, { passive: true, capture: true });
+document.addEventListener("pointerup", (ev) => { if (ev.pointerType === "mouse" || !tipDown) return;
+  if (Math.hypot(ev.clientX - tipDown[0], ev.clientY - tipDown[1]) > 10) return;   // gezogen/gewischt → kein Tooltip
+  const k = kzZiel(ev); if (k) { kreuzZeig(k, ev, 6000); return; }
+  const e = tipZiel(ev); if (e) tipZeig(e.getAttribute("data-tip"), ev.clientX, ev.clientY, 6000); else tipWeg(); }, { passive: true, capture: true });
+window.addEventListener("scroll", () => { if (TIP.style.display === "block") tipWeg(); }, { passive: true });
+
+// Fadenkreuz für Zeitkurven: cfg = {L, R, T, B, x0, x1, reihen: [{n, f, p: [[ms, Wert]], e, d, gap}]}
+function kreuz(el, cfg) { el.__kz = cfg; }
+function wertBei(p, t, gap) {
+  if (!p || !p.length) return null; let lo = 0, hi = p.length - 1;
+  if (t < p[0][0] - gap || t > p[hi][0] + gap) return null;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (p[m][0] <= t) lo = m; else hi = m; }
+  const a = p[lo], b = p[hi];
+  if (t <= a[0]) return t >= a[0] - gap ? a[1] : null; if (t >= b[0]) return t <= b[0] + gap ? b[1] : null;
+  if (b[0] - a[0] > gap * 2) return Math.abs(t - a[0]) <= gap ? a[1] : (Math.abs(b[0] - t) <= gap ? b[1] : null);
+  if (a[1] === null || b[1] === null) return a[1] ?? b[1];
+  return a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0]); }
+function kreuzZeig(el, ev, dauer) {
+  const c = el.__kz, pt = el.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  const q = pt.matrixTransform(el.getScreenCTM().inverse());
+  if (q.x < c.L || q.x > c.R || q.y < c.T - 10 || q.y > c.B + 10) { tipWeg(); return; }
+  const t = c.x0 + (q.x - c.L) / (c.R - c.L) * (c.x1 - c.x0), dt = new Date(t);
+  const kopf = `${["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}. ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
+  const z = c.reihen.map((r) => [r, wertBei(r.p, t, r.gap || 45 * 6e4)]).filter(([, v]) => v !== null && !isNaN(v));
+  if (!z.length) { tipWeg(); return; }
+  let l = el.querySelector(".kz-linie"); if (!l) { l = document.createElementNS("http://www.w3.org/2000/svg", "line"); l.setAttribute("class", "kz-linie"); el.appendChild(l); }
+  for (const [k, v] of [["x1", q.x], ["x2", q.x], ["y1", c.T], ["y2", c.B], ["stroke", "#e5e7eb"], ["stroke-width", "1.2"], ["stroke-dasharray", "3 3"], ["pointer-events", "none"]]) l.setAttribute(k, v);
+  tipZeig(`<b>${kopf}</b>` + z.map(([r, v]) => `<br><span style="color:${r.f}">●</span> ${r.n}: <b>${zahl(v, r.d ?? 1)}</b> ${r.e || ""}`).join(""), ev.clientX, ev.clientY, dauer); }
+
+// Übersichtsleiste mit weißem Rahmen + gelben Griffen (zoombar), gemeinsam für Tagesbalken und Stromherkunft (30.09.2026).
+// c = {lo, hi, a, b, minw, UH, inhalt(UX, UW, UH) → SVG, setze(a, b), std()}. Rahmen ziehen = verschieben, Griffe = zoomen,
+// daneben tippen = springen, Doppelklick/-tippen = Standard.
+function leiste(u, c) {
+  const UW = Math.max(Math.round(u.getBoundingClientRect().width) || 1000, 300), UH = c.UH || 26;
+  u.setAttribute("viewBox", `0 0 ${UW} ${UH + 18}`);
+  const UX = (v) => 8 + (v - c.lo) / (c.hi - c.lo) * (UW - 16), xa = UX(c.a), xb = UX(c.b);
+  u.innerHTML = `<rect x="8" y="2" width="${UW - 16}" height="${UH}" rx="3" fill="#27272a"/>` + c.inhalt(UX, UW, UH)
+    + `<rect x="${xa}" y="1" width="${Math.max(xb - xa, 2)}" height="${UH + 2}" rx="3" fill="#e5e7eb" fill-opacity="0.12" stroke="#e5e7eb" stroke-width="1.5"/>` + griffe(xa, xb, UH);
+  u.__c = c; u.__UW = UW;
+  if (u.__an) return; u.__an = true; u.style.touchAction = "none"; u.style.cursor = "pointer";
+  let gm = null;
+  const lage = (ev) => { const c = u.__c, W = u.__UW, r = u.getBoundingClientRect();
+    const zt = (x) => c.lo + ((x - r.left) / r.width * W - 8) / (W - 16) * (c.hi - c.lo), xt = (v) => r.left + (8 + (v - c.lo) / (c.hi - c.lo) * (W - 16)) / W * r.width;
+    return { t: zt(ev.clientX), a: c.a, b: c.b, xa: xt(c.a), xb: xt(c.b), tol: ev.pointerType === "touch" ? 18 : 8 }; };
+  const setzeW = (a, b) => { u.__neu = [a, b]; if (!u.__raf) u.__raf = requestAnimationFrame(() => { u.__raf = null; u.__c.setze(...u.__neu); }); };
+  u.addEventListener("pointerdown", (ev) => { const q = lage(ev), mitte = (q.xa + q.xb) / 2, eng = q.xb - q.xa < 3 * q.tol;
+    if (Math.abs(ev.clientX - q.xa) <= q.tol && (!eng || ev.clientX < mitte)) gm = { m: "l" };
+    else if (Math.abs(ev.clientX - q.xb) <= q.tol) gm = { m: "r" };
+    else if (ev.clientX > q.xa && ev.clientX < q.xb) gm = { m: "m", off: q.t - q.a, w: q.b - q.a };
+    else { const w = q.b - q.a; gm = { m: "m", off: w / 2, w }; setzeW(q.t - w / 2, q.t + w / 2); }
+    try { u.setPointerCapture(ev.pointerId); } catch (e) {} });
+  u.addEventListener("pointermove", (ev) => { const q = lage(ev), mw = u.__c.minw;
+    if (!gm) { u.style.cursor = Math.abs(ev.clientX - q.xa) <= q.tol || Math.abs(ev.clientX - q.xb) <= q.tol ? "ew-resize" : (ev.clientX > q.xa && ev.clientX < q.xb ? "grab" : "pointer"); return; }
+    if (gm.m === "l") setzeW(Math.min(q.t, q.b - mw), q.b); else if (gm.m === "r") setzeW(q.a, Math.max(q.t, q.a + mw)); else setzeW(q.t - gm.off, q.t - gm.off + gm.w); });
+  u.addEventListener("pointerup", () => { gm = null; }); u.addEventListener("pointercancel", () => { gm = null; });
+  doppel(u, () => { if (u.__raf) { cancelAnimationFrame(u.__raf); u.__raf = null; } u.__c.std(); }); }
 
 function zeichneZL(id) {
   const Q = ZL[id], jetzt = Date.now(), ende = zlEnde[id] ?? jetzt, x0 = ende - 48 * 36e5;
@@ -678,13 +784,17 @@ function zeigeHerkunft(d) {
     let q = [Math.max(h - n - a, 0), a, n]; const s = q[0] + q[1] + q[2];
     if (s > 0) { q = q.map((x) => (x / s < 0.08 ? 0 : x)); const s2 = q.reduce((x, y) => x + y, 0) || 1; q = q.map((x) => Math.round(x / s2 * 20) / 20 * s); }
     const laden = batt >= 150 ? batt : 0, einsp = -netz >= 150 ? -netz : 0;
-    return [v[0] * 1000, q[0], q[1], q[2], laden, einsp, h, pvg];
+    return [v[0] * 1000, q[0], q[1], q[2], laden, einsp, h, pvg, v[5] ? 36e5 : 6e5];   // ältere Tage Stundenmittel (30.09.2026)
   });
   if ($("herkunft")) zeichneHK();
 }
 function zeichneHK() {
   const svgEl = $("herkunft"), W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
-  const jetzt = Date.now(), ende = jetzt, x0 = ende - 48 * 36e5, T = 48, y2 = T + 88, L = 8, R = W - 8;
+  // blätterbar (30.09.2026): 14 Tage geladen, Standard 48 h bis jetzt; Leiste darunter mit Griffen, Ziehen im Feld, Doppeltippen = Standard
+  const jetzt = Date.now(), lo = hkDaten.length ? Math.min(hkDaten[0][0], jetzt - 48 * 36e5) : jetzt - 48 * 36e5, hw = window.__hkWin || { live: true, br: 48 * 36e5 };
+  const br = Math.min(Math.max(hw.br, 3 * 36e5), jetzt - lo), ende = hw.live ? jetzt : Math.min(Math.max(hw.bis, lo + br), jetzt), x0 = ende - br;
+  window.__hkX = [x0, ende, lo];
+  const T = 48, y2 = T + 88, L = 8, R = W - 8;
   svgEl.setAttribute("viewBox", `0 0 ${W} ${y2 + 26}`);
   const X = (t) => L + (t - x0) / (ende - x0) * (R - L);
   const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
@@ -695,19 +805,42 @@ function zeichneHK() {
   let svg = zlHimmel("herkunft", x0, ende, L, R, T, y2, X, hm), tips = "";
   for (const [y0, y1] of [L1, L2]) svg += `<line x1="${L}" x2="${R}" y1="${(y0 + y1) / 2}" y2="${(y0 + y1) / 2}" stroke="#6b7280" stroke-width="1"/>`;
   const r = (k, a, b, y0, y1) => { if (y1 - y0 > 0.2) p[k] += `M${a.toFixed(1)} ${y0.toFixed(1)}H${b.toFixed(1)}V${y1.toFixed(1)}H${a.toFixed(1)}Z`; };
-  for (const [t, pv, akku, netz, laden, einsp, haus, pvg] of hkDaten) {
-    if (t + 6e5 < x0 || t > ende) continue;
-    const a = Math.max(X(t), L), b = Math.min(X(t + 6e5) + 0.6, R); if (b <= a) continue;
+  for (const [t, pv, akku, netz, laden, einsp, haus, pvg, dur] of hkDaten) {
+    if (t + dur < x0 || t > ende) continue;
+    const a = Math.max(X(t), L), b = Math.min(X(t + dur) + 0.6, R); if (b <= a) continue;
     const s = pv + akku + netz;
     if (s > 20) { let y = L1[1]; for (const [k, v] of [["pv", pv], ["akku", akku], ["netz", netz]]) { const dy = v / s * (L1[1] - L1[0]); r(k, a, b, y - dy, y); y -= dy; } }
     const u = laden + einsp;
     if (u > 0) { let y = L2[1]; for (const [k, v] of [["laden", laden], ["einsp", einsp]]) { const dy = v / u * (L2[1] - L2[0]); r(k, a, b, y - dy, y); y -= dy; } }
     const pz = (v) => (s > 0 ? " (" + Math.round(v / s * 100) + " %)" : "");
-    tips += `<rect x="${a}" y="${L1[0]}" width="${b - a}" height="${L2[1] - L1[0]}" fill="transparent"><title>${tg(t)} ${hm(t)} · Haus ${kw(haus)}\nPV ${kw(pv)}${pz(pv)} · Akku ${kw(akku)}${pz(akku)} · Netz ${kw(netz)}${pz(netz)}${laden > 0 ? "\nAkku lädt " + kw(laden) + " (aus " + (pvg >= laden * 0.8 ? "PV" : pvg > 100 ? "PV + Netz" : "Netz") + ", PV gesamt " + kw(pvg) + ")" : ""}${einsp > 0 ? "\nEinspeisung " + kw(einsp) : ""}\n30-min-Mittel</title></rect>`;
+    tips += `<rect x="${a}" y="${L1[0]}" width="${b - a}" height="${L2[1] - L1[0]}" fill="transparent"><title>${tg(t)} ${hm(t)} · Haus ${kw(haus)}\nPV ${kw(pv)}${pz(pv)} · Akku ${kw(akku)}${pz(akku)} · Netz ${kw(netz)}${pz(netz)}${laden > 0 ? "\nAkku lädt " + kw(laden) + " (aus " + (pvg >= laden * 0.8 ? "PV" : pvg > 100 ? "PV + Netz" : "Netz") + ", PV gesamt " + kw(pvg) + ")" : ""}${einsp > 0 ? "\nEinspeisung " + kw(einsp) : ""}\n${dur > 6e5 ? "Stundenmittel" : "30-min-Mittel"}</title></rect>`;
   }
   for (const k of Object.keys(p)) if (p[k]) svg += `<path d="${p[k]}" fill="${HK_F[k]}" shape-rendering="crispEdges"/>`;
   svg += zlAchse(x0, ende, L, R, T, y2, schmal, X, tg) + tips;
   svgEl.innerHTML = svg;
+  const hkSetze = (a, b) => { const j = Date.now(); window.__hkWin = { live: b >= j - 6e4, br: b - a, bis: b }; zeichneHK(); };
+  const hkStd = () => { window.__hkWin = { live: true, br: 48 * 36e5 }; zeichneHK(); };
+  let u = $("herkunft_ueb");
+  if (!u) { u = document.createElementNS("http://www.w3.org/2000/svg", "svg"); u.id = "herkunft_ueb"; u.setAttribute("class", "zeitleiste zl-ueb");
+    u.style.cssText = "display:block;width:100%;height:auto;margin-top:4px"; svgEl.after(u);
+    // Ziehen im Feld verschiebt (wie Zeitleisten), Doppeltippen = Standard
+    svgEl.style.touchAction = "pan-y"; svgEl.style.cursor = "grab"; let dr = null;
+    svgEl.addEventListener("pointerdown", (ev) => { const [a, b] = window.__hkX; dr = { x: ev.clientX, a, b, moved: false }; });
+    svgEl.addEventListener("pointermove", (ev) => { if (!dr) return; const dx = ev.clientX - dr.x; if (Math.abs(dx) > 5) dr.moved = true; if (!dr.moved) return;
+      const r = svgEl.getBoundingClientRect(), k = (dr.b - dr.a) / (r.width - 16), lo2 = window.__hkX[2], j = Date.now();
+      let b = Math.min(Math.max(dr.b - dx * k, lo2 + (dr.b - dr.a)), j); window.__hkWin = { live: b >= j - 6e4, br: dr.b - dr.a, bis: b };
+      if (!svgEl.__raf) svgEl.__raf = requestAnimationFrame(() => { svgEl.__raf = null; zeichneHK(); }); });
+    const aus = () => { dr = null; }; svgEl.addEventListener("pointerup", aus); svgEl.addEventListener("pointercancel", aus); svgEl.addEventListener("pointerleave", aus);
+    doppel(svgEl, () => { if (svgEl.__raf) { cancelAnimationFrame(svgEl.__raf); svgEl.__raf = null; } hkStd(); }); }
+  leiste(u, { lo, hi: jetzt, a: x0, b: ende, minw: 3 * 36e5, UH: 24,
+    inhalt: (UX, UW, UH) => { let g = "";
+      for (const [t, pv, akku, netz, , , , , dur] of hkDaten) { const s = pv + akku + netz; if (s <= 20) continue; const x = UX(t), w = Math.max(UX(t + dur) - x, 0.8); let y = UH + 1;
+        for (const [k, v] of [["pv", pv], ["akku", akku], ["netz", netz]]) { const dy = v / s * (UH - 4); if (dy > 0.2) g += `<rect x="${x.toFixed(1)}" y="${(y - dy).toFixed(1)}" width="${w.toFixed(1)}" height="${dy.toFixed(1)}" fill="${HK_F[k]}"/>`; y -= dy; } }
+      for (let v = new Date(lo).setHours(24, 0, 0, 0); v < jetzt; v += 864e5) { const dt = new Date(v);
+        g += `<line x1="${UX(v)}" x2="${UX(v)}" y1="2" y2="${UH + 2}" stroke="#18181b" stroke-width="1"/>`;
+        if (UW > 600 || dt.getDate() % 2 === 0) g += `<text x="${UX(v + 432e5)}" y="${UH + 15}" fill="#9ca3af" font-size="10" text-anchor="middle">${dt.getDate()}.${dt.getMonth() + 1}.</text>`; }
+      return g; },
+    setze: hkSetze, std: hkStd });
 }
 
 // ---------- PV-Prognose (VRM) + Ist, vorgestern bis übermorgen ----------
@@ -762,7 +895,10 @@ function zeigePrognose(d) {
       const a = Math.max(t, x0), b = Math.min(t + 864e5, x1), dt = new Date(t);
       if (X(b) - X(a) > 60) svg += `<text x="${(X(a) + X(b)) / 2}" y="${B + 22}" fill="${t === t0.getTime() ? '#e5e7eb' : '#9ca3af'}" font-size="13" ${t === t0.getTime() ? 'font-weight="700"' : ''} text-anchor="middle">${tage[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}.</text>`;
     } }
-  let g = "";
+  let g = ""; const KZ = [], KZt = (arr) => arr.filter((p) => p[1] !== null && p[1] !== undefined);
+  if (ip.length) KZ.push({ n: "PV", f: "#f59e0b", e: "kW", d: 2, p: KZt(ip.map((p) => [p[0] + halb, p[1]])) },
+    { n: "Verbrauch", f: "#ef4444", e: "kW", d: 2, p: KZt(ip.map((p) => [p[0] + halb, p[2]])) },
+    { n: "Akku", f: "#3b82f6", e: "%", d: 0, p: KZt(ip.map((p) => [p[0] + halb, p[3]])) });
   const flaeche = (idx, farbe, deck) => {
     if (!ip.length) return "";
     const pts = ip.map((p) => [X(p[0] + halb), Y(p[idx])]);
@@ -784,8 +920,10 @@ function zeigePrognose(d) {
       (d.va || []).forEach((p) => { if (p[0] < h0) em.set(p[0], p[1]); });
       (d.ve || []).forEach((p) => { if (p[0] >= h0) em.set(p[0], p[1]); });
       const ep = [...em.entries()].sort((a, b) => a[0] - b[0]).filter((p) => p[0] + halb >= x0 - 36e5 && p[0] + halb <= x1 + 36e5).map((p) => [p[0], p[1] / 1000]);
-      g += zwei(ep, "#22c55e", "#1f6b3a", 2); }
+      g += zwei(ep, "#22c55e", "#1f6b3a", 2); KZ.push({ n: "Verbrauch Prognose eigen", f: "#22c55e", e: "kW", d: 2, p: ep.map((p) => [p[0] + halb, p[1]]) }); }
     g += zwei(fp.map((p) => [p[0], p[1] / 1000]), "#fbbf24", "#7c6320", 2.5);
+    KZ.push({ n: "PV Prognose", f: "#fbbf24", e: "kW", d: 2, p: fp.map((p) => [p[0] + halb, p[1] / 1000]) },
+      { n: "Verbrauch Prognose Victron", f: "#f87171", e: "kW", d: 2, p: fp.map((p) => [p[0] + halb, p[2] / 1000]) });
   }
   if (ip.length) g += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Ys(p[3])]))}" fill="none" stroke="#3b82f6" stroke-width="2.5"/>`;
   // Akku-Prognose nur Zukunft (wie im Dashboard): PV-Prognose (heute mit Tageskorrektur) − eigene Verbrauchsprognose d.ve
@@ -800,10 +938,11 @@ function zeigePrognose(d) {
       const morgen = tt0.getTime() + 864e5; let tag = 0; for (const [t, w] of pvm) if (t >= tt0.getTime() && t < morgen) tag += w || 0;
       // gewichtet mit dem vergangenen Anteil der Tages-PV (30.09.2026)
       const k0 = prog >= 2000 ? Math.min(Math.max(ist * 1000 / prog, 0.5), 1.3) : 1, k = 1 + (k0 - 1) * (tag > 0 ? Math.min(prog / tag, 1) : 0);
-      let e = soc / 100 * cap; const pts = [[X(jn), Ys(soc)]];
+      let e = soc / 100 * cap; const pts = [[X(jn), Ys(soc)]], akt = [[jn, soc]];
       for (let i = 0; i < 192; i++) { const ms = h0 + i * 36e5, l = i === 0 ? (h0 + 36e5 - jn) / 36e5 : 1; if (!vbm.has(ms) || ms > x1 + 36e5) break;
         const dd = ((pvm.get(ms) || 0) * (ms < morgen ? k : 1) - (vbm.get(ms) || 0)) / 1000 * l;
-        e = dd >= 0 ? Math.min(e + dd * eta, cap) : Math.max(e + dd / eta, emin); pts.push([X(ms + 36e5), Ys(e / cap * 100)]); }
+        e = dd >= 0 ? Math.min(e + dd * eta, cap) : Math.max(e + dd / eta, emin); pts.push([X(ms + 36e5), Ys(e / cap * 100)]); akt.push([ms + 36e5, e / cap * 100]); }
+      if (akt.length > 1) KZ.push({ n: "Akku Prognose", f: "#93c5fd", e: "%", d: 0, gap: 90 * 6e4, p: akt });
       if (pts.length > 1) g += `<path d="${linie(pts)}" fill="none" stroke="#93c5fd" stroke-width="2.2" stroke-dasharray="7 5"/>`;
     }
   }
@@ -811,6 +950,7 @@ function zeigePrognose(d) {
   svg += `<g clip-path="url(#pkclip)">${g}</g>`;
   const el = $("progkurve");
   el.innerHTML = svg;
+  kreuz(el, { L, R, T, B, x0, x1, reihen: KZ });
   // Tagesleiste darunter: PV je Tag (gemessen kräftig, Prognose hell gestrichelt), Verbrauch roter Strich, Rahmen = Ausschnitt
   { const tg = (arr, idx, f, nur) => { const o = {}; for (const p of arr) { if (nur && !nur(p[0])) continue; const dt = new Date(p[0]); const k = dt.getFullYear() * 1e4 + (dt.getMonth() + 1) * 100 + dt.getDate();
         o[k] = (o[k] || 0) + (p[idx] || 0) * f; } return o; };
@@ -914,6 +1054,10 @@ function zeigeTemperaturen(d) {
     if (ip.length) { const l = ip[ip.length - 1]; svg += `<line x1="${X(l[0] + halb)}" y1="${Y(l[4])}" x2="${ax}" y2="${ay}" stroke="#3b82f6" stroke-width="2.2"/>`; }
     svg += `<circle cx="${ax}" cy="${ay}" r="19" fill="#3b82f6" stroke="#fff" stroke-width="2"/><text x="${ax}" y="${ay + 4}" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">${zahl(oat, 1)}°</text>`; }
   $("tempkurve").innerHTML = svg;
+  kreuz($("tempkurve"), { L, R, T, B, x0, x1, reihen: [
+    { n: "Außen", f: "#3b82f6", e: "°C", p: ip.map((p) => [p[0] + halb, p[4]]).concat(oat !== null ? [[jetzt, oat]] : []) },
+    { n: "Innen", f: "#ef4444", e: "°C", p: ip.map((p) => [p[0] + halb, p[5]]) },
+    { n: "Außen Prognose", f: "#93c5fd", e: "°C", p: fp, gap: 90 * 6e4 }] });
 }
 
 // ---------- Laden ----------
