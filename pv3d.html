@@ -137,7 +137,7 @@ kiste(B, B + 3.12, GAR[0], GAR[1], 0, GH, matWand);
 kiste(B, B + 3.12, GAR[0], GAR[1], GH, GH + 0.08, new THREE.MeshStandardMaterial({ color: 0x8b6b4a, roughness: 0.9 }));
 // Stahlkamin an der Gartenecke des Giebels (neben der Garage)
 { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 11.2, 20), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7, roughness: 0.3 }));
-  k.position.copy(P(B + 0.3, -0.45, 5.6));   // außerhalb der Gartenecke (Foto) k.castShadow = true; inner.add(k); }
+  k.position.copy(P(B + 0.3, -0.45, 5.6)); k.castShadow = true; inner.add(k); }   // Kamin außerhalb der Gartenecke (Foto)
 // Windfang Straßenseite (Dach 7°, +2,85) und Wintergarten Gartenseite (Glas)
 const WF = [1.2, 3.9], WFT = 1.9;
 kiste(WF[0], WF[1], T, T + WFT, 0, 2.62, matWand);
