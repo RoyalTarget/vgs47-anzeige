@@ -718,9 +718,11 @@ function zeigePrognose(d) {
   const W = 1000, H = 330, L = 44, R = 956, T = 12, B = 290;
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const LO = t0.getTime() - 4 * 864e5, HI = t0.getTime() + 8 * 864e5, FEN = 5 * 864e5;
-  if (!window.__progWin) window.__progWin = { std: true, von: 0 };
+  if (!window.__progWin) window.__progWin = { std: true, von: 0, breite: FEN };
+  // Breite variabel (Griffe am Rahmen der Tagesleiste, 30.09.2026): 12 h … ganzer Bereich
+  const BR = window.__progWin.std ? FEN : Math.min(Math.max(window.__progWin.breite || FEN, 12 * 36e5), HI - LO);
   let x0 = window.__progWin.std ? t0.getTime() - 2 * 864e5 : window.__progWin.von;
-  x0 = Math.min(Math.max(x0, LO), HI - FEN); const x1 = x0 + FEN;
+  x0 = Math.min(Math.max(x0, LO), HI - BR); const x1 = x0 + BR; window.__progX = [x0, x1];
   const X = (t) => L + (t - x0) / (x1 - x0) * (R - L);
   const halb = 18e5, jetzt = Date.now(), h0 = Math.floor(jetzt / 36e5) * 36e5;
   const fp = pr.filter((p) => p[0] + halb >= x0 - 36e5 && p[0] + halb <= x1 + 36e5);
@@ -817,27 +819,39 @@ function zeigePrognose(d) {
     let ub = $("progueb");
     if (!ub) { ub = document.createElementNS("http://www.w3.org/2000/svg", "svg"); ub.id = "progueb"; ub.setAttribute("viewBox", "0 0 1000 58");
       ub.style.cssText = "display:block;width:100%;height:auto;margin-top:4px;cursor:pointer;touch-action:none"; el.after(ub);
-      let zieht = false;
-      const hin = (ev) => { const r = ub.getBoundingClientRect(), tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
-        const lo = tt0.getTime() - 4 * 864e5, hi = tt0.getTime() + 8 * 864e5, fx = (ev.clientX - r.left) / r.width * 1000;
-        const t = lo + (fx - 8) / (1000 - 16) * (hi - lo); window.__progWin = { std: false, von: t - 2.5 * 864e5 }; zeigePrognose(window.__progD); };
-      ub.addEventListener("pointerdown", (ev) => { zieht = true; hin(ev); try { ub.setPointerCapture(ev.pointerId); } catch (e) {} });
-      ub.addEventListener("pointermove", (ev) => { if (zieht) hin(ev); });
-      ub.addEventListener("pointerup", () => { zieht = false; }); ub.addEventListener("pointercancel", () => { zieht = false; });
-      ub.addEventListener("dblclick", () => { window.__progWin = { std: true, von: 0 }; zeigePrognose(window.__progD); }); }
+      // Griffe (30.09.2026): Rand des Rahmens ziehen = schmaler/breiter (zoomen), im Rahmen ziehen = verschieben, daneben tippen = springen
+      let gm = null; const MINW = 12 * 36e5;
+      const lage = (ev) => { const r = ub.getBoundingClientRect(), tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
+        const lo = tt0.getTime() - 4 * 864e5, hi = tt0.getTime() + 8 * 864e5, [a, b] = window.__progX;
+        const zt = (x) => lo + ((x - r.left) / r.width * 1000 - 8) / (1000 - 16) * (hi - lo), xt = (t) => r.left + (8 + (t - lo) / (hi - lo) * (1000 - 16)) / 1000 * r.width;
+        return { t: zt(ev.clientX), a, b, xa: xt(a), xb: xt(b), tol: ev.pointerType === "touch" ? 18 : 8 }; };
+      const setze = (von, bis) => { window.__progWin = { std: false, von, breite: bis - von };
+        if (!ub.__raf) ub.__raf = requestAnimationFrame(() => { ub.__raf = null; zeigePrognose(window.__progD); }); };
+      ub.addEventListener("pointerdown", (ev) => { const q = lage(ev), mitte = (q.xa + q.xb) / 2, schmal = q.xb - q.xa < 3 * q.tol;
+        if (Math.abs(ev.clientX - q.xa) <= q.tol && (!schmal || ev.clientX < mitte)) gm = { m: "l" };
+        else if (Math.abs(ev.clientX - q.xb) <= q.tol) gm = { m: "r" };
+        else if (ev.clientX > q.xa && ev.clientX < q.xb) gm = { m: "m", off: q.t - q.a, w: q.b - q.a };
+        else { const w = q.b - q.a; gm = { m: "m", off: w / 2, w }; setze(q.t - w / 2, q.t + w / 2); }
+        try { ub.setPointerCapture(ev.pointerId); } catch (e) {} });
+      ub.addEventListener("pointermove", (ev) => { const q = lage(ev);
+        if (!gm) { ub.style.cursor = Math.abs(ev.clientX - q.xa) <= q.tol || Math.abs(ev.clientX - q.xb) <= q.tol ? "ew-resize" : (ev.clientX > q.xa && ev.clientX < q.xb ? "grab" : "pointer"); return; }
+        if (gm.m === "l") setze(Math.min(q.t, q.b - MINW), q.b);
+        else if (gm.m === "r") setze(q.a, Math.max(q.t, q.a + MINW));
+        else setze(q.t - gm.off, q.t - gm.off + gm.w); });
+      ub.addEventListener("pointerup", () => { gm = null; }); ub.addEventListener("pointercancel", () => { gm = null; });
+      ub.addEventListener("dblclick", () => { window.__progWin = { std: true, von: 0, breite: FEN }; zeigePrognose(window.__progD); }); }
     ub.innerHTML = u; }
   // Ziehen im Feld (einmalig anmelden)
   if (!el.__drag) { el.__drag = true; el.style.touchAction = "pan-y"; el.style.cursor = "grab";
     let dr = null;
-    el.addEventListener("pointerdown", (ev) => { const w = window.__progWin, tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
-      dr = { x: ev.clientX, von: w.std ? tt0.getTime() - 2 * 864e5 : w.von, moved: false }; });
+    el.addEventListener("pointerdown", (ev) => { const [a, b] = window.__progX; dr = { x: ev.clientX, von: a, br: b - a, moved: false }; });
     el.addEventListener("pointermove", (ev) => { if (!dr) return; const dx = ev.clientX - dr.x; if (Math.abs(dx) > 5) dr.moved = true; if (!dr.moved) return;
       const r = el.getBoundingClientRect(), pw = r.width * (956 - 44) / 1000;
-      window.__progWin = { std: false, von: dr.von - dx / pw * 5 * 864e5 };
+      window.__progWin = { std: false, von: dr.von - dx / pw * dr.br, breite: dr.br };
       if (!el.__raf) el.__raf = requestAnimationFrame(() => { el.__raf = null; zeigePrognose(window.__progD); }); });
     const ende = () => { dr = null; };
     el.addEventListener("pointerup", ende); el.addEventListener("pointerleave", ende); el.addEventListener("pointercancel", ende);
-    el.addEventListener("dblclick", () => { window.__progWin = { std: true, von: 0 }; zeigePrognose(window.__progD); }); }
+    el.addEventListener("dblclick", () => { window.__progWin = { std: true, von: 0, breite: 5 * 864e5 }; zeigePrognose(window.__progD); }); }
 }
 
 // ---------- Temperaturen innen/außen + Vorhersage, vorgestern bis übermorgen ----------
