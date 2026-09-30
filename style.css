@@ -179,3 +179,4 @@ tr.teil.hz-an td { color: #facc15; }
   box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
 /* Schaltkriterien-Zonen im Schema (30.09.2026) */
 .sk-zone { position: absolute; cursor: help; z-index: 3; }
+.prog-legende .oat::before { border-color: #22d3ee; border-top-width: 2px; }
