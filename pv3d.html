@@ -121,7 +121,7 @@ function gaube([xa, xb], seite) {
 }
 gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
 // Glas-Firstaufbau (2 m breit, bis +9,45)
-{ const xa = 1.1, xb = 4.9, y0 = T / 2 - 1.0, y1 = T / 2 + 1.0, zw = 9.05, zf = 9.45;
+{ const xa = 1.1, xb = 4.6, y0 = T / 2 - 1.0, y1 = T / 2 + 1.0, zw = 9.05, zf = 9.45;   // endet ≈ 4,7 m von der Wand zu Nr. 45 (Drohnenfoto)
   for (const y of [y0, y1]) poly([[xa, y, zDach(y)], [xb, y, zDach(y)], [xb, y, zw], [xa, y, zw]], matGaube);
   for (const x of [xa, xb]) poly([[x, y0, zDach(y0)], [x, y1, zDach(y1)], [x, y1, zw], [x, T / 2, zf], [x, y0, zw]], matGaube);
   poly([[xa, y0, zw], [xb, y0, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlas, false);
@@ -137,7 +137,7 @@ kiste(B, B + 3.12, GAR[0], GAR[1], 0, GH, matWand);
 kiste(B, B + 3.12, GAR[0], GAR[1], GH, GH + 0.08, new THREE.MeshStandardMaterial({ color: 0x8b6b4a, roughness: 0.9 }));
 // Stahlkamin an der Gartenecke des Giebels (neben der Garage)
 { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 11.2, 20), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7, roughness: 0.3 }));
-  k.position.copy(P(B + 0.3, -0.45, 5.6)); k.castShadow = true; inner.add(k); }   // Kamin außerhalb der Gartenecke (Foto)
+  k.position.copy(P(B + 0.25, 0.15, 5.6)); k.castShadow = true; inner.add(k); }   // Kamin an der Gartenecke des Giebels (Nutzer)
 // Windfang Straßenseite (Dach 7°, +2,85) und Wintergarten Gartenseite (Glas)
 const WF = [1.2, 3.9], WFT = 1.9;
 kiste(WF[0], WF[1], T, T + WFT, 0, 2.62, matWand);
@@ -160,13 +160,15 @@ function zellTextur(hochkant) {
 const TEX = { hoch: zellTextur(true), quer: zellTextur(false) };
 const module = [];
 // Modul auf eine Ebene legen: Mitte (Hauskoordinaten), Richtungen u (Breite) / v (Länge) als Einheitsvektoren in Hauskoordinaten
-function modul(key, mitte, u, v, bu, bv, aussen = [0, 0, 1]) {   // aussen = Richtung, in die die Zellseite zeigen soll (Hauskoordinaten)
+function modul(key, mitte, u, v, bu, bv, aussen = [0, 0, 1], geplant = false) {   // aussen = Richtung, in die die Zellseite zeigen soll (Hauskoordinaten)
   const hoch = bv > bu, mat = new THREE.MeshStandardMaterial({ map: hoch ? TEX.hoch : TEX.quer, color: 0x1e293b, roughness: 0.35, metalness: 0.2, emissive: 0x000000 });
   let U = P(...u).normalize(); const V = P(...v).normalize(); let N = new THREE.Vector3().crossVectors(U, V).normalize();
   if (N.dot(P(...aussen)) < 0) { U.negate(); N = new THREE.Vector3().crossVectors(U, V).normalize(); }
   const m = new THREE.Mesh(new THREE.BoxGeometry(bu, bv, MD), [matBlech, matBlech, matBlech, matBlech, mat, matBlech]);
   m.setRotationFromMatrix(new THREE.Matrix4().makeBasis(U, V, N)); m.position.copy(P(...mitte)).addScaledVector(N, 0.06);
-  m.castShadow = true; m.userData.key = key; inner.add(m); module.push(m); return m;
+  m.castShadow = !geplant; m.userData.key = key; m.userData.geplant = geplant;
+  if (geplant) { mat.transparent = true; mat.opacity = 0.4; mat.color.set(0x94a3b8); m.material = [mat, mat, mat, mat, mat, mat]; }
+  inner.add(m); module.push(m); return m;
 }
 // Gauben: 3 hochkant nebeneinander auf dem 7°-Dach, Länge in Gefällerichtung
 for (const [key, [xa, xb], so] of [['gaube_ost', GAUBE_SO, true], ['gaube_west', GAUBE_NW, false]]) {
@@ -188,6 +190,18 @@ kiste(B + 0.05, B + 0.12, 1.1, 1.17, 0, 4.72, matBlech);
 // Balkonkraftwerk: 2 hochkant auf dem Windfangdach (7°, zur Straße geneigt)
 for (const dx of [-0.59, 0.59]) { const xm = (WF[0] + WF[1]) / 2, d = WFT / 2 + 0.05;
   modul('bkw', [xm + dx, T + d, 2.85 - G7 * d], [-1, 0, 0], [0, 1, -G7], MB, ML); }
+
+// Dachfenster Straßenseite zwischen Gaube und Giebel, nahe der Traufe (Nutzer 30.09.2026)
+{ const cosA = 1 / Math.hypot(1, NEIG), xm = GAUBE_NW[1] + 0.4, s0 = 0.55, s1 = 1.6;
+  const y0 = T - s0 * cosA, y1 = T - s1 * cosA;
+  poly([[xm - 0.28, y0, zDach(y0) + 0.03], [xm + 0.28, y0, zDach(y0) + 0.03], [xm + 0.28, y1, zDach(y1) + 0.03], [xm - 0.28, y1, zDach(y1) + 0.03]], matFenster, false); }
+// Geplante Module (Nutzer 30.09.2026): je 3 hochkant übereinander im Streifen zwischen Gaube und Südwest-Giebel,
+// Straßenseite → String Dach West, Gartenseite → String Dach Ost (Ausrichtung/Neigung wie die Dachmodule). Grau, halbdurchsichtig.
+for (const [key, xm, so] of [['dach_west', 5.3, false], ['dach_ost', 5.2, true]]) {
+  const cosA = 1 / Math.hypot(1, NEIG);
+  for (let k = 0; k < 3; k++) { const sl = 0.3 + ML / 2 + k * (ML + 0.03), d = sl * cosA, y = so ? d : T - d;
+    modul(key, [xm, y, zDach(y)], so ? [1, 0, 0] : [-1, 0, 0], so ? [0, 1, NEIG] : [0, -1, NEIG], MB, ML, [0, 0, 1], true); }
+}
 
 // Wert-Schilder über den Flächen
 const schilder = {};
@@ -245,7 +259,7 @@ async function aktualisieren() {
   for (const [k, f] of Object.entries(F)) {
     const p = Math.max(w(f.p) ?? 0, 0), h = w(f.h), mx = w(f.m); stand[k] = { p, h, mx }; summe += p; heute += h ?? 0;
     const col = farbe(p / f.n / PMOD);
-    for (const m of module) if (m.userData.key === k) { const mat = m.material[4]; mat.color.copy(col); mat.emissive.copy(col).multiplyScalar(p > 5 ? 0.35 : 0); }
+    for (const m of module) if (m.userData.key === k && !m.userData.geplant) { const mat = m.material[4]; mat.color.copy(col); mat.emissive.copy(col).multiplyScalar(p > 5 ? 0.35 : 0); }
     schildMalen(k, zahl(p) + ' W', '#' + col.getHexString());
   }
   const s = sonneSetzen();
@@ -258,14 +272,18 @@ const himmel = (az) => ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'][Math.round(a
 const tip = document.getElementById('tip'), ray = new THREE.Raycaster(), maus = new THREE.Vector2();
 let hover = null;
 function treffer(ev) { const r = cv.getBoundingClientRect(); maus.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
-  ray.setFromCamera(maus, cam); const t = ray.intersectObjects(module, false)[0]; return t ? t.object.userData.key : null; }
+  ray.setFromCamera(maus, cam); const t = ray.intersectObjects(module, false)[0]; return t ? (t.object.userData.geplant ? 'geplant:' + t.object.userData.key : t.object.userData.key) : null; }
 function zeigeTip(key, ev) {
-  for (const m of module) m.scale.setScalar(m.userData.key === key ? 1.03 : 1);
+  for (const m of module) m.scale.setScalar(key && (m.userData.geplant ? 'geplant:' : '') + m.userData.key === key ? 1.03 : 1);
   if (!key) { tip.style.display = 'none'; return; }
+  if (key.startsWith('geplant:')) { const f = F[key.slice(8)];
+    tip.innerHTML = `<div class="n">Geplant: 3 Module</div><div class="g">kommen an den String <b>${f.name}</b> (${f.sub.split(' · ')[0]})</div>gleiche Ausrichtung und Neigung wie die Dachmodule`;
+  } else {
   const f = F[key], s = stand[key] || {}, anteil = s.p != null ? s.p / f.n : null;
   tip.innerHTML = `<div class="n">${f.name}</div><div class="g">${f.sub} · ${f.n} Module</div>`
     + `jetzt <b>${zahl(s.p)} W</b> <span class="g">(≈ ${zahl(anteil)} W je Modul, ${zahl(anteil / PMOD * 100)} %)</span><br>`
     + `heute <b>${zahl(s.h, 2)} kWh</b>${s.mx != null ? `<br>Spitze heute ${zahl(s.mx)} W` : ''}`;
+  }
   tip.style.display = 'block'; const r = cv.getBoundingClientRect();
   let x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 12; if (x + tip.offsetWidth > r.width - 6) x = ev.clientX - r.left - tip.offsetWidth - 14;
   if (y + tip.offsetHeight > r.height - 6) y = r.height - tip.offsetHeight - 6; tip.style.left = Math.max(x, 4) + 'px'; tip.style.top = Math.max(y, 4) + 'px';
@@ -292,7 +310,7 @@ function sichtbarkeit() { const vd = verdecker();
 let fr = 0;
 (function schleife() { controls.update(); if (fr++ % 6 === 0) sichtbarkeit(); renderer.render(scene, cam); requestAnimationFrame(schleife); })();
 aktualisieren(); setInterval(aktualisieren, 5000);
-window.__pv3d = { schilder, cam, inner, THREE };   // für Tests
+window.__pv3d = { schilder, cam, inner, THREE, controls };   // für Tests
 </script>
 </body>
 </html>
