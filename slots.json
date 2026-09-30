@@ -253,6 +253,50 @@
   "dec": 1
  },
  {
+  "id": "rl_bw_l",
+  "left": 90.17,
+  "top": 10.33,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "BW:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_bw",
+  "left": 97.17,
+  "top": 10.33,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_bad_wand",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
+  "id": "rl_bf_l",
+  "left": 90.17,
+  "top": 13.98,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "BF:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_bf",
+  "left": 97.17,
+  "top": 13.98,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_bad_fussboden",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
   "id": "hk_mix",
   "left": 63.33,
   "top": 29.48,
