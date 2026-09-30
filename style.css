@@ -172,3 +172,8 @@ tr.teil.hz-an td { color: #facc15; }
 /* PV-Anlage 3D (30.09.2026) */
 .pv3d { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; }
 @media (max-width: 700px) { .pv3d { aspect-ratio: 4 / 5; } }
+
+/* Mouse-over (30.09.2026): sofort sichtbar, am iPhone per Antippen */
+#tip { position: fixed; display: none; pointer-events: none; z-index: 50; background: rgba(24, 24, 27, .97); color: #e5e7eb;
+  border: 1px solid #52525b; border-radius: 8px; padding: 6px 9px; font-size: 12.5px; line-height: 1.45; max-width: min(380px, 92vw);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
