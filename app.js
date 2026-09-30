@@ -272,11 +272,12 @@ function zeigeTabellen(s, k, lp) {
     ["Fassade Süd unten", "RS 450 #4", "sensor.mppt2_leistung_pv_tracker_4_sued_unten", "sensor.mppt2_ertrag_tracker_4_sued_unten_heute", "sensor.mppt2_maximalleistung_tracker_4_sued_unten_heute"],
     ["Gaube Ost", "RS 450 #2", "sensor.mppt2_leistung_pv_tracker_2_gaube_ost", "sensor.mppt2_ertrag_tracker_2_gaube_ost_heute", "sensor.mppt2_maximalleistung_tracker_2_gaube_ost_heute"],
     ["Gaube West", "RS 450 #5", "sensor.mppt2_leistung_pv_tracker_5_gaube_west", "sensor.mppt2_ertrag_tracker_5_gaube_west_heute", "sensor.mppt2_maximalleistung_tracker_5_gaube_west_heute"],
+    ["Balkonkraftwerk", "EM111, Windfang West", "sensor.em111_bkw_gesamtleistung", "sensor.pv_balkonkraftwerk_heute", null],
   ];
   const sw = F.reduce((a, f) => a + (num(s, f[2]) ?? 0), 0);
   const sh = F.reduce((a, f) => a + (k[f[3]] ?? 0), 0);
   $("pvflaeche").innerHTML = "<tr><th>Fläche</th><th>jetzt</th><th>heute kWh</th><th>max heute</th></tr>"
-    + F.map(([n, m, p, h, mx]) => `<tr><td>${n} <span class="klein">${m}</span></td><td>${w0(p)}</td><td>${kw(h)}</td><td>${w0(mx)}</td></tr>`).join("")
+    + F.map(([n, m, p, h, mx]) => `<tr><td>${n} <span class="klein">${m}</span></td><td>${w0(p)}</td><td>${kw(h)}</td><td>${mx ? w0(mx) : "–"}</td></tr>`).join("")
     + `<tr class="summe"><td>Summe</td><td>${zahl(sw, 0)} W</td><td>${zahl(sh, 2)}</td><td></td></tr>`;
 }
 
