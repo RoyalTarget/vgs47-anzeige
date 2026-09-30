@@ -785,7 +785,12 @@ function zeigeTemperaturen(d) {
   const X = (t) => L + (t - x0) / (x1 - x0) * (R - L), halb = 18e5;
   const ip = pi.filter((p) => p[0] + halb >= x0 && p[0] + halb <= x1);
   const jetzt = Date.now();
-  const fp = wt.filter((p) => p[0] >= jetzt - 36e5 && p[0] <= x1);
+  // Vorhersage an den gemessenen Wert angeglichen (30.09.2026): Abweichung jetzt, klingt über 12 h ab (met.no nachts 3,5–5 K zu warm)
+  const ist = num(d.s || {}, "sensor.cmi_t_aussen");
+  const wv = wt.filter((p) => p[0] <= jetzt), wn = wt.filter((p) => p[0] > jetzt && p[0] <= x1);
+  const pj = wv.length && wn.length ? wv[wv.length - 1][1] + (wn[0][1] - wv[wv.length - 1][1]) * (jetzt - wv[wv.length - 1][0]) / (wn[0][0] - wv[wv.length - 1][0]) : null;
+  const off = ist !== null && pj !== null ? ist - pj : 0;
+  const fp = (ist !== null ? [[jetzt, ist]] : []).concat(wn.map(([t, w]) => [t, w + off * Math.max(0, 1 - (t - jetzt) / 432e5)]));
   const werte = ip.flatMap((p) => [p[4], p[5]]).concat(fp.map((p) => p[1])).filter((v) => typeof v === "number");
   if (!werte.length) { $("tempkurve").innerHTML = ""; return; }
   const lo = Math.min(0, Math.floor(Math.min(...werte) / 5) * 5), hi = Math.max(30, Math.ceil(Math.max(...werte) / 5) * 5);   // ab 0 °C (29.09.2026)
