@@ -564,6 +564,11 @@ function zeigeZeitleiste(d) {
       for (let m = j + 1; m < st.length; m++) if (!st[m][1]) { b = st[m][0]; lauf = false; break; }
       seg[c].push([st[j][0], b, lauf]);
     }
+    // Aussetzer < 2 min (Template-Reload, kurz „nicht verfügbar“) überbrücken – sonst zerfällt ein Lauf in Stücke
+    // mit sichtbaren Nahtstrichen (30.09.2026, wie im Dashboard)
+    const m = [];
+    for (const g of seg[c]) { const l = m[m.length - 1]; if (l && g[0] - l[1] < 12e4) { l[1] = g[1]; l[2] = g[2]; } else m.push(g.slice()); }
+    seg[c] = m;
   }
   zlSeg = seg; window.__zlSonne = d.sn;
   for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id);
