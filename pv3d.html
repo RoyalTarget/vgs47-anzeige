@@ -126,11 +126,21 @@ gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
   for (const x of [xa, xb]) poly([[x, y0, zDach(y0)], [x, y1, zDach(y1)], [x, y1, zw], [x, T / 2, zf], [x, y0, zw]], matGaube);
   poly([[xa, y0, zw], [xb, y0, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlas, false);
   poly([[xa, y1, zw], [xb, y1, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlas, false); }
-// Fenster Südwest-Giebel (2 oben, 2 unten), rundes Fenster im Giebel, Stahlkamin
-for (const [y, z] of [[2.2, 3.9], [3.7, 3.9], [2.2, 1.2], [3.7, 1.2]]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.3), matFenster); f.position.copy(P(B + 0.02, y, z + 0.6)); f.rotation.y = Math.PI / 2; inner.add(f); }
-{ const r = new THREE.Mesh(new THREE.CircleGeometry(0.35, 32), matFenster); r.position.copy(P(B + 0.02, T / 2, 8.3)); r.rotation.y = Math.PI / 2; inner.add(r);
-  const k = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 11.2, 20), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7, roughness: 0.3 }));
-  k.position.copy(P(B + 0.35, 0.7, 5.6)); k.castShadow = true; inner.add(k); }
+// Südwest-Giebel (Nutzer 30.09.2026): oben zwei ganz kleine Fenster, darunter die 8 Module, darunter zwei Fenstertüren,
+// die unten auf der Dachterrasse der Garage enden. Lage/Höhen aus der Südwest-Ansicht (Maßstab ≈ 84 px/m).
+const fenster = (y, z, b, h) => { const f = new THREE.Mesh(new THREE.PlaneGeometry(b, h), matFenster); f.position.copy(P(B + 0.02, y, z)); f.rotation.y = Math.PI / 2; inner.add(f); };
+for (const y of [3.56, 5.8]) fenster(y, 3.72, 0.95, 1.95);          // Fenstertüren (OG) auf die Garagenterrasse
+for (const y of [4.2, 5.3]) fenster(y, 9.0, 0.5, 0.5);              // kleine Giebelfenster
+// Garage vor dem Giebel (3,12 m tief) mit Holz-Dachterrasse + Geländer
+const GAR = [2.5, 8.4], GH = 2.6;
+kiste(B, B + 3.12, GAR[0], GAR[1], 0, GH, matWand);
+kiste(B, B + 3.12, GAR[0], GAR[1], GH, GH + 0.08, new THREE.MeshStandardMaterial({ color: 0x8b6b4a, roughness: 0.9 }));
+{ const hl = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.6 }), gl = new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0.18, side: THREE.DoubleSide });
+  const g = (x0, x1, y0, y1) => { kiste(x0, x1, y0, y1, GH + 0.08, GH + 1.0, gl).castShadow = false; kiste(x0, x1, y0, y1, GH + 0.98, GH + 1.04, hl); };   // Glasfüllung + Handlauf
+  g(B + 3.08, B + 3.12, GAR[0], GAR[1]); g(B, B + 3.12, GAR[0], GAR[0] + 0.04); g(B, B + 3.12, GAR[1] - 0.04, GAR[1]); }
+// Stahlkamin an der Gartenecke des Giebels (neben der Garage)
+{ const k = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 11.2, 20), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7, roughness: 0.3 }));
+  k.position.copy(P(B + 0.35, 2.2, 5.6)); k.castShadow = true; inner.add(k); }
 // Windfang Straßenseite (Dach 7°, +2,85) und Wintergarten Gartenseite (Glas)
 const WF = [1.2, 3.9], WFT = 1.9;
 kiste(WF[0], WF[1], T, T + WFT, 0, 2.62, matWand);
@@ -173,9 +183,9 @@ for (const [key, [xa, xb], so] of [['dach_ost', GAUBE_SO, true], ['dach_west', G
   const v = so ? [0, 1, NEIG] : [0, -1, NEIG];
   for (const dx of [-0.9, 0.9]) modul(key, [xm + dx, y, zDach(y)], so ? [1, 0, 0] : [-1, 0, 0], v, ML, MB);
 }
-// Fassade Südwest-Giebel: 2 Reihen × 4 hochkant, zur Straßenseite hin versetzt (Foto)
-for (const [key, zm] of [['fassade_oben', 6.0], ['fassade_unten', 4.2]])
-  for (const ym of [4.47, 5.61, 6.75, 7.89]) modul(key, [B + 0.02, ym, zm], [0, 1, 0], [0, 0, 1], MB, ML, [1, 0, 0]);
+// Fassade Südwest-Giebel: 2 Reihen × 4 hochkant, mittig zwischen Fenstertüren (bis +4,8) und kleinen Giebelfenstern
+for (const [key, zm] of [['fassade_oben', 7.33], ['fassade_unten', 5.55]])
+  for (const ym of [3.04, 4.18, 5.32, 6.46]) modul(key, [B + 0.02, ym, zm], [0, 1, 0], [0, 0, 1], MB, ML, [1, 0, 0]);
 // Balkonkraftwerk: 2 hochkant auf dem Windfangdach (7°, zur Straße geneigt)
 for (const dx of [-0.58, 0.58]) { const xm = (WF[0] + WF[1]) / 2, d = WFT / 2 + 0.05;
   modul('bkw', [xm + dx, T + d, 2.85 - G7 * d], [-1, 0, 0], [0, 1, -G7], MB, ML); }
@@ -189,7 +199,7 @@ function schild(key, pos) {
   inner.add(s); schilder[key] = { c, t, s };
 }
 schild('gaube_ost', [2.9, 0.4, 9.4]); schild('dach_ost', [2.9, 2.6, 10.6]); schild('gaube_west', [2.48, T - 0.4, 9.4]); schild('dach_west', [2.48, T - 2.6, 10.6]);
-schild('fassade_oben', [B + 0.6, 6.2, 7.6]); schild('fassade_unten', [B + 0.6, 6.2, 2.9]); schild('bkw', [2.55, T + 1.2, 4.0]);
+schild('fassade_oben', [B + 0.7, 8.1, 8.0]); schild('fassade_unten', [B + 0.7, 8.1, 5.4]); schild('bkw', [2.55, T + 1.2, 4.0]);
 function schildMalen(key, txt, farbe) {
   const { c, t } = schilder[key], g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
   g.fillStyle = 'rgba(17,20,24,0.85)'; g.strokeStyle = farbe; g.lineWidth = 3;
