@@ -780,7 +780,9 @@ function zeigePrognose(d) {
       const cap = 30, eta = 0.95, emin = res / 100 * cap, jn = jetzt, tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
       let prog = 0; for (const [t, w] of pvm) if (t >= tt0.getTime() && t < h0) prog += w || 0; prog += (pvm.get(h0) || 0) * ((jn - h0) / 36e5);
       const ist = Math.max(num(s, "sensor.pv_ertrag_heute") ?? 0, num(s, "sensor.pv_ertrag_tag_max") ?? 0);
-      const k = prog >= 2000 ? Math.min(Math.max(ist * 1000 / prog, 0.5), 1.3) : 1, morgen = tt0.getTime() + 864e5;
+      const morgen = tt0.getTime() + 864e5; let tag = 0; for (const [t, w] of pvm) if (t >= tt0.getTime() && t < morgen) tag += w || 0;
+      // gewichtet mit dem vergangenen Anteil der Tages-PV (30.09.2026)
+      const k0 = prog >= 2000 ? Math.min(Math.max(ist * 1000 / prog, 0.5), 1.3) : 1, k = 1 + (k0 - 1) * (tag > 0 ? Math.min(prog / tag, 1) : 0);
       let e = soc / 100 * cap; const pts = [[X(jn), Ys(soc)]];
       for (let i = 0; i < 192; i++) { const ms = h0 + i * 36e5, l = i === 0 ? (h0 + 36e5 - jn) / 36e5 : 1; if (!vbm.has(ms) || ms > x1 + 36e5) break;
         const dd = ((pvm.get(ms) || 0) * (ms < morgen ? k : 1) - (vbm.get(ms) || 0)) / 1000 * l;
