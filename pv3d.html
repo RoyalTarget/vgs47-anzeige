@@ -29,7 +29,7 @@
 <div id="kopf"><b>☀️ PV jetzt –</b><br><span class="g" id="kopf2"></span></div>
 <div id="legende">Leistung je Modul<div class="bar"></div>0 · · · 425 W</div>
 <div id="hinweis">Ziehen = drehen · Modul antippen/zeigen = Werte</div>
-<div id="knoepfe"><button id="zin" title="näher">+</button><button id="zout" title="weiter">−</button><button id="zreset" title="Ansicht zurücksetzen">⟲</button></div>
+<div id="knoepfe"><button id="zin" title="näher">+</button><button id="zout" title="weiter">−</button><button id="zmerk" title="Diese Ansicht als Startansicht merken">📌</button><button id="zreset" title="Zur Startansicht (Doppelklick: Standard)">⟲</button></div>
 <div id="tip"></div>
 <script type="module">
 import * as THREE from './lib/three.module.min.js';
@@ -66,8 +66,12 @@ const cam = new THREE.PerspectiveCamera(38, 1, 0.1, 300);
 const controls = new OrbitControls(cam, cv);
 controls.enableDamping = true; controls.enableZoom = false; controls.enablePan = false;   // kein Mausrad-Zoom (Seite soll scrollen)
 controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 8; controls.maxDistance = 60;
-const START = { pos: new THREE.Vector3(-5, 12, 20), ziel: new THREE.Vector3(0, 5, 0) };   // Blick von Süden: Garten-Dachseite + Südwest-Giebel
-const reset = () => { cam.position.copy(START.pos); controls.target.copy(START.ziel); controls.update(); };
+// Standardansicht (Nutzer 30.09.2026): frontal auf den Südwest-Giebel, schräg von oben, beide Dachseiten sichtbar.
+// 📌 merkt die aktuelle Ansicht in diesem Browser (localStorage), ⟲ springt dorthin; Doppelklick auf ⟲ = Standard.
+const START = { pos: new THREE.Vector3(-13.05, 17.6, 8.55), ziel: new THREE.Vector3(0, 5, 0) };
+const gemerkt = () => { try { const g = JSON.parse(localStorage.getItem('pv3d_blick') || 'null'); return g && g.pos && g.ziel ? g : null; } catch (e) { return null; } };
+const reset = (standard = false) => { const g = standard ? null : gemerkt();
+  cam.position.copy(g ? new THREE.Vector3(...g.pos) : START.pos); controls.target.copy(g ? new THREE.Vector3(...g.ziel) : START.ziel); controls.update(); };
 
 scene.add(new THREE.HemisphereLight(0xdbe7ff, 0x303030, 0.55));
 const sonne = new THREE.DirectionalLight(0xfff4dd, 1.6); sonne.castShadow = true;
@@ -295,7 +299,10 @@ cv.addEventListener('pointerdown', (ev) => { down = [ev.clientX, ev.clientY]; })
 cv.addEventListener('pointerup', (ev) => { if (down && Math.hypot(ev.clientX - down[0], ev.clientY - down[1]) < 6 && ev.pointerType !== 'mouse') zeigeTip(treffer(ev), ev); down = null; });
 document.getElementById('zin').onclick = () => { cam.position.lerp(controls.target, 0.2); controls.update(); };
 document.getElementById('zout').onclick = () => { cam.position.sub(controls.target).multiplyScalar(1.25).add(controls.target); controls.update(); };
-document.getElementById('zreset').onclick = reset;
+document.getElementById('zreset').onclick = () => reset();
+document.getElementById('zreset').ondblclick = () => { try { localStorage.removeItem('pv3d_blick'); } catch (e) {} reset(true); };
+document.getElementById('zmerk').onclick = () => { try { localStorage.setItem('pv3d_blick', JSON.stringify({ pos: cam.position.toArray(), ziel: controls.target.toArray() })); } catch (e) {}
+  const b = document.getElementById('zmerk'); b.textContent = '✓'; setTimeout(() => { b.textContent = '📌'; }, 1200); };
 
 // ---------- Größe + Schleife ----------
 function groesse() { const w = cv.clientWidth, h = cv.clientHeight; renderer.setSize(w, h, false); cam.aspect = w / h;
