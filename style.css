@@ -177,3 +177,5 @@ tr.teil.hz-an td { color: #facc15; }
 #tip { position: fixed; display: none; pointer-events: none; z-index: 50; background: rgba(24, 24, 27, .97); color: #e5e7eb;
   border: 1px solid #52525b; border-radius: 8px; padding: 6px 9px; font-size: 12.5px; line-height: 1.45; max-width: min(380px, 92vw);
   box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+/* Schaltkriterien-Zonen im Schema (30.09.2026) */
+.sk-zone { position: absolute; cursor: help; z-index: 3; }
