@@ -583,6 +583,16 @@ function zlAchse(x0, ende, L, R, T, y2, schmal, X, tg) {
   if (ende >= jetzt - 6e4) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T - 4}" y2="${y2}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
   return svg;
 }
+// Doppeltippen/-klicken = Standardansicht (30.09.2026): Maus + Touch (iOS feuert bei Touch kein dblclick), Zeit aus ev.timeStamp
+function doppel(e, fn) { let t0 = 0, x0 = 0, xd = 0;
+  e.addEventListener("pointerdown", (ev) => { xd = ev.clientX; });
+  e.addEventListener("pointerup", (ev) => { if (Math.abs(ev.clientX - xd) > 8) { t0 = 0; return; } const t = ev.timeStamp || Date.now();
+    if (t - t0 < 450 && Math.abs(ev.clientX - x0) < 30) { t0 = 0; fn(); } else { t0 = t; x0 = ev.clientX; } });
+  e.addEventListener("dblclick", fn); }
+// gelbe Griffe links/rechts am Rahmen = Leiste ist zoombar (wie Videoschnitt bei Apple)
+const griffe = (xa, xb, h) => `<rect x="${xa - 3.5}" y="0" width="7" height="${h + 4}" rx="2" fill="#facc15"/><rect x="${xb - 3.5}" y="0" width="7" height="${h + 4}" rx="2" fill="#facc15"/>`
+  + `<line x1="${xa}" x2="${xa}" y1="${h / 2 - 4}" y2="${h / 2 + 8}" stroke="#1c1c1c" stroke-width="1.4"/><line x1="${xb}" x2="${xb}" y1="${h / 2 - 4}" y2="${h / 2 + 8}" stroke="#1c1c1c" stroke-width="1.4"/>`;
+
 function zeichneZL(id) {
   const Q = ZL[id], jetzt = Date.now(), ende = zlEnde[id] ?? jetzt, x0 = ende - 48 * 36e5;
   const svgEl = $(id), W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
@@ -621,19 +631,23 @@ function zeichneZL(id) {
       if (!schmal || dt.getDate() % 2 === 0) g += `<text x="${UX(v + 432e5)}" y="${UH + 15}" fill="#9ca3af" font-size="10" text-anchor="middle">${dt.getDate()}.${dt.getMonth() + 1}.</text>`; }
     g += `<rect x="${UX(x0)}" y="1" width="${UX(ende) - UX(x0)}" height="${UH + 2}" fill="#e5e7eb" fill-opacity="0.12" stroke="#e5e7eb" stroke-width="1.5" rx="3"/>`;
     u.innerHTML = g;
-    if (!u.__zl) { u.__zl = true; let zieht = false;
-      const setze = (ev) => { const r = u.getBoundingClientRect(), j2 = Date.now(), v0 = j2 - 14 * 864e5, tt = v0 + (ev.clientX - r.left - 8) / (r.width - 16) * (j2 - v0);
-        const erst = Math.min(...Object.values(zlSeg).flat().map((s) => s[0]), j2);
-        const e2 = Math.min(Math.max(tt + 24 * 36e5, j2 - 13 * 864e5, erst + 48 * 36e5), j2); zlEnde[id] = e2 >= j2 - 30 * 6e4 ? null : e2;
-        const b = $(id + "_jetzt"); if (b) b.hidden = zlEnde[id] === null; zeichneZL(id); };
-      u.addEventListener("pointerdown", (ev) => { zieht = true; u.setPointerCapture(ev.pointerId); setze(ev); });
-      u.addEventListener("pointermove", (ev) => { if (zieht) setze(ev); });
-      u.addEventListener("pointerup", () => { zieht = false; }); u.addEventListener("pointercancel", () => { zieht = false; }); }
+    if (!u.__zl) { u.__zl = true; let off = null;   // 30.09.2026: im Rahmen ziehen = verschieben, daneben tippen = dorthin springen
+      const zeit = (ev) => { const r = u.getBoundingClientRect(), j2 = Date.now(), v0 = j2 - 14 * 864e5; return v0 + ((ev.clientX - r.left) / r.width * UW - 8) / (UW - 16) * (j2 - v0); };
+      const setze = (e2) => { const j2 = Date.now(), erst = Math.min(...Object.values(zlSeg).flat().map((s) => s[0]), j2);
+        e2 = Math.min(Math.max(e2, j2 - 13 * 864e5, erst + 48 * 36e5), j2); zlEnde[id] = e2 >= j2 - 30 * 6e4 ? null : e2;
+        const b = $(id + "_jetzt"); if (b) b.hidden = zlEnde[id] === null;
+        if (!u.__raf) u.__raf = requestAnimationFrame(() => { u.__raf = null; zeichneZL(id); }); };
+      u.addEventListener("pointerdown", (ev) => { const tt = zeit(ev), e = zlEnde[id] ?? Date.now();
+        if (tt >= e - 48 * 36e5 && tt <= e) off = e - tt; else { off = 24 * 36e5; setze(tt + off); }
+        try { u.setPointerCapture(ev.pointerId); } catch (e) {} });
+      u.addEventListener("pointermove", (ev) => { if (off !== null) { const e = zlEnde[id] ?? Date.now(), n = zeit(ev) + off; if (Math.abs(n - e) > 6e4) setze(n); } });
+      u.addEventListener("pointerup", () => { off = null; }); u.addEventListener("pointercancel", () => { off = null; });
+      doppel(u, () => { if (u.__raf) { cancelAnimationFrame(u.__raf); u.__raf = null; } zlEnde[id] = null; const b = $(id + "_jetzt"); if (b) b.hidden = true; zeichneZL(id); }); }
   }
   // Ziehen/Wischen im Feld verschiebt das Fenster (29.09.2026), begrenzt auf Datenbeginn und jetzt
   if (!svgEl.__zl) {
     svgEl.__zl = true; svgEl.style.touchAction = "pan-y"; svgEl.style.cursor = "grab"; let dr = null;
-    svgEl.addEventListener("pointerdown", (ev) => { dr = { x: ev.clientX, ende: zlEnde[id] ?? Date.now(), moved: false }; svgEl.setPointerCapture(ev.pointerId); });
+    svgEl.addEventListener("pointerdown", (ev) => { dr = { x: ev.clientX, ende: zlEnde[id] ?? Date.now(), moved: false }; try { svgEl.setPointerCapture(ev.pointerId); } catch (e) {} });
     svgEl.addEventListener("pointermove", (ev) => { if (!dr) return; const dx = ev.clientX - dr.x; if (Math.abs(dx) > 5) dr.moved = true; if (!dr.moved) return;
       const breite = svgEl.getBoundingClientRect().width - 16, jetzt2 = Date.now();
       const erst = Math.min(...Object.values(zlSeg).flat().map((s) => s[0]), jetzt2);
@@ -642,7 +656,7 @@ function zeichneZL(id) {
       if (!svgEl.__raf) svgEl.__raf = requestAnimationFrame(() => { svgEl.__raf = null; zeichneZL(id); }); });
     const aus = () => { dr = null; };
     svgEl.addEventListener("pointerup", aus); svgEl.addEventListener("pointercancel", aus);
-    svgEl.addEventListener("dblclick", () => { zlEnde[id] = null; const b = $(id + "_jetzt"); if (b) b.hidden = true; zeichneZL(id); });
+    doppel(svgEl, () => { if (svgEl.__raf) { cancelAnimationFrame(svgEl.__raf); svgEl.__raf = null; } zlEnde[id] = null; const b = $(id + "_jetzt"); if (b) b.hidden = true; zeichneZL(id); });
     const b = $(id + "_jetzt"); if (b) b.addEventListener("click", () => { zlEnde[id] = null; b.hidden = true; zeichneZL(id); });
   }
 }
@@ -816,6 +830,7 @@ function zeigePrognose(d) {
       u += `<text x="${x + bw / 2}" y="${UH + 17}" fill="${t === heute ? '#e5e7eb' : '#9ca3af'}" font-size="12" ${t === heute ? 'font-weight="700"' : ''} text-anchor="middle">${tage[dt.getDay()]} ${dt.getDate()}.</text>`; });
     u += `<line x1="${U(jetzt)}" x2="${U(jetzt)}" y1="1" y2="${UH + 3}" stroke="#e5e7eb" stroke-width="1.5"/>`;
     u += `<rect x="${U(x0)}" y="1" width="${U(x1) - U(x0)}" height="${UH + 2}" rx="3" fill="#e5e7eb" fill-opacity="0.10" stroke="#e5e7eb" stroke-width="1.5"/>`;
+    u += griffe(U(x0), U(x1), UH);   // gelbe Griffe = zoombar
     let ub = $("progueb");
     if (!ub) { ub = document.createElementNS("http://www.w3.org/2000/svg", "svg"); ub.id = "progueb"; ub.setAttribute("viewBox", "0 0 1000 58");
       ub.style.cssText = "display:block;width:100%;height:auto;margin-top:4px;cursor:pointer;touch-action:none"; el.after(ub);
@@ -839,7 +854,7 @@ function zeigePrognose(d) {
         else if (gm.m === "r") setze(q.a, Math.max(q.t, q.a + MINW));
         else setze(q.t - gm.off, q.t - gm.off + gm.w); });
       ub.addEventListener("pointerup", () => { gm = null; }); ub.addEventListener("pointercancel", () => { gm = null; });
-      ub.addEventListener("dblclick", () => { window.__progWin = { std: true, von: 0, breite: FEN }; zeigePrognose(window.__progD); }); }
+      doppel(ub, () => { if (ub.__raf) { cancelAnimationFrame(ub.__raf); ub.__raf = null; } window.__progWin = { std: true, von: 0, breite: FEN }; zeigePrognose(window.__progD); }); }
     ub.innerHTML = u; }
   // Ziehen im Feld (einmalig anmelden)
   if (!el.__drag) { el.__drag = true; el.style.touchAction = "pan-y"; el.style.cursor = "grab";
@@ -851,7 +866,7 @@ function zeigePrognose(d) {
       if (!el.__raf) el.__raf = requestAnimationFrame(() => { el.__raf = null; zeigePrognose(window.__progD); }); });
     const ende = () => { dr = null; };
     el.addEventListener("pointerup", ende); el.addEventListener("pointerleave", ende); el.addEventListener("pointercancel", ende);
-    el.addEventListener("dblclick", () => { window.__progWin = { std: true, von: 0, breite: 5 * 864e5 }; zeigePrognose(window.__progD); }); }
+    doppel(el, () => { if (el.__raf) { cancelAnimationFrame(el.__raf); el.__raf = null; } window.__progWin = { std: true, von: 0, breite: FEN }; zeigePrognose(window.__progD); }); }
 }
 
 // ---------- Temperaturen innen/außen + Vorhersage, vorgestern bis übermorgen ----------
