@@ -180,3 +180,16 @@ tr.teil.hz-an td { color: #facc15; }
 /* Schaltkriterien-Zonen im Schema (30.09.2026) */
 .sk-zone { position: absolute; cursor: help; z-index: 3; }
 .prog-legende .oat::before { border-color: #22d3ee; border-top-width: 2px; }
+
+/* Großverbraucher: Umschalter + Bilanz (01.10.2026) */
+.gv-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; position: sticky; top: 0; z-index: 6; background: var(--bg); padding: 6px 0; }
+.gv-um { display: inline-flex; gap: 4px; font-size: 13px; font-weight: 400; }
+.gv-um button { background: transparent; color: var(--leise); border: 1px solid #52525b; border-radius: 999px; padding: 3px 10px; font: inherit; cursor: pointer; }
+.gv-um button::before { content: "○ "; }
+.gv-um button.an { color: #86efac; border-color: #22c55e; background: rgba(34,197,94,0.12); }
+.gv-um button.an::before { content: "◉ "; }
+.gross { font-variant-numeric: tabular-nums; }
+.gross tr.netz td { background: rgba(249,115,22,0.18); border-top: 3px double rgba(249,115,22,0.9); color: #fdba74; font-weight: 600; }
+.gross tr.pvabzug td { border-top: none; }
+@media (min-width: 701px) { .gross { table-layout: fixed; } .gross th:first-child { width: 34%; } }
+@media (max-width: 700px) { .gross tr.netz td:first-child { background: #3a2716; } }
