@@ -253,6 +253,50 @@
   "dec": 1
  },
  {
+  "id": "rl_wz1_l",
+  "left": 90.17,
+  "top": 54.71,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "WZ 1:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_wz1",
+  "left": 97.17,
+  "top": 54.71,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_wz_1",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
+  "id": "rl_wc_l",
+  "left": 90.17,
+  "top": 58.36,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "WC:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_wc",
+  "left": 97.17,
+  "top": 58.36,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_wc",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
   "id": "rl_bw_l",
   "left": 90.17,
   "top": 10.33,
