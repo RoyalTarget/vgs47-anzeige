@@ -196,7 +196,9 @@ function zeigeWasser(s) {
 }
 
 // ---------- Großverbraucher & PV je Fläche ----------
-function zeigeTabellen(s, k, lp) {
+function gvModus() { try { return localStorage.getItem("gv_modus") === "ohne" ? "ohne" : "echt"; } catch (e) { return "echt"; } }
+function zeigeTabellen(s, k, lp, gh) {
+  window.__gvArgs = [s, k, lp, gh];
   {
   // Großverbraucher gegliedert wie im Dashboard (29.09.2026): Gruppen mit Summe, € (Bezugspreis live), Ø/Tag über Tage mit Messung
   // (ab Folgemonat inkl. Vormonat lp), Jahr ≈ = Ø/Tag × 365; grüne Zeile = Anteil aus PV/Akku, Haus-€ = nur Netzbezug
@@ -228,6 +230,18 @@ function zeigeTabellen(s, k, lp) {
       ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "2026-09-24T02:30"],
       ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
+  // „echt bezahlt“ / „ohne PV“ (01.10.2026, wie im Dashboard): € je Gerät = kWh × Preis × Netzanteil des Geräts (Payload gh aus
+  // sensor.geraete_herkunft: {h|m: {Leistungs-Entität: [kWh, davon Netz]}}); Ø/Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses
+  const echt = gvModus() === "echt", GH = (gh && gh.h) || {}, GM = (gh && gh.m) || {};
+  const hp = num(s, "sensor.hausverbrauch"), hh = kv("sensor.hausverbrauch_heute"), hm = kv("sensor.hausverbrauch_monat");
+  const haStart = "2026-09-22T15:00", ha = avg(hm, lp["sensor.hausverbrauch_monat"] || 0, haStart);
+  const np = Math.max(num(s, "sensor.em_540_netzmessgeraet_leistung") ?? 0, 0);
+  const nh = Math.max((num(s, "sensor.em_540_netzmessgeraet_verbrauch") ?? 0) - (num(s, "input_number.em540_bezug_mitternacht") ?? 0), 0);
+  const nm = kv("sensor.netzbezug_monat"), na = avg(nm, lp["sensor.netzbezug_monat"] || 0, haStart);
+  const fh = hh > 0.05 ? Math.min(nh / hh, 1) : 0.5, fm = hm > 0.05 && nm !== null ? Math.min(nm / hm, 1) : 0.5, fa = ha > 0.05 && na !== null ? Math.min(na / ha, 1) : 0.5;
+  const mTage = (jetztMs - ms.getTime()) / 864e5;
+  const ant = (dd, key, fb) => { const x = dd[key]; return x && x[0] > 0.005 ? x[1] / x[0] : fb; };
+  const anteile = (key) => echt ? [ant(GH, key, fh), ant(GM, key, fm), mTage >= 7 ? ant(GM, key, fm) : fa] : [1, 1, 1];
   const w0 = (v) => (v === null ? "–" : zahl(v, 0) + " W");
   const eur = (v) => zahl(v, 2) + " €";
   const zelle = (v, n = 2, e) => v === null ? "–" : `${zahl(v, n)}<span class="eur">${eur(e ?? v * preis)}</span>`;
@@ -236,39 +250,45 @@ function zeigeTabellen(s, k, lp) {
   let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>Jahr ≈</th></tr>";
   let sp = 0, sh = 0, sa = 0; const gruppen = [];
   for (const [gn, items] of G) {
-    let gp = 0, gh = 0, gm = 0, ga = 0, zeilen = "";
+    let gp = 0, gh = 0, gm = 0, ga = 0, geh = 0, gem = 0, gea = 0, zeilen = "";
     for (const [n, p, h, m, st, cls] of items) {
       let mv, l;
       if (m === "verdichter") { const b = kv("sensor.bwwp_energie_monat"), z = kv("sensor.bwwp_heizstab_energie_monat");
         mv = b === null || z === null ? null : Math.max(b - z, 0); l = (lp["sensor.bwwp_energie_monat"] || 0) - (lp["sensor.bwwp_heizstab_energie_monat"] || 0);
       } else { mv = kv(m); l = lp[m] || 0; }
-      const pv = num(s, p), hv = kv(h), av = avg(mv, l, st);
-      if (!cls) { gp += pv ?? 0; gh += hv ?? 0; gm += mv ?? 0; ga += av ?? 0; }
-      zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : ""), n, pv, hv, mv, av);
+      const pv = num(s, p), hv = kv(h), av = avg(mv, l, st), [ah, am, aa] = anteile(p);
+      const eh = (hv ?? 0) * preis * ah, em = (mv ?? 0) * preis * am, ea = (av ?? 0) * preis * aa;
+      if (!cls) { gp += pv ?? 0; gh += hv ?? 0; gm += mv ?? 0; ga += av ?? 0; geh += eh; gem += em; gea += ea; }
+      zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : ""), n, pv, hv, mv, av, eh, em, ea);
     }
-    gruppen.push([gn, gp, gh, gm, ga, zeilen]); sp += gp; sh += gh; sa += ga;
+    gruppen.push([gn, gp, gh, gm, ga, zeilen, geh, gem, gea]); sp += gp; sh += gh; sa += ga;
   }
-  const hp = num(s, "sensor.hausverbrauch"), hh = kv("sensor.hausverbrauch_heute"), hm = kv("sensor.hausverbrauch_monat");
-  const haStart = "2026-09-22T15:00", ha = avg(hm, lp["sensor.hausverbrauch_monat"] || 0, haStart);
   const ra = ha === null ? null : Math.max(ha - sa, 0), rh = hh === null ? null : Math.max(hh - sh, 0);
   const rm = ra === null ? null : ra * (jetztMs - Math.max(ms.getTime(), new Date(haStart).getTime())) / 864e5;
-  const rp = num(s, "sensor.rest_ungemessen");
-  for (const [gn, gp, gh, gm, ga, zeilen] of gruppen) {
+  const rp = num(s, "sensor.rest_ungemessen"), [rah, ram, raa] = anteile("sensor.rest_ungemessen");
+  const reh = (rh ?? 0) * preis * rah, rem = (rm ?? 0) * preis * ram, rea = (ra ?? 0) * preis * raa;
+  for (const [gn, gp, gh, gm, ga, zeilen, geh, gem, gea] of gruppen) {
     const x = gn.includes("Sonstiges");
-    html += zeile("gruppe", gn, gp + (x ? rp ?? 0 : 0), gh + (x ? rh ?? 0 : 0), gm + (x ? rm ?? 0 : 0), ga + (x ? ra ?? 0 : 0)) + zeilen
-      + (x ? zeile("", "Rest (ungemessen)", rp, rh, rm, ra) : "");
+    html += zeile("gruppe", gn, gp + (x ? rp ?? 0 : 0), gh + (x ? rh ?? 0 : 0), gm + (x ? rm ?? 0 : 0), ga + (x ? ra ?? 0 : 0), geh + (x ? reh : 0), gem + (x ? rem : 0), gea + (x ? rea : 0)) + zeilen
+      + (x ? zeile("", "Rest (ungemessen)", rp, rh, rm, ra, reh, rem, rea) : "");
   }
-  // Netzbezug: heute = EM540 − Mitternachtsstand, Monat = utility_meter
-  const np = Math.max(num(s, "sensor.em_540_netzmessgeraet_leistung") ?? 0, 0);
-  const nh = Math.max((num(s, "sensor.em_540_netzmessgeraet_verbrauch") ?? 0) - (num(s, "input_number.em540_bezug_mitternacht") ?? 0), 0);
-  const nm = kv("sensor.netzbezug_monat"), na = avg(nm, lp["sensor.netzbezug_monat"] || 0, haStart);
-  const g = (a, b) => (a === null || b === null ? null : Math.max(a - b, 0));
+  // Bilanz (01.10.2026): Haus gesamt (Wert ohne PV) − davon aus PV/Akku = aus dem Netz bezogen (echte Kosten)
+  const g = (a, b) => (a === null || b === null ? null : Math.max(a - b, 0)), neg = (v) => (v === null ? null : -v);
   const gh2 = g(hh, nh), gm2 = g(hm, nm), ga2 = g(ha, na);
-  html += zeile("pvabzug", "☀️ davon aus PV/Akku<span class=\"eur\">kostet nichts</span>", hp === null ? null : Math.max(hp - np, 0),
-      gh2, gm2, ga2, gh2 === null ? null : -gh2 * preis, gm2 === null ? null : -gm2 * preis, ga2 === null ? null : -ga2 * preis)
-    + zeile("haus", "Haus gesamt<span class=\"eur\">€ = nur Netzbezug</span>", hp, hh, hm, ha, nh * preis, nm === null ? null : nm * preis, na === null ? null : na * preis);
+  html += zeile("haus", "Haus gesamt verbraucht<span class=\"eur\">€ = Wert, wenn alles aus dem Netz käme</span>", hp, hh, hm, ha)
+    + zeile("pvabzug", "− davon aus PV/Akku<span class=\"eur\">gratis = gespart</span>", hp === null ? null : Math.max(hp - np, 0),
+      neg(gh2), neg(gm2), neg(ga2))
+    + zeile("netz", "= aus dem Netz bezogen<span class=\"eur\">das wird bezahlt</span>", np, nh, nm, na);
   $("gross").innerHTML = html;
-  $("gross_fuss").innerHTML = `kWh · € = kWh × ${zahl(preis * 100, 2)} ct (je Gerät ohne PV-Abzug) · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal, die Hochrechnung aus wenigen Tagen ist dafür zu niedrig · ≈ geschätzt`;
+  $("gross_fuss").innerHTML = (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
+      : `kWh · € = ohne PV: kWh × ${zahl(preis * 100, 2)} ct je Gerät, als käme alles aus dem Netz`)
+    + ` · Bilanz unten: Haus gesamt − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
+  const um = $("gv_um");
+  if (um && !um.__an) { um.__an = true;
+    um.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (!b) return;
+      try { localStorage.setItem("gv_modus", b.dataset.m); } catch (e) {}
+      um.querySelectorAll("button").forEach((x) => x.classList.toggle("an", x === b)); if (window.__gvArgs) zeigeTabellen(...window.__gvArgs); }); }
+  if (um) um.querySelectorAll("button").forEach((x) => x.classList.toggle("an", x.dataset.m === gvModus()));
 
   }
   const kw = (e) => (k[e] == null ? "–" : zahl(k[e], 2));
@@ -1083,7 +1103,7 @@ async function holen() {
     const r = await fetch(DATEN + "?t=" + Date.now(), { cache: "no-store" });
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
-    zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {});
+    zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
