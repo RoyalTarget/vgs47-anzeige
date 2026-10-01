@@ -343,7 +343,7 @@
  {
   "id": "rl_yoga_l",
   "left": 90.17,
-  "top": 29.33,
+  "top": 27.66,
   "anchor": "start",
   "color": "#f59e0b",
   "prefix": "Yoga:",
@@ -354,11 +354,33 @@
  {
   "id": "rl_yoga",
   "left": 97.17,
-  "top": 29.33,
+  "top": 27.66,
   "anchor": "end",
   "color": "#f59e0b",
   "prefix": "",
   "entity": "sensor.rl_yoga",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
+  "id": "rl_ogbad_l",
+  "left": 90.17,
+  "top": 31.0,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "Bad:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_ogbad",
+  "left": 97.17,
+  "top": 31.0,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_og_bad",
   "unit": "°C",
   "dec": 1
  },
