@@ -343,7 +343,7 @@
  {
   "id": "rl_yoga_l",
   "left": 90.17,
-  "top": 27.66,
+  "top": 22.64,
   "anchor": "start",
   "color": "#f59e0b",
   "prefix": "Yoga:",
@@ -354,7 +354,7 @@
  {
   "id": "rl_yoga",
   "left": 97.17,
-  "top": 27.66,
+  "top": 22.64,
   "anchor": "end",
   "color": "#f59e0b",
   "prefix": "",
@@ -365,7 +365,7 @@
  {
   "id": "rl_ogbad_l",
   "left": 90.17,
-  "top": 31.0,
+  "top": 25.99,
   "anchor": "start",
   "color": "#f59e0b",
   "prefix": "Bad:",
@@ -376,11 +376,55 @@
  {
   "id": "rl_ogbad",
   "left": 97.17,
-  "top": 31.0,
+  "top": 25.99,
   "anchor": "end",
   "color": "#f59e0b",
   "prefix": "",
   "entity": "sensor.rl_og_bad",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
+  "id": "rl_ogbhz_l",
+  "left": 90.17,
+  "top": 29.33,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "BHZ:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_ogbhz",
+  "left": 97.17,
+  "top": 29.33,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_og_bad_wand",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
+  "id": "rl_ogf_l",
+  "left": 90.17,
+  "top": 32.67,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "OGF:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_ogf",
+  "left": 97.17,
+  "top": 32.67,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_og_flur",
   "unit": "°C",
   "dec": 1
  },
