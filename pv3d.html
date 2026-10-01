@@ -146,7 +146,7 @@ const fenster = (y, z, b, h) => { const f = new THREE.Mesh(new THREE.PlaneGeomet
 for (const y of [3.55, 5.95]) fenster(y, 3.66, 1.0, 2.0);           // Fenstertüren (OG) auf die Garagenterrasse, direkt unter dem Modulfeld
 for (const y of [3.55, 5.95]) fenster(y, 7.35, 0.9, 0.6);           // kleine Giebelfenster, direkt über dem Modulfeld (Foto 30.09.2026)
 // Garage vor dem Giebel (3,12 m tief) mit Holz-Dachterrasse (ohne Geländer, Nutzer 30.09.2026)
-const GAR = [2.5, 8.4], GH = 2.6;
+const GAR = [1.4, 7.3], GH = 2.6;   // 01.10.2026: ≈ 1 m Richtung Garten – endet kurz vor dem Kamin, fast bündig mit dem Modulfeld (Foto)
 kiste(B, B + 3.12, GAR[0], GAR[1], 0, GH, matWand);
 kiste(B, B + 3.12, GAR[0], GAR[1], GH, GH + 0.08, new THREE.MeshStandardMaterial({ color: 0x8b6b4a, roughness: 0.9 }));
 // Stahlkamin an der Gartenecke des Giebels (neben der Garage)
@@ -156,7 +156,7 @@ kiste(B, B + 3.12, GAR[0], GAR[1], GH, GH + 0.08, new THREE.MeshStandardMaterial
 const WF = [1.2, 3.9], WFT = 1.9;
 kiste(WF[0], WF[1], T, T + WFT, 0, 2.62, matWand);
 poly([[WF[0] - 0.1, T, 2.85], [WF[1] + 0.1, T, 2.85], [WF[1] + 0.1, T + WFT + 0.15, 2.85 - G7 * (WFT + 0.15)], [WF[0] - 0.1, T + WFT + 0.15, 2.85 - G7 * (WFT + 0.15)]], matBlech);
-kiste(0.05, B - 0.05, -2.8, 0, 0, 2.7, matGlas).castShadow = false;
+kiste(0.04, B - 0.04, -4.0, 0, 0, 2.7, matGlas).castShadow = false;   // Wintergarten 5,90 × 4,0 m (Nutzer 01.10.2026, vorher 2,8 m tief)
 
 // ---------- Module ----------
 // Zellbild als Textur (Halbzellen: sichtbare Mittelteilung), Farbe = Leistung (dunkel → bernstein → gelb)
