@@ -96,6 +96,7 @@ const matDach = new THREE.MeshStandardMaterial({ color: 0x5a3b35, roughness: 0.8
 const matGaube = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.8, side: THREE.DoubleSide });
 const matBlech = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide });
 const matGlas = new THREE.MeshStandardMaterial({ color: 0xbfdbfe, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
+const matGlasDach = new THREE.MeshStandardMaterial({ color: 0x5b84b1, roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.75, side: THREE.DoubleSide });   // Glas-Firstaufbau: dunkler, spiegelnd wie auf dem Foto
 const matFenster = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.2 });
 function poly(punkte, mat, schatten = true) {   // ebenes Vieleck aus Hauskoordinaten (Fächer-Dreiecke)
   const g = new THREE.BufferGeometry();
@@ -124,12 +125,21 @@ function gaube([xa, xb], seite) {
   fm.position.copy(P((xa + xb) / 2, fy, TR + 1.0)); if (seite === 'so') fm.rotation.y = Math.PI; inner.add(fm);
 }
 gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
-// Glas-Firstaufbau (2 m breit, bis +9,45)
-{ const xa = 1.1, xb = 4.6, y0 = T / 2 - 1.0, y1 = T / 2 + 1.0, zw = 9.05, zf = 9.45;   // endet ≈ 4,7 m von der Wand zu Nr. 45 (Drohnenfoto)
-  for (const y of [y0, y1]) poly([[xa, y, zDach(y)], [xb, y, zDach(y)], [xb, y, zw], [xa, y, zw]], matGaube);
-  for (const x of [xa, xb]) poly([[x, y0, zDach(y0)], [x, y1, zDach(y1)], [x, y1, zw], [x, T / 2, zf], [x, y0, zw]], matGaube);
-  poly([[xa, y0, zw], [xb, y0, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlas, false);
-  poly([[xa, y1, zw], [xb, y1, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlas, false); }
+// Glas-Firstaufbau (Foto 01.10.2026): sitzt AUF dem First – graue senkrechte Wände ≈ 0,45 m über der Dachfläche,
+// darauf ein Satteldach aus Glas (je Seite 3 Scheiben mit hellen Rahmen), First ≈ 0,3 m über dem Hausfirst.
+// Vorher lag er mit +9,05/+9,45 unter der Dachfläche (First +10,07) und war unsichtbar.
+{ const xa = 1.1, xb = 4.6, y0 = T / 2 - 1.0, y1 = T / 2 + 1.0, zw = zDach(y0) + 0.45, zf = FI + 0.3;   // endet ≈ 4,7 m von der Wand zu Nr. 45 (Drohnenfoto)
+  const matRahmen = new THREE.MeshStandardMaterial({ color: 0xc7ccd3, roughness: 0.5, metalness: 0.4, side: THREE.DoubleSide });
+  for (const y of [y0, y1]) poly([[xa, y, zDach(y) - 0.2], [xb, y, zDach(y) - 0.2], [xb, y, zw], [xa, y, zw]], matRahmen);
+  for (const x of [xa, xb]) poly([[x, y0, zDach(y0) - 0.2], [x, T / 2, FI], [x, y1, zDach(y1) - 0.2], [x, y1, zw], [x, T / 2, zf], [x, y0, zw]], matRahmen);
+  poly([[xa, y0, zw], [xb, y0, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlasDach, false);
+  poly([[xa, y1, zw], [xb, y1, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlasDach, false);
+  // Rahmen: Sprossen zwischen den Scheiben (quer zum First), Traufkante und Firstkappe
+  const stab = (p, q, d = 0.07) => { const v = P(...q).sub(P(...p)), m = new THREE.Mesh(new THREE.BoxGeometry(d, d, v.length()), matRahmen);
+    m.position.copy(P(...p).add(P(...q)).multiplyScalar(0.5)); m.lookAt(P(...q)); inner.add(m); };
+  for (const x of [xa, xa + (xb - xa) / 3, xa + 2 * (xb - xa) / 3, xb]) for (const y of [y0, y1]) stab([x, y, zw + 0.02], [x, T / 2, zf + 0.02]);
+  for (const y of [y0, y1]) stab([xa, y, zw + 0.02], [xb, y, zw + 0.02], 0.09);
+  stab([xa, T / 2, zf + 0.04], [xb, T / 2, zf + 0.04], 0.12); }
 // Südwest-Giebel (Nutzer 30.09.2026): oben zwei ganz kleine Fenster, darunter die 8 Module, darunter zwei Fenstertüren,
 // die unten auf der Dachterrasse der Garage enden. Lage/Höhen aus der Südwest-Ansicht (Maßstab ≈ 84 px/m).
 const fenster = (y, z, b, h) => { const f = new THREE.Mesh(new THREE.PlaneGeometry(b, h), matFenster); f.position.copy(P(B + 0.02, y, z)); f.rotation.y = Math.PI / 2; inner.add(f); };
@@ -309,7 +319,7 @@ function groesse() { const w = cv.clientWidth, h = cv.clientHeight; renderer.set
   cam.fov = w / h < 1.1 ? 50 : 38; cam.updateProjectionMatrix(); }
 new ResizeObserver(groesse).observe(cv); groesse(); reset();
 // Schilder ausblenden, wenn das Haus zwischen Kamera und Schild liegt (Sichtstrahl gegen Hausflächen, ohne Module/Glas)
-const verdecker = () => inner.children.filter((o) => o.isMesh && !module.includes(o) && o.material !== matGlas);
+const verdecker = () => inner.children.filter((o) => o.isMesh && !module.includes(o) && o.material !== matGlas && o.material !== matGlasDach);
 const sr = new THREE.Raycaster(), wp = new THREE.Vector3();
 function sichtbarkeit() { const vd = verdecker();
   for (const { s } of Object.values(schilder)) { s.getWorldPosition(wp); const d = wp.distanceTo(cam.position);
