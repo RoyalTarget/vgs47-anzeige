@@ -242,6 +242,50 @@
   "dec": 1
  },
  {
+  "id": "rl_gz_l",
+  "left": 88.17,
+  "top": 10.33,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "GZ:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_gz",
+  "left": 98.5,
+  "top": 10.33,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_dg_3",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
+  "id": "rl_lz_l",
+  "left": 88.17,
+  "top": 13.83,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "LZ:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_lz",
+  "left": 98.5,
+  "top": 13.83,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_dg_4",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
   "id": "rl_yoga_l",
   "left": 88.17,
   "top": 19.3,
