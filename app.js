@@ -32,7 +32,7 @@ function baueSchema() {
   const o = $("overlays");
   overlays.forEach((ov, i) => {
     const img = document.createElement("img");
-    img.src = "img/" + ov.img + "?v=49";   // Cache-Kennung der Schema-Grafiken (wie ?vN im Dashboard, 30.09.2026)
+    img.src = "img/" + ov.img + "?v=50";   // Cache-Kennung der Schema-Grafiken (wie ?vN im Dashboard, 30.09.2026)
     img.alt = "";
     img.hidden = true;
     img.id = "ov_" + i;
