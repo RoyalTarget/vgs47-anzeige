@@ -203,7 +203,7 @@
   "top": 3.34,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "BW:",
+  "prefix": "Bad D W:",
   "entity": null,
   "unit": "",
   "dec": 0
@@ -225,7 +225,7 @@
   "top": 6.84,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "BF:",
+  "prefix": "Bad D:",
   "entity": null,
   "unit": "",
   "dec": 0
@@ -313,7 +313,7 @@
   "top": 22.8,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "Bad:",
+  "prefix": "Bad O:",
   "entity": null,
   "unit": "",
   "dec": 0
@@ -335,7 +335,7 @@
   "top": 26.29,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "BHZ:",
+  "prefix": "Bad O W:",
   "entity": null,
   "unit": "",
   "dec": 0
@@ -357,7 +357,7 @@
   "top": 29.79,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "OGF:",
+  "prefix": "Flur O:",
   "entity": null,
   "unit": "",
   "dec": 0
@@ -467,7 +467,7 @@
   "top": 56.23,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "WHZ:",
+  "prefix": "WZ W:",
   "entity": null,
   "unit": "",
   "dec": 0
@@ -511,7 +511,7 @@
   "top": 63.22,
   "anchor": "start",
   "color": "#f59e0b",
-  "prefix": "Flur:",
+  "prefix": "Flur E:",
   "entity": null,
   "unit": "",
   "dec": 0
