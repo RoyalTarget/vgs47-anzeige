@@ -374,6 +374,50 @@
   "dec": 1
  },
  {
+  "id": "rl_emil1_l",
+  "left": 88.17,
+  "top": 33.28,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "Emil 1:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_emil1",
+  "left": 98.5,
+  "top": 33.28,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_og_5",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
+  "id": "rl_emil2_l",
+  "left": 88.17,
+  "top": 36.78,
+  "anchor": "start",
+  "color": "#f59e0b",
+  "prefix": "Emil 2:",
+  "entity": null,
+  "unit": "",
+  "dec": 0
+ },
+ {
+  "id": "rl_emil2",
+  "left": 98.5,
+  "top": 36.78,
+  "anchor": "end",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.rl_og_6",
+  "unit": "°C",
+  "dec": 1
+ },
+ {
   "id": "rl_wz1_l",
   "left": 88.17,
   "top": 42.25,
