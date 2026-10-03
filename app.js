@@ -571,6 +571,8 @@ const ZL = {
 };
 const zlEnde = {};            // Fensterende je Leiste (ms), null = live
 let zlSeg = {};               // Kürzel → [[von, bis, läuft]]
+let zlLauf = [];              // [Kürzel, Start ms, Text] aus den Lauf-Protokollen (03.10.2026)
+const zlInfo = (c, a) => { const c2 = c === 'hz' ? 'bw' : c; const r = zlLauf.find((x) => x[0] === c2 && Math.abs(x[1] - a) <= 6 * 6e4); return r ? '\n' + r[2] : ''; };
 function zeigeZeitleiste(d) {
   const z = (d.zl || []).slice().sort((a, b) => a[1] - b[1]), jetzt = Date.now(), seg = {};
   const codes = [...new Set(z.map((r) => r[0]))];
@@ -591,6 +593,10 @@ function zeigeZeitleiste(d) {
     seg[c] = m;
   }
   zlSeg = seg; window.__zlSonne = d.sn;
+  // Lauf-Infos (03.10.2026): d.lr = [Kürzel, „TT.MM. HH:MM“, Text] → Tooltip des passenden Balkens (Start ±6 min)
+  zlLauf = (d.lr || []).map(([c, s, txt]) => { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(s || ""); if (!m) return null;
+    const j = new Date().getFullYear(), t0 = new Date(j, +m[2] - 1, +m[1], +m[3], +m[4]).getTime();
+    return [c, t0 > Date.now() + 864e5 ? new Date(j - 1, +m[2] - 1, +m[1], +m[3], +m[4]).getTime() : t0, txt]; }).filter(Boolean);
   for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id);
 }
 // Sonnenhöhe in Grad (Näherung ±0,5°) – Ort grob München, bewusst ohne genaue Adresse
@@ -750,7 +756,7 @@ function zeichneZL(id) {
       for (const [a, b, lauf] of zlSeg[c] || []) {
         if (b <= x0 || a >= ende) continue;
         const aa = Math.max(a, x0), bb = Math.min(b, ende);
-        svg += `<rect x="${X(aa)}" y="${y + 6}" width="${Math.max(X(bb) - X(aa), 1.5)}" height="${H - 12}" fill="${farben[k]}"><title>${name}${zus ? zus[k] : ""}: ${tg(a)} ${hm(a)}–${lauf ? "läuft" : hm(b)} (${dau(b - a)})</title></rect>`;
+        svg += `<rect x="${X(aa)}" y="${y + 6}" width="${Math.max(X(bb) - X(aa), 1.5)}" height="${H - 12}" fill="${farben[k]}"><title>${name}${zus ? zus[k] : ""}: ${tg(a)} ${hm(a)}–${lauf ? "läuft" : hm(b)} (${dau(b - a)})${lauf ? '' : zlInfo(c, a)}</title></rect>`;
       }
     });
   });
