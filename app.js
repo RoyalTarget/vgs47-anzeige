@@ -713,10 +713,10 @@ const HK_TORTE = { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 
       [{ n: "ins Haus", v: rd1(pv), f: "#facc15" }, { n: "in den Akku", v: rd1(lad), f: "#93c5fd" }, { n: "Einspeisung", v: rd1(einsp), f: "#22c55e" }]] }; } };
 const GER_TORTE = { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["Gruppen", "je Gerät"],
   rechne: (von, bis) => {
-    const G = [["Waschmaschine", "g_waschmaschine", "Wäsche", "#38bdf8"], ["Trockner", "g_trockner", "Wäsche", "#0ea5e9"], ["Spülmaschine", "g_spulmaschine", "Küche & Kühlen", "#2dd4bf"],
-      ["Kühlschrank", "g_kuhlschrank", "Küche & Kühlen", "#14b8a6"], ["Kühlschrank Garage", "g_kuhlschrank_garage", "Küche & Kühlen", "#0d9488"], ["Entfeuchter", "g_entfeuchter", "Entfeuchter", "#a78bfa"],
+    const G = [["Waschmaschine", "g_waschmaschine", "Wäsche", "#06b6d4"], ["Trockner", "g_trockner", "Wäsche", "#a855f7"], ["Spülmaschine", "g_spulmaschine", "Küche & Kühlen", "#22c55e"],
+      ["Kühlschrank", "g_kuhlschrank", "Küche & Kühlen", "#86efac"], ["Kühlschrank Garage", "g_kuhlschrank_garage", "Küche & Kühlen", "#4ade80"], ["Entfeuchter", "g_entfeuchter", "Entfeuchter", "#f59e0b"],
       ["Nerdaxe", "g_nerdaxe", "Miner", "#f472b6"], ["Iceriver", "g_iceriver", "Miner", "#db2777"], ["TV", "g_tv_sony", "TV", "#94a3b8"]];
-    const FG = { "Wäsche": "#0ea5e9", "Küche & Kühlen": "#14b8a6", "Entfeuchter": "#a78bfa", "Miner": "#ec4899", "TV": "#94a3b8" }, je = {}, gr = {};
+    const FG = { "Wäsche": "#06b6d4", "Küche & Kühlen": "#22c55e", "Entfeuchter": "#f59e0b", "Miner": "#ec4899", "TV": "#94a3b8" }, je = {}, gr = {};
     for (const [k, , , an] of fwTage(von, bis)) { const x = TL[k]; if (!x) continue; for (const g of G) { const v = (x[g[1]] || 0) * an; je[g[0]] = (je[g[0]] || 0) + v; gr[g[2]] = (gr[g[2]] || 0) + v; } }
     return { ringe: [Object.entries(gr).map(([n, v]) => ({ n, v: rd1(v), f: FG[n] })).sort((a, b) => b.v - a.v),
       G.map((g) => ({ n: g[0], v: rd1(je[g[0]] || 0), f: g[3] })).sort((a, b) => b.v - a.v)],
