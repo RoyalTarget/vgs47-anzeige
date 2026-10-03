@@ -606,23 +606,28 @@ const fwBox = (s) => `<div style="line-height:1.55">${s}</div>`;
 // Knöpfe Fenster (= sichtbarer Bereich) · Woche · Monat · Jahr · Alles; Langzeitwerte aus verlauf.json „tl“.
 const FW_TK = [["fenster", "Fenster"], ["woche", "Woche"], ["monat", "Monat"], ["jahr", "Jahr"], ["alles", "Alles"]];
 let TL = {};   // Datum → {Kürzel: Wert} aus der Langzeitstatistik
-function tlSetzen(v) { TL = {}; for (const [d, k, w] of (v && v.tl) || []) (TL[d] = TL[d] || {})[k] = w; }
+// Spalten von „tl“ (SQL „Tageswerte lang“, 03.10.2026): [Datum, …] in dieser Reihenfolge; Liter bzw. kWh
+const TL_K = ["a_dusche", "a_badewanne", "a_abspuelen", "a_warm_kurz", "a_wc", "a_kalt", "a_waschmaschine", "a_spuelmaschine", "vol",
+  "cmi_wp", "keller_bwwp_shelly_energie", "klima_betrieb_heute", "wp_strom_gratis_heute", "bwwp_strom_gratis_heute",
+  "haus", "netz", "einsp", "akku_ent", "akku_lad", "g_waschmaschine", "g_trockner", "g_spulmaschine", "g_kuhlschrank", "g_kuhlschrank_garage",
+  "g_entfeuchter", "g_nerdaxe", "g_iceriver", "g_tv_sony"];
+function tlSetzen(v) { TL = {}; for (const r of (v && v.tl) || []) { if (!Array.isArray(r)) continue; const x = TL[r[0]] = {}; TL_K.forEach((k, i) => { if (r[i + 1] != null) x[k] = r[i + 1]; }); } }
 const fwBogen = (cx, cy, r0, r1, a0, a1) => { if (a1 - a0 >= 2 * Math.PI - 1e-6) a1 = a0 + 2 * Math.PI - 1e-4;
   const p = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)], g = a1 - a0 > Math.PI ? 1 : 0;
   const [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0);
   return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r1} ${r1} 0 ${g} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}L${x2.toFixed(2)} ${y2.toFixed(2)}A${r0} ${r0} 0 ${g} 0 ${x3.toFixed(2)} ${y3.toFixed(2)}Z`; };
-function fwTorte(id) {
-  const c = FW[id], svgEl = $(id); if (!c || !c.torte || !svgEl) return;
+function fwTorte(id, cc) {
+  const c = cc || FW[id], svgEl = $(id); if (!c || !c.torte || !svgEl) return;
   let box = $(id + "_torte");
   if (!box) { box = document.createElement("div"); box.id = id + "_torte"; box.className = "fw-torte";
     box.innerHTML = `<div class="fw-knoepfe">${FW_TK.map(([m, n]) => `<button data-m="${m}">${n}</button>`).join("")}<span class="fw-zeit"></span><button class="fw-det"></button></div>`
       + `<svg class="fw-tsvg" viewBox="0 0 200 200"></svg><div class="fw-liste"></div>`;
     ($(id + "_ueb") || svgEl).after(box);
-    box.querySelectorAll("button[data-m]").forEach((b) => b.addEventListener("click", () => { c.tModus = b.dataset.m; fwTorte(id); }));
+    box.querySelectorAll("button[data-m]").forEach((b) => b.addEventListener("click", () => { c.tModus = b.dataset.m; fwTorte(id, cc); }));
     try { c.tOffen = localStorage.getItem("torte_" + id) === "1"; } catch (e) {}
-    const um = () => { c.tOffen = !c.tOffen; try { localStorage.setItem("torte_" + id, c.tOffen ? "1" : "0"); } catch (e) {} fwTorte(id); };
+    const um = () => { c.tOffen = !c.tOffen; try { localStorage.setItem("torte_" + id, c.tOffen ? "1" : "0"); } catch (e) {} fwTorte(id, cc); };
     box.querySelector(".fw-det").addEventListener("click", um); box.querySelector(".fw-tsvg").addEventListener("click", um); }
-  const m = c.tModus || "fenster", jetzt = Date.now(), h0 = new Date(); h0.setHours(0, 0, 0, 0);
+  const m = c.tModus || "alles", jetzt = Date.now(), h0 = new Date(); h0.setHours(0, 0, 0, 0);
   box.querySelectorAll("button[data-m]").forEach((b) => b.classList.toggle("an", b.dataset.m === m));
   const n = { woche: 7, monat: 30, jahr: 365 }[m];
   const [von, bis] = m === "fenster" ? [Math.max(c.x0, c.torte.start), Math.min(c.x1, jetzt)]
@@ -653,8 +658,10 @@ function fwTorte(id) {
     : `${f(von)} – ${f(bis - 1)} (${Math.max(Math.round((bis - von) / 864e5), 1)} Tage)`;
 }
 // Tage zwischen von und bis (lokale Mitternacht), mit Anteil des Tages im Bereich
-function fwTage(von, bis) { const l = [], d = new Date(von); d.setHours(0, 0, 0, 0);
-  for (let t = d.getTime(); t < bis; t += 864e5) { const a = Math.max(t, von), b = Math.min(t + 864e5, bis); if (b > a) l.push([fwKey(t), a, b, (b - a) / 864e5]); }
+function fwTage(von, bis) { const l = [], d = new Date(von), jetzt = Date.now(); d.setHours(0, 0, 0, 0);
+  // Anteil bezogen auf den schon vergangenen Teil des Tages (heute stehen in den Tageswerten nur die bisherigen Stunden)
+  for (let t = d.getTime(); t < bis; t += 864e5) { const a = Math.max(t, von), b = Math.min(t + 864e5, bis), voll = Math.min(t + 864e5, jetzt) - t;
+    if (b > a) l.push([fwKey(t), a, b, Math.min((b - a) / Math.max(voll, 6e4), 1)]); }
   return l; }
 const WF_ART = [["Dusche", "Dusche", "#ef4444", 1, "a_dusche"], ["Badewanne?", "Badewanne", "#f97316", 1, "a_badewanne"], ["Abspülen / Becken?", "Abspülen", "#fb7185", 1, "a_abspuelen"],
   ["warm kurz", "warm kurz", "#fca5a5", 1, "a_warm_kurz"], ["WC?", "WC", "#60a5fa", 0, "a_wc"], ["kalt", "kalt sonst", "#2563eb", 0, "a_kalt"],
@@ -666,7 +673,7 @@ function wfTorteRechne(von, bis) {
     if (a) art[a[1]] = (art[a[1]] || 0) + e.l; else ohne += e.l; ring[e.warm === true ? "warm" : e.warm === false ? "kalt" : "unb"] += e.l; }
   for (const [k, a, b, anteil] of fwTage(von, Math.min(ab, bis))) { const x = TL[k]; if (!x) continue;
     let s = 0; for (const q of WF_ART) { const v = (x[q[4]] || 0) * anteil; art[q[1]] = (art[q[1]] || 0) + v; ring[q[3] ? "warm" : "kalt"] += v; s += v; }
-    const rest = Math.max((x.vol || 0) * 1000 * anteil - s, 0); ohne += rest; ring.unb += rest; }
+    const rest = Math.max((x.vol || 0) * anteil - s, 0); ohne += rest; ring.unb += rest; }
   const rd = (r) => r.map((x) => ({ ...x, v: Math.round(x.v) }));
   return { ringe: [rd([{ n: "warm", v: ring.warm, f: "#ef4444" }, { n: "kalt", v: ring.kalt, f: "#3b82f6" }, { n: "ohne Aufteilung", v: ring.unb, f: "#6b7280" }]),
     rd(WF_ART.map((a) => ({ n: a[1], v: art[a[1]] || 0, f: a[2] })).sort((x, y) => y.v - x.v).concat([{ n: "ohne Aufteilung", v: ohne, f: "#6b7280" }]))],
@@ -690,6 +697,30 @@ function wpTorteRechne(von, bis) {
     [{ n: "WP", v: rd(wp), f: "#3b82f6" }, { n: "BWWP", v: rd(bw), f: "#f87171" }, { n: "LLWP (Daikin)", v: rd(ll), f: "#facc15" }]],
     hinweis: unb > 0.05 ? "grau = LLWP bzw. Tage ohne PV/Netz-Aufteilung" : "" };
 }
+
+
+// Torten an Grafiken mit eigener Fensterlogik (03.10.2026): Stromherkunft (#herkunft) und Haushaltsgeräte (#zeitleiste2)
+const FW_FREMD = {};
+function fwTorteFremd(id, torte, x0, x1) { const c = FW_FREMD[id] = FW_FREMD[id] || { torte }; c.x0 = x0; c.x1 = x1; fwTorte(id, c); }
+const rd1 = (v) => Math.round(v * 10) / 10;
+const HK_TORTE = { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["Haus bezieht", "PV-Strom geht"],
+  rechne: (von, bis, m) => { let pv = 0, akku = 0, netz = 0, lad = 0, einsp = 0;
+    if (m === "fenster") for (const r of hkDaten) { const a = Math.max(r[0], von), b = Math.min(r[0] + r[8], bis); if (b <= a) continue; const f = (b - a) / 3.6e9;
+      pv += r[1] * f; akku += r[2] * f; netz += r[3] * f; lad += r[4] * f; einsp += r[5] * f; }
+    else for (const [k, , , an] of fwTage(von, bis)) { const x = TL[k]; if (!x) continue; const h = (x.haus || 0) * an, n = (x.netz || 0) * an, ak = Math.min((x.akku_ent || 0) * an, Math.max(h - n, 0));
+      netz += n; akku += ak; pv += Math.max(h - n - ak, 0); lad += (x.akku_lad || 0) * an; einsp += (x.einsp || 0) * an; }
+    return { ringe: [[{ n: "PV direkt", v: rd1(pv), f: "#facc15" }, { n: "Akku", v: rd1(akku), f: "#3b82f6" }, { n: "Netz", v: rd1(netz), f: "#f97316" }],
+      [{ n: "ins Haus", v: rd1(pv), f: "#facc15" }, { n: "in den Akku", v: rd1(lad), f: "#93c5fd" }, { n: "Einspeisung", v: rd1(einsp), f: "#22c55e" }]] }; } };
+const GER_TORTE = { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["Gruppen", "je Gerät"],
+  rechne: (von, bis) => {
+    const G = [["Waschmaschine", "g_waschmaschine", "Wäsche", "#38bdf8"], ["Trockner", "g_trockner", "Wäsche", "#0ea5e9"], ["Spülmaschine", "g_spulmaschine", "Küche & Kühlen", "#2dd4bf"],
+      ["Kühlschrank", "g_kuhlschrank", "Küche & Kühlen", "#14b8a6"], ["Kühlschrank Garage", "g_kuhlschrank_garage", "Küche & Kühlen", "#0d9488"], ["Entfeuchter", "g_entfeuchter", "Entfeuchter", "#a78bfa"],
+      ["Nerdaxe", "g_nerdaxe", "Miner", "#f472b6"], ["Iceriver", "g_iceriver", "Miner", "#db2777"], ["TV", "g_tv_sony", "TV", "#94a3b8"]];
+    const FG = { "Wäsche": "#0ea5e9", "Küche & Kühlen": "#14b8a6", "Entfeuchter": "#a78bfa", "Miner": "#ec4899", "TV": "#94a3b8" }, je = {}, gr = {};
+    for (const [k, , , an] of fwTage(von, bis)) { const x = TL[k]; if (!x) continue; for (const g of G) { const v = (x[g[1]] || 0) * an; je[g[0]] = (je[g[0]] || 0) + v; gr[g[2]] = (gr[g[2]] || 0) + v; } }
+    return { ringe: [Object.entries(gr).map(([n, v]) => ({ n, v: rd1(v), f: FG[n] })).sort((a, b) => b.v - a.v),
+      G.map((g) => ({ n: g[0], v: rd1(je[g[0]] || 0), f: g[3] })).sort((a, b) => b.v - a.v)],
+      hinweis: "Tageswerte (stündlich aktualisiert); im Fenster anteilig nach Zeit" }; } };
 
 // --- Wasser: jede Zapfung (Protokoll; davor aus dem SYR-Zählerverlauf rekonstruiert, Regeln wie zapfungen.yaml) ---
 let WF = null;
@@ -1136,6 +1167,7 @@ function zeichneZL(id) {
       u.addEventListener("pointerup", () => { off = null; }); u.addEventListener("pointercancel", () => { off = null; });
       doppel(u, () => { if (u.__raf) { cancelAnimationFrame(u.__raf); u.__raf = null; } zlEnde[id] = null; const b = $(id + "_jetzt"); if (b) b.hidden = true; zeichneZL(id); }); }
   }
+  if (id === "zeitleiste2") try { fwTorteFremd(id, GER_TORTE, x0, Math.min(ende, Date.now())); } catch (e) { console.warn("ger-torte", e); }
   // Ziehen/Wischen im Feld verschiebt das Fenster (29.09.2026), begrenzt auf Datenbeginn und jetzt
   if (!svgEl.__zl) {
     svgEl.__zl = true; svgEl.style.touchAction = "pan-y"; svgEl.style.cursor = "grab"; let dr = null;
@@ -1206,6 +1238,7 @@ function zeichneHK() {
   svgEl.innerHTML = svg;
   const hkSetze = (a, b) => { const j = Date.now(); window.__hkWin = { live: b >= j - 6e4, br: b - a, bis: b }; zeichneHK(); };
   const hkStd = () => { window.__hkWin = { live: true, br: 48 * 36e5 }; zeichneHK(); };
+  try { fwTorteFremd("herkunft", HK_TORTE, x0, Math.min(ende, Date.now())); } catch (e) { console.warn("hk-torte", e); }
   let u = $("herkunft_ueb");
   if (!u) { u = document.createElementNS("http://www.w3.org/2000/svg", "svg"); u.id = "herkunft_ueb"; u.setAttribute("class", "zeitleiste zl-ueb");
     u.style.cssText = "display:block;width:100%;height:auto;margin-top:4px"; svgEl.after(u);
