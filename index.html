@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202610012356">
+<link rel="stylesheet" href="style.css?v=202610030939">
 </head>
 <body>
 <header>
@@ -26,11 +26,17 @@
     <h2>Heizung</h2>
     <div class="karte schema-karte">
       <div id="schema" class="schema">
-        <img src="img/schema_bg.svg?v=55" alt="Anlagenschema" class="bg">
+        <img src="img/schema_bg.svg?v=56" alt="Anlagenschema" class="bg">
         <div id="overlays"></div>
         <div id="werte"></div>
       </div>
     </div>
+  </section>
+
+  <section>
+    <h2>Fußbodenheizung – Rücklauf je Kreis</h2>
+    <div class="karte" style="padding:0;overflow:hidden"><iframe src="fbh_waermebild.html?v=202610030939" title="Wärmebild Fußbodenheizung" class="fbhbild" loading="lazy"></iframe></div>
+    <div class="karte fbh-fazit" id="fbh_fazit"></div>
   </section>
 
   <section>
@@ -142,10 +148,6 @@
     <div class="karte gross-karte"><div class="scroll"><table class="tab gross" id="gross"></table></div>
       <div class="fuss" id="gross_fuss"></div></div>
   </section>
-  <section>
-    <h2>PV je Fläche</h2>
-    <div class="karte"><table class="tab" id="pvflaeche"></table></div>
-  </section>
 
   <section>
     <h2>Wasser</h2>
@@ -160,6 +162,6 @@
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
-<script src="app.js?v=202610030911"></script>
+<script src="app.js?v=202610030939"></script>
 </body>
 </html>
