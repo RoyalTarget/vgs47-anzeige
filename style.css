@@ -193,3 +193,9 @@ tr.teil.hz-an td { color: #facc15; }
 .gross tr.pvabzug td { border-top: none; }
 @media (min-width: 701px) { .gross { table-layout: fixed; } .gross th:first-child { width: 34%; } }
 @media (max-width: 700px) { .gross tr.netz td:first-child { background: #3a2716; } }
+
+/* Wärmebild FBH + Kurzfazit (03.10.2026) */
+.fbhbild { display: block; width: 100%; height: 470px; border: 0; }
+@media (max-width: 700px) { .fbhbild { height: 560px; } }
+.fbh-fazit { margin-top: 10px; line-height: 1.5; font-size: .95em; }
+.fbh-fazit p { margin: .3em 0; } .fbh-fazit small { color: var(--grau, #9ca3af); }
