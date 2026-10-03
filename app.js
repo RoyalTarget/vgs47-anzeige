@@ -372,6 +372,7 @@ function zeigeTage(s, k, h) {
       std: () => { window.__tageWin = { std: true }; zeigeTage(...window.__tageArgs); } }); }
 
   // 30-Tage-Kreis
+  if (!$("donut")) return;   // 30-Tage-Kreis ersetzt durch die Torte unter dem WP-Fenster (03.10.2026)
   const m = alle.slice(-30), g = m.reduce((a, t) => a + t.gratis, 0), sum = m.reduce((a, t) => a + t.summe, 0), p = sum > 0 ? g / sum : 0;
   const r = 90, u = 2 * Math.PI * r;
   $("donut").innerHTML = `<circle cx="110" cy="110" r="${r}" fill="none" stroke="#ef4444" stroke-width="30"/>`
@@ -614,17 +615,24 @@ function fwTorte(id) {
   const c = FW[id], svgEl = $(id); if (!c || !c.torte || !svgEl) return;
   let box = $(id + "_torte");
   if (!box) { box = document.createElement("div"); box.id = id + "_torte"; box.className = "fw-torte";
-    box.innerHTML = `<div class="fw-knoepfe">${FW_TK.map(([m, n]) => `<button data-m="${m}">${n}</button>`).join("")}<span class="fw-zeit"></span></div>`
+    box.innerHTML = `<div class="fw-knoepfe">${FW_TK.map(([m, n]) => `<button data-m="${m}">${n}</button>`).join("")}<span class="fw-zeit"></span><button class="fw-det"></button></div>`
       + `<svg class="fw-tsvg" viewBox="0 0 200 200"></svg><div class="fw-liste"></div>`;
     ($(id + "_ueb") || svgEl).after(box);
-    box.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { c.tModus = b.dataset.m; fwTorte(id); })); }
+    box.querySelectorAll("button[data-m]").forEach((b) => b.addEventListener("click", () => { c.tModus = b.dataset.m; fwTorte(id); }));
+    try { c.tOffen = localStorage.getItem("torte_" + id) === "1"; } catch (e) {}
+    const um = () => { c.tOffen = !c.tOffen; try { localStorage.setItem("torte_" + id, c.tOffen ? "1" : "0"); } catch (e) {} fwTorte(id); };
+    box.querySelector(".fw-det").addEventListener("click", um); box.querySelector(".fw-tsvg").addEventListener("click", um); }
   const m = c.tModus || "fenster", jetzt = Date.now(), h0 = new Date(); h0.setHours(0, 0, 0, 0);
-  box.querySelectorAll("button").forEach((b) => b.classList.toggle("an", b.dataset.m === m));
+  box.querySelectorAll("button[data-m]").forEach((b) => b.classList.toggle("an", b.dataset.m === m));
   const n = { woche: 7, monat: 30, jahr: 365 }[m];
   const [von, bis] = m === "fenster" ? [Math.max(c.x0, c.torte.start), Math.min(c.x1, jetzt)]
     : [n ? Math.max(h0.getTime() - (n - 1) * 864e5, c.torte.start) : c.torte.start, jetzt];
   const erg = c.torte.rechne(von, bis, m) || {}, e = c.torte.einheit, dec = c.torte.dec || 0;
-  const ringe = (erg.ringe || []).map((r) => r.filter((x) => x.v > 0)).filter((r) => r.length), sum = (r) => r.reduce((a, x) => a + x.v, 0);
+  // Ring 1 = Gesamtbild, Ring 2 = Detail außen nur aufgeklappt (Klick auf Torte/„Details“, gemerkt je Grafik)
+  const alle = (erg.ringe || []).map((r) => r.filter((x) => x.v > 0)), offen = !!c.tOffen;
+  const ringe = alle.slice(0, offen ? 2 : 1).filter((r) => r.length), sum = (r) => r.reduce((a, x) => a + x.v, 0);
+  const det = box.querySelector(".fw-det"); det.hidden = !(alle.length > 1 && alle[1].length);
+  det.textContent = offen ? "Details ▴" : "Details: " + ((c.torte.ringnamen || [])[1] || "") + " ▾";
   const R = ringe.length > 1 ? [[46, 64], [68, 92]] : [[56, 92]];
   let svg = "";
   ringe.forEach((r, i) => { const t = sum(r); let a = 0;
@@ -637,7 +645,7 @@ function fwTorte(id) {
   svg += `<text x="100" y="96" fill="#e5e7eb" font-size="17" font-weight="700" text-anchor="middle">${ringe.length ? zahl(sum(ringe[0]), dec) : "–"}</text><text x="100" y="114" fill="#9ca3af" font-size="11" text-anchor="middle">${e}</text>`;
   box.querySelector(".fw-tsvg").innerHTML = svg;
   box.querySelector(".fw-liste").innerHTML = ringe.map((r, i) => { const t = sum(r);
-    return `<div class="fw-rname">${(c.torte.ringnamen || [])[ringe.length > 1 ? i : 0] || ""}</div>`
+    return `<div class="fw-rname">${(c.torte.ringnamen || [])[i] || ""}</div>`
       + r.map((x) => `<div class="fw-zeile"><i style="background:${x.f}"></i><span>${x.n}</span><b>${zahl(x.v, dec)} ${e}</b><em>${Math.round(x.v / t * 100)} %</em></div>`).join(""); }).join("")
     + (erg.hinweis ? `<div class="fw-hinweis">${erg.hinweis}</div>` : "");
   const f = (t) => new Date(t).toLocaleDateString("de-DE", { day: "numeric", month: "numeric" }), hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
@@ -678,8 +686,8 @@ function wpTorteRechne(von, bis) {
     wp += d.wp * f.wp; bw += d.bw * f.bw; ll += d.ll * f.ll;
     if (d.gwp == null && d.gbw == null) unb += d.wp * f.wp + d.bw * f.bw; else gr += Math.min((d.gwp || 0) * f.wp + (d.gbw || 0) * f.bw, d.wp * f.wp + d.bw * f.bw); }
   unb += ll; const rd = (v) => Math.round(v * 10) / 10;
-  return { ringe: [[{ n: "WP", v: rd(wp), f: "#3b82f6" }, { n: "BWWP", v: rd(bw), f: "#f87171" }, { n: "LLWP (Daikin)", v: rd(ll), f: "#facc15" }],
-    [{ n: "PV/Akku", v: rd(gr), f: "#22c55e" }, { n: "Netz", v: rd(Math.max(wp + bw + ll - gr - unb, 0)), f: "#ef4444" }, { n: "ohne Aufteilung", v: rd(unb), f: "#6b7280" }]],
+  return { ringe: [[{ n: "PV/Akku", v: rd(gr), f: "#22c55e" }, { n: "Netz", v: rd(Math.max(wp + bw + ll - gr - unb, 0)), f: "#ef4444" }, { n: "LLWP / ohne Aufteilung", v: rd(unb), f: "#6b7280" }],
+    [{ n: "WP", v: rd(wp), f: "#3b82f6" }, { n: "BWWP", v: rd(bw), f: "#f87171" }, { n: "LLWP (Daikin)", v: rd(ll), f: "#facc15" }]],
     hinweis: unb > 0.05 ? "grau = LLWP bzw. Tage ohne PV/Netz-Aufteilung" : "" };
 }
 
@@ -740,7 +748,7 @@ function zeigeWasserFenster(d, v) {
   WF = wasserFensterDaten(d, v);
   const F = (t) => { const x = new Date(t); return x.toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }); };
   FW.wf = Object.assign(FW.wf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
-    torte: { start: new Date(2026, 8, 23).getTime(), einheit: "l", dec: 0, ringnamen: ["warm / kalt", "nach Art"], rechne: wfTorteRechne },
+    torte: { start: new Date(2026, 8, 23).getTime(), einheit: "l", dec: 0, ringnamen: ["warm / kalt", "wer hat es verbraucht"], rechne: wfTorteRechne },
     links: { e: "l", max: () => Math.max(20, ...WF.ev.map((e) => e.l)) }, rechts: { e: "l", max: () => Math.max(100, ...WF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, YR, x0, x1, schmal }) => { let g = ""; const bw = schmal ? 3 : 4;
       for (const e of WF.ev) { if (e.t < x0 - 36e5 || e.t > x1 + 36e5) continue; const col = e.warm === true ? "#ef4444" : e.warm === false ? "#3b82f6" : "#9ca3af";
@@ -800,7 +808,7 @@ function zeigeWpFenster(d, v) {
   const f1 = (x) => zahl(Math.round((x || 0) * 10) / 10, 1), pct = (a, b) => b > 0 && a != null ? Math.round(Math.min(a / b, 1) * 100) + " %" : "–";
   const FARBE = { wp: "#3b82f6", bw: "#f87171", ll: "#facc15" };
   FW.wpf = Object.assign(FW.wpf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
-    torte: { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["je Gerät", "woher"], rechne: wpTorteRechne },
+    torte: { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["woher", "je Gerät"], rechne: wpTorteRechne },
     links: { e: "kW", dec: 1, max: () => Math.max(2.5, ...["wp", "bw", "ll"].flatMap((n) => WPF.kw[n].map((p) => p[1]))) },
     rechts: { e: "kWh", max: () => Math.max(4, ...WPF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, x0, x1 }) => { let g = "";
