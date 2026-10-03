@@ -50,14 +50,11 @@
   </section>
 
   <section>
-    <h2>Wärmepumpen – Strom pro Tag</h2>
-    <div class="karte">
-      <svg id="tage" viewBox="0 0 700 330" class="tage" aria-label="Strom pro Tag"></svg>
-      <div class="legende">
-        <span><i style="background:#3b82f6"></i>WP PV/Akku</span><span><i style="background:#1d4ed8"></i>WP Netz</span>
-        <span><i style="background:#f87171"></i>BWWP PV/Akku</span><span><i style="background:#dc2626"></i>BWWP Netz</span>
-      </div>
-    </div>
+    <h2>Wärmepumpen – Strom</h2>
+    <div class="karte"><h3 style="margin:0 0 4px">Fläche = Leistung · Linie = kWh seit 0:00 · Kreis = Tagessumme (grün = PV/Akku, rot = Netz)</h3>
+      <svg id="wpf" viewBox="0 0 1000 330" class="zeitleiste" aria-label="Wärmepumpen – Strom, 14 Tage"></svg>
+      <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP</span><span class="l" style="--c:#facc15">LLWP (Daikin)</span><span class="l" style="--c:#e5e7eb">kWh seit 0:00</span></div>
+      <div class="zl-hinweis">Im Feld ziehen oder unten tippen/ziehen = blättern, Griffe = zoomen, Doppeltippen = Standard</div></div>
     <div class="karte donut-karte">
       <svg id="donut" viewBox="0 0 220 220" class="donut" aria-label="Strom der letzten 30 Tage"></svg>
       <div id="donut_text" class="donut-text"></div>
@@ -151,16 +148,14 @@
   <section>
     <h2>Wasser</h2>
     <div id="wasser" class="raster vier"></div>
-    <div class="karte" style="margin-top:10px"><h3 style="margin:0 0 4px">Wasser heute – jede Zapfung</h3>
-      <svg id="wheute" viewBox="0 0 1000 200" class="zeitleiste" aria-label="Zapfungen heute"></svg>
-      <div class="prog-legende"><span class="l" style="--c:#ef4444">warm</span><span class="l" style="--c:#3b82f6">kalt</span></div></div>
-    <div class="karte" style="margin-top:10px"><h3 style="margin:0 0 4px">Wasser pro Tag (14 Tage) · 🚿 = Duschen</h3>
-      <svg id="wtage" viewBox="0 0 1000 240" class="zeitleiste" aria-label="Wasser pro Tag"></svg>
-      <div class="prog-legende"><span class="l" style="--c:#ef4444">warm</span><span class="l" style="--c:#3b82f6">kalt</span><span class="l" style="--c:#6b7280">gesamt (ohne Aufteilung)</span></div></div>
+    <div class="karte" style="margin-top:10px"><h3 style="margin:0 0 4px">Jede Zapfung · Linie = Liter seit 0:00 · Kreis = Tagessumme</h3>
+      <svg id="wf" viewBox="0 0 1000 330" class="zeitleiste" aria-label="Wasser – jede Zapfung, 14 Tage"></svg>
+      <div class="prog-legende"><span class="l" style="--c:#ef4444">warm</span><span class="l" style="--c:#3b82f6">kalt</span><span class="l" style="--c:#9ca3af">ohne Aufteilung</span><span class="l" style="--c:#e5e7eb">Liter seit 0:00</span></div>
+      <div class="zl-hinweis">Im Feld ziehen oder unten tippen/ziehen = blättern, Griffe = zoomen, Doppeltippen = Standard</div></div>
   </section>
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
-<script src="app.js?v=202610030939"></script>
+<script src="app.js?v=202610032055"></script>
 </body>
 </html>
