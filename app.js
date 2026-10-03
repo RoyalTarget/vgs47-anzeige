@@ -358,8 +358,8 @@ function zeigeTage(s, k, h) {
       svg += `<g>${kreis(cx, top - 56, 13, t.gratis / t.summe)}<title>PV/Akku ${f1(t.gratis)} kWh (${Math.round(t.gratis / t.summe * 100)} %) · Netz ${f1(t.summe - t.gratis)} kWh</title></g>`;
     }
   });
-  $("tage").innerHTML = svg;
-  { let u = $("tage_ueb");
+  if ($("tage")) $("tage").innerHTML = svg;   // Tagesbalken ersetzt durch das WP-Fenster (03.10.2026), Kreis bleibt
+  if ($("tage")) { let u = $("tage_ueb");
     if (!u) { u = document.createElementNS("http://www.w3.org/2000/svg", "svg"); u.id = "tage_ueb"; u.setAttribute("class", "zeitleiste zl-ueb");
       u.style.cssText = "display:block;width:100%;height:auto;margin-top:4px"; $("tage").after(u);
       doppel($("tage"), () => { window.__tageWin = { std: true }; zeigeTage(...window.__tageArgs); }); }
@@ -468,6 +468,7 @@ function netzHeute(s, bez, e, akku, ent, soc) {
 
 // ---------- Wasser-Grafiken (29.09.2026, wie Dashboard) ----------
 function zeigeWasserGrafik(d) {
+  if (!$("wheute")) return;   // ersetzt durch das Wasser-Fenster (03.10.2026)
   const s = d.s || {}, j = new Date().getFullYear();
   const breite = (id) => { const W = Math.max(Math.round($(id).getBoundingClientRect().width) || 1000, 300); return [W, W < 600]; };
   // 1) Zapfungen heute: Balken je Zapfung, Höhe = Liter, rot warm / blau kalt, Tooltip per <title>
@@ -522,6 +523,245 @@ function zeigeWasserGrafik(d) {
     $("wtage").innerHTML = g;
   }
 }
+
+// ---------- Fenster-Grafiken (03.10.2026, wie Dashboard /local/vgs_fenster.js) ----------
+// Fenster über die geladenen Tage (Standard 5 Tage, Handy 2), im Feld ziehen = blättern, Leiste mit Griffen = zoomen,
+// Doppeltippen = Standard; Dämmerung + Sonnenband, Mitternacht + Tageskopf (Datum + Wert), Tooltip über kreuz({html}).
+// Konfiguration je SVG in FW[id] = {zurueck, vor, std, stdSchmal, hoehe, links, rechts, daten(), kopf(), leiste(), tip()}.
+const FW = {};
+const fwKey = (t) => { const d = new Date(t); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const fwNice = (m, n) => { const roh = Math.max(m, 1e-9) / n, p = Math.pow(10, Math.floor(Math.log10(roh))), f = roh / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p * n; };
+function fensterZeichnen(id) {
+  const c = FW[id], svgEl = $(id); if (!c || !svgEl) return;
+  const W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0); const h0 = t0.getTime(), lo = h0 - c.zurueck * 864e5, hi = h0 + (c.vor + 1) * 864e5;
+  const sd = schmal ? c.stdSchmal : c.std, std = [h0 + sd[0] * 864e5, h0 + sd[1] * 864e5];
+  let [x0, x1] = c.win && !c.win.std ? [c.win.von, c.win.bis] : std;
+  const w = Math.min(Math.max(x1 - x0, 6 * 36e5), hi - lo); x1 = x0 + w; if (x0 < lo) { x0 = lo; x1 = lo + w; } if (x1 > hi) { x1 = hi; x0 = hi - w; }
+  c.x0 = x0; c.x1 = x1; c.lo = lo; c.hi = hi;
+  const H = c.hoehe, T = 80, B = H - 26, L = 44, R = W - 44;
+  svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const X = (t) => L + (t - x0) / (x1 - x0) * (R - L), jetzt = Date.now();
+  const hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  const mL = fwNice(c.links.max() * 1.05, 4), mR = fwNice(c.rechts.max() * 1.05, 4);
+  const YL = (v) => B - Math.max(v, 0) / mL * (B - T), YR = (v) => B - Math.max(v, 0) / mR * (B - T);
+  let svg = zlHimmel(id, x0, x1, L, R, T + 10, B, X, hm);   // Hintergrund ab T, Sonnenband T−16 … T
+  for (let i = 0; i <= 4; i++) { const y = B - i / 4 * (B - T);
+    svg += `<line x1="${L}" x2="${R}" y1="${y}" y2="${y}" stroke="#e5e7eb" stroke-opacity="0.12" stroke-dasharray="3 4"/>`
+      + `<text x="${L - 6}" y="${y + 4}" fill="#9ca3af" font-size="11" text-anchor="end">${zahl(mL * i / 4, c.links.dec || 0)}</text>`
+      + `<text x="${R + 6}" y="${y + 4}" fill="#9ca3af" font-size="11">${zahl(mR * i / 4, c.rechts.dec || 0)}</text>`; }
+  svg += `<text x="${L - 6}" y="${T - 14}" fill="#9ca3af" font-size="10" text-anchor="end">${c.links.e}</text><text x="${R + 4}" y="${T - 14}" fill="#9ca3af" font-size="10">${c.rechts.e}</text>`;
+  // Mitternacht hinter den Daten, Daten im Plotbereich beschnitten
+  const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
+  for (let v = mn.getTime(); v < x1; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 64}" y2="${B}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.7"/>`;
+  if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
+  svg += `<defs><clipPath id="${id}_clip"><rect x="${L}" y="${T - 12}" width="${R - L}" height="${B - T + 12}"/></clipPath></defs>`;
+  svg += `<g clip-path="url(#${id}_clip)">${c.daten({ X, YL, YR, x0, x1, T, B, schmal })}</g>` + (c.oben ? c.oben({ X, YL, YR, x0, x1, T, B, schmal, L, R }) : "");
+  // Stunden unten, Datum + Kopf oben je Tag
+  const pxh = (R - L) / Math.max((x1 - x0) / 36e5, 0.1), sh = [1, 2, 3, 6, 12, 24].find((h) => h * pxh >= (schmal ? 50 : 45)) || 24;
+  const st = new Date(x0); st.setMinutes(0, 0, 0); st.setHours(Math.ceil(st.getHours() / sh) * sh);
+  for (let v = st.getTime(); v <= x1; v += sh * 36e5) { const h = new Date(v).getHours(); if (sh >= 24 || h === 0) continue;
+    svg += `<text x="${X(v)}" y="${B + 16}" fill="#9ca3af" font-size="11" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
+  const WT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  for (let a0 = mn.getTime() - 864e5; a0 < x1; a0 += 864e5) { const a = Math.max(a0, x0), b = Math.min(a0 + 864e5, x1), bw = X(b) - X(a);
+    if (bw < 46) continue; const dt = new Date(a0 + 432e5), xm = (X(a) + X(b)) / 2, heute = a0 === h0;
+    svg += `<text x="${xm}" y="${T - 52}" fill="${heute ? "#fff" : "#e5e7eb"}" font-size="12" font-weight="700" text-anchor="middle">${bw >= 90 ? WT[dt.getDay()] + " " : ""}${dt.getDate()}.${dt.getMonth() + 1}.</text>`;
+    const k = c.kopf(a0, bw); if (k) svg += `<text x="${xm}" y="${T - 37}" fill="#9ca3af" font-size="11" text-anchor="middle">${k}</text>`;
+    if (bw >= 70) svg += `<text x="${X(a0 + 864e5 > x1 ? x1 : a0 + 864e5) - (a0 + 864e5 > x1 ? 2 : 0)}" y="${B + 16}" fill="#9ca3af" font-size="11" text-anchor="${a0 + 864e5 > x1 ? "end" : "middle"}"></text>`; }
+  svgEl.innerHTML = svg;
+  kreuz(svgEl, { L, R, T: T - 10, B, x0, x1, html: (t) => c.tip(t, { x0, x1 }) });
+  // Leiste
+  let u = $(id + "_ueb");
+  if (!u) { u = document.createElementNS("http://www.w3.org/2000/svg", "svg"); u.id = id + "_ueb"; u.setAttribute("class", "zeitleiste zl-ueb"); svgEl.after(u); }
+  const tage = []; for (let t = lo; t < hi; t += 864e5) tage.push(t);
+  const st2 = tage.map((t) => c.leiste(t) || []), mx = Math.max(1e-9, ...st2.map((l) => l.reduce((x, e) => x + (e.v > 0 ? e.v : 0), 0)));
+  leiste(u, { lo, hi, a: x0, b: x1, minw: 6 * 36e5, UH: 34,
+    inhalt: (UX, UW, UH) => tage.map((t, i) => { const x = UX(t) + 1.5, bw = Math.max(UX(t + 864e5) - UX(t) - 3, 1), dt = new Date(t); let sum = 0, g = "";
+      for (const e of st2[i]) { if (!(e.v > 0)) continue; const hh = (UH - 4) * e.v / mx; g += `<rect x="${x}" y="${UH + 1 - (sum + hh)}" width="${bw}" height="${Math.max(hh, 0.5)}" fill="${e.farbe}"/>`; sum += hh; }
+      if (UW > 700 || dt.getDate() % 2 === 0) g += `<text x="${x + bw / 2}" y="${UH + 15}" fill="${t === h0 ? "#e5e7eb" : "#9ca3af"}" font-size="10" text-anchor="middle"${t === h0 ? ' font-weight="700"' : ""}>${UW > 900 ? WT[dt.getDay()] + " " : ""}${dt.getDate()}.</text>`;
+      return g; }).join("") + (jetzt < hi ? `<line x1="${UX(jetzt)}" x2="${UX(jetzt)}" y1="1" y2="${UH + 3}" stroke="#e5e7eb" stroke-width="1.5"/>` : ""),
+    setze: (a, b) => { c.win = { std: false, von: a, bis: b }; fensterZeichnen(id); },
+    std: () => { c.win = { std: true }; fensterZeichnen(id); } });
+  // Ziehen im Feld = verschieben (einmal anmelden)
+  if (!svgEl.__fw) { svgEl.__fw = true; svgEl.style.touchAction = "pan-y"; svgEl.style.cursor = "grab"; let dr = null;
+    svgEl.addEventListener("pointerdown", (ev) => { dr = { x: ev.clientX, a: FW[id].x0, b: FW[id].x1, moved: false }; });
+    svgEl.addEventListener("pointermove", (ev) => { if (!dr) return; const dx = ev.clientX - dr.x; if (Math.abs(dx) > 5) dr.moved = true; if (!dr.moved) return;
+      const r = svgEl.getBoundingClientRect(), vb = svgEl.viewBox.baseVal.width || r.width, pw = r.width * (vb - 88) / vb, dt = -dx / pw * (dr.b - dr.a);
+      FW[id].win = { std: false, von: dr.a + dt, bis: dr.b + dt }; tipWeg();
+      if (!svgEl.__raf) svgEl.__raf = requestAnimationFrame(() => { svgEl.__raf = null; fensterZeichnen(id); }); });
+    const aus = () => { dr = null; }; svgEl.addEventListener("pointerup", aus); svgEl.addEventListener("pointercancel", aus); svgEl.addEventListener("pointerleave", aus);
+    doppel(svgEl, () => { FW[id].win = { std: true }; fensterZeichnen(id); }); }
+}
+const fwKreis = (cx, cy, txt, torte) => `${torte !== undefined ? (torte === null ? `<circle cx="${cx}" cy="${cy}" r="7" fill="#6b7280"/>` : kreis(cx, cy, 7, torte)) : `<circle cx="${cx}" cy="${cy}" r="7" fill="#1c1c1c"/>`}`
+  + `<circle cx="${cx}" cy="${cy}" r="7.5" fill="none" stroke="#e5e7eb" stroke-width="2"/>`
+  + `<rect x="${cx - txt.length * 3.4 - 5}" y="${cy - 30}" width="${txt.length * 6.8 + 10}" height="18" rx="3" fill="#27272a" stroke="#9ca3af"/>`
+  + `<text x="${cx}" y="${cy - 17}" fill="#f3f4f6" font-size="11" font-weight="700" text-anchor="middle">${txt}</text>`;
+const fwBox = (s) => `<div style="line-height:1.55">${s}</div>`;
+
+// --- Wasser: jede Zapfung (Protokoll; davor aus dem SYR-Zählerverlauf rekonstruiert, Regeln wie zapfungen.yaml) ---
+let WF = null;
+function wasserFensterDaten(d, v) {
+  const s = d.s || {}, jetzt = Date.now(), jahr = new Date().getFullYear(), mn = (t) => { const x = new Date(t); x.setHours(0, 0, 0, 0); return x.getTime(); };
+  // Tage: gesamt aus Zählerstand am Tagesende (heute live), warm/Duschen aus BWWP-Tageswerten (heute live)
+  const tage = {}, stand = {}; for (const [k, vv] of d.wd || []) stand[k] = vv;
+  for (let t = mn(jetzt) - 14 * 864e5; t <= mn(jetzt); t += 864e5) { const k = fwKey(t), kv = fwKey(t - 864e5 + 36e5 * 2 - 36e5 * 2);
+    const vk = fwKey(mn(t) - 1); let v1 = stand[k]; if (k === fwKey(jetzt)) v1 = num(s, "sensor.syr_connect_245124253_getvol") ?? v1;
+    if (v1 !== undefined && stand[vk] !== undefined) tage[k] = { ges: Math.max(Math.round((v1 - stand[vk]) * 1000), 0) }; }
+  for (const [k, wl, n] of d.bt || []) if (tage[k]) { tage[k].warm = wl; tage[k].dusch = n; }
+  const hk = fwKey(jetzt); tage[hk] = { ges: Math.round(num(s, "sensor.wasser_heute_liter") ?? (tage[hk] || {}).ges ?? 0),
+    warm: Math.round(num(s, "sensor.warmwasser_heute_liter") ?? 0), dusch: num(s, "sensor.duschen_heute") ?? 0 };
+  // Protokoll
+  const ev = [];
+  for (const p of (v && v.zp) || d.zp || []) { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) continue;
+    const dt = new Date(jahr, m[2] - 1, m[1], m[3], m[4]); if (dt.getTime() > jetzt + 864e5) dt.setFullYear(jahr - 1);
+    ev.push({ t: dt.getTime() + (p[1] || 0) * 3e4, l: p[2], warm: !!p[3], art: p[4], p: { start: p[0], dauer_min: p[1], max_lh: p[5] } }); }
+  const ab = ev.length ? Math.min(...ev.map((e) => e.t)) - 3e5 : Infinity;
+  // Binärsensoren → An-Phasen
+  const ph = {}; for (const c of ["w", "m", "s"]) ph[c] = { ab: Infinity, an: [] };
+  const bn = ((v && v.wv && v.wv.bn) || []).slice().sort((a, b) => a[1] - b[1]), offen = {};
+  for (const [c, t, o] of bn) { const p = ph[c]; if (!p) continue; const ms = t * 1000; if (p.ab === Infinity) p.ab = ms;
+    if (o && offen[c] == null) offen[c] = ms; else if (!o && offen[c] != null) { p.an.push([offen[c], ms]); offen[c] = null; } }
+  for (const c in offen) if (offen[c] != null) ph[c].an.push([offen[c], jetzt]);
+  const an = (p, a, b) => p.an.some(([x, y]) => x < b && y > a);
+  // Zählerverlauf → Rekonstruktion + Liter seit 0:00
+  const pts = []; if (v && v.wv && v.wv.vs) { let [t, l] = v.wv.vs; pts.push([t * 1000, l]); for (const [dt, dl] of v.wv.vd || []) { t += dt; l += dl; pts.push([t * 1000, l]); } }
+  const kum = [], ende = []; let basis = null, tag = null, prev = null, akt = null;
+  const schliesse = () => { if (!akt || akt.l < 1 || akt.t1 >= ab) { akt = null; return; }
+    const l = Math.round(akt.l), dauer = Math.max(Math.round((akt.t1 - akt.t0) / 6e4 + 1), 1), b = akt.t1 + 6e4;
+    const warm = akt.t0 >= ph.w.ab ? an(ph.w, akt.t0, b) : null;
+    const g = akt.t0 >= ph.m.ab && an(ph.m, akt.t0, b) ? "Waschmaschine" : akt.t0 >= ph.s.ab && an(ph.s, akt.t0, b) ? "Spülmaschine" : "";
+    const art = warm === null ? "" : g && !warm && l <= 25 ? g : warm && l >= 100 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
+      : warm && dauer >= 3 ? "Abspülen / Becken?" : warm ? "warm kurz" : l >= 3 && l <= 12 && dauer <= 3 ? "WC?" : "kalt";
+    ev.push({ t: (akt.t0 + akt.t1) / 2, l, warm, art, nach: true, p: { dauer_min: dauer } }); akt = null; };
+  for (const [t, vl] of pts) { const m = mn(t);
+    if (m !== tag) { if (tag !== null && prev) { const w = Math.max(prev[1] - basis, 0); kum.push([m - 1, w], [m - 0.5, null]); ende.push([m - 1, w]); }
+      tag = m; basis = prev ? prev[1] : vl; kum.push([m, 0]); }
+    kum.push([t, Math.max(vl - basis, 0)]);
+    if (prev) { const dv = vl - prev[1];
+      if (dv > 0 && dv < 2000) { if (akt && t - akt.t1 <= 15e4) { akt.t1 = t; akt.l += dv; } else { schliesse(); akt = { t0: t - 6e4, t1: t, l: dv }; } }
+      else if (akt && t - akt.t1 > 15e4) schliesse(); }
+    prev = [t, vl]; }
+  schliesse(); if (prev) { const w = Math.max(prev[1] - basis, 0); kum.push([jetzt, w]); ende.push([jetzt, w]); }
+  ev.sort((a, b) => a.t - b.t);
+  for (const e of ev) { const k = fwKey(e.t), x = tage[k] = tage[k] || { ges: 0 }; x.arten = x.arten || {};
+    if (e.art) { const a = x.arten[e.art] = x.arten[e.art] || { n: 0, l: 0 }; a.n++; a.l += e.l; }
+    if (e.warm !== null) x.ev_warm = (x.ev_warm || 0) + (e.warm ? e.l : 0); }
+  for (const x of Object.values(tage)) if (x.warm == null && x.ev_warm != null) x.warm = Math.min(x.ev_warm, x.ges);
+  return { tage, ev, kum, ende };
+}
+const WF_IC = { "Dusche": "🚿", "Badewanne?": "🛁", "Waschmaschine": "🧺", "Spülmaschine": "🍽️", "WC?": "🚽", "Abspülen / Becken?": "🚰" };
+function zeigeWasserFenster(d, v) {
+  if (!$("wf")) return;
+  WF = wasserFensterDaten(d, v);
+  const F = (t) => { const x = new Date(t); return x.toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }); };
+  FW.wf = Object.assign(FW.wf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
+    links: { e: "l", max: () => Math.max(20, ...WF.ev.map((e) => e.l)) }, rechts: { e: "l", max: () => Math.max(100, ...WF.kum.map((p) => p[1] || 0)) },
+    daten: ({ X, YL, YR, x0, x1, schmal }) => { let g = ""; const bw = schmal ? 3 : 4;
+      for (const e of WF.ev) { if (e.t < x0 - 36e5 || e.t > x1 + 36e5) continue; const col = e.warm === true ? "#ef4444" : e.warm === false ? "#3b82f6" : "#9ca3af";
+        g += `<rect x="${(X(e.t) - bw / 2).toFixed(1)}" y="${YL(e.l).toFixed(1)}" width="${bw}" height="${Math.max(YL(0) - YL(e.l), 1).toFixed(1)}" fill="${col}"/>`; }
+      let p = ""; for (const [t, l] of WF.kum) { if (l == null) { p += " "; continue; } p += (p === "" || p.endsWith(" ") ? "M" : "L") + X(t).toFixed(1) + " " + YR(l).toFixed(1); }
+      return g + `<path d="${p.replace(/ M/g, "M").trim()}" fill="none" stroke="#e5e7eb" stroke-opacity="0.6" stroke-width="1.5"/>`; },
+    oben: ({ X, YR, x0, x1 }) => WF.ende.filter(([t]) => t >= x0 - 5e3 && t <= x1 + 5e3).map(([t, l]) => { const x = WF.tage[fwKey(t - 1000)] || {};
+      return fwKreis(X(t), YR(l), (x.ges || l) + " l"); }).join(""),
+    kopf: (t, b) => { const x = WF.tage[fwKey(t)]; if (!x || !x.ges) return "";
+      const IC = [["Dusche", "🚿"], ["Badewanne?", "🛁"], ["Waschmaschine", "🧺"], ["Spülmaschine", "🍽️"]], ar = x.arten || {};
+      let ic = IC.filter(([a]) => ar[a]).map(([a, i]) => i + (ar[a].n > 1 && !/maschine/.test(a) ? ar[a].n : "")).join(" ");
+      if (!ar["Dusche"] && x.dusch) ic = "🚿" + (x.dusch > 1 ? x.dusch : "") + (ic ? " " + ic : "");
+      return b >= 90 ? `${x.ges} l${ic ? " · " + ic : ""}` : `${x.ges} l`; },
+    leiste: (t) => { const x = WF.tage[fwKey(t)]; if (!x) return [];
+      return x.warm != null ? [{ v: Math.min(x.warm, x.ges), farbe: "#ef4444" }, { v: Math.max(x.ges - x.warm, 0), farbe: "#3b82f6" }] : [{ v: x.ges, farbe: "#6b7280" }]; },
+    tip: (t, { x0, x1 }) => { const tol = (x1 - x0) * 0.012, e0 = WF.ende.find(([te]) => Math.abs(te - t) < tol);
+      if (e0) { const k = fwKey(e0[0] - 1000), x = WF.tage[k] || {}, ges = x.ges || 0, heute = k === fwKey(Date.now());
+        let s = `<b>${new Date(e0[0] - 1000).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${heute ? " (bis jetzt)" : ""}: ${ges} l</b>`;
+        if (x.warm != null) s += `<br><span style="color:#ef4444">●</span> warm ${x.warm} l (${ges ? Math.round(x.warm / ges * 100) : 0} %) · <span style="color:#3b82f6">●</span> kalt ${Math.max(ges - x.warm, 0)} l`;
+        const ar = Object.entries(x.arten || {}).filter(([a]) => WF_IC[a]).sort((a, b) => b[1].l - a[1].l);
+        if (ar.length) s += "<br>" + ar.map(([a, vv]) => `${WF_IC[a]} ${a.replace("?", "")} ${/maschine/.test(a) ? vv.n + (vv.n === 1 ? " Füllung" : " Füllungen") : vv.n + "×"} · ${vv.l} l`).join("<br>");
+        return fwBox(s); }
+      let b = null; for (const e of WF.ev) if (!b || Math.abs(e.t - t) < Math.abs(b.t - t)) b = e;
+      if (!b || Math.abs(b.t - t) > (x1 - x0) * 0.01) { const y = wertBei(WF.kum.filter((p) => p[1] != null), t, 36e5 * 6); return y == null ? "" : fwBox(`${F(t)}<br>seit 0:00: <b>${Math.round(y)} l</b>`); }
+      const col = b.warm === true ? "#ef4444" : b.warm === false ? "#3b82f6" : "#9ca3af", art = b.warm === true ? "warm" : b.warm === false ? "kalt" : "warm/kalt unbekannt";
+      return fwBox(`<b>${F(b.t)}</b> · ${b.p.dauer_min || "?"} min<br><span style="color:${col}">●</span> <b>${b.art || art}</b> · ${b.l} l ${b.art ? art : ""}${b.p.max_lh ? " · max " + b.p.max_lh + " l/h" : ""}`
+        + (b.nach ? '<br><span style="color:#9ca3af;font-size:11px">aus SYR-Verlauf nachträglich bestimmt</span>' : "")); } });
+  fensterZeichnen("wf");
+}
+
+// --- Wärmepumpen – Strom: Fläche = Leistung (15-min-Mittel), Linie = kWh seit 0:00, Torte = PV/Akku-Anteil am Tagesende ---
+let WPF = null;
+function wpFensterDaten(d, v, s, k) {
+  const jetzt = Date.now(), mn = (t) => { const x = new Date(t); x.setHours(0, 0, 0, 0); return x.getTime(); };
+  const kw = { wp: [], bw: [], ll: [] };
+  for (const [b, a, c, e] of (v && v.pw) || []) { const t = b * 900000;
+    if (a != null) kw.wp.push([t, a / 100]); if (c != null) kw.bw.push([t, c / 100]); if (e != null) kw.ll.push([t, e / 100]); }
+  const tage = {};
+  for (const t of tagesListe(s, k, d.h)) { const x = tage[t.d] = { wp: t.teile[0] + t.teile[1], bw: t.teile[2] + t.teile[3], gwp: t.teile[0], gbw: t.teile[2], ll: 0 };
+    if (t.d < "2026-09-26") { x.gwp = null; x.gbw = null; } }
+  // Integral je Tag (kWh) aus den 15-min-Mitteln; LLWP-Tageswert nur daraus
+  const integ = {}; for (const n of ["wp", "bw", "ll"]) for (const [t, p] of kw[n]) { const kk = fwKey(t), x = integ[kk] = integ[kk] || { wp: 0, bw: 0, ll: 0 }; x[n] += p * 0.25; }
+  for (const [kk, x] of Object.entries(integ)) { const tg = tage[kk] = tage[kk] || { wp: 0, bw: 0, gwp: null, gbw: null, ll: 0 }; tg.ll = x.ll; }
+  // Linie: Integral, je Tag auf die Zählerwerte skaliert (damit Linie und Kreis zur Tagessumme passen)
+  const kum = [], ende = [], alle = []; for (const n of ["wp", "bw", "ll"]) for (const [t, p] of kw[n]) alle.push([t, n, p]);
+  alle.sort((a, b) => a[0] - b[0]); let tag = null, sum = 0, letzt = null;
+  for (const [t, n, p] of alle) { const m = mn(t), kk = fwKey(t), i = integ[kk] || {}, tg = tage[kk] || {};
+    if (m !== tag) { if (tag !== null) { kum.push([tag + 864e5 - 1, sum], [tag + 864e5 - 0.5, null]); ende.push([tag + 864e5 - 1, sum]); } tag = m; sum = 0; kum.push([m, 0]); }
+    const f = n === "ll" ? 1 : (i[n] > 0.05 && tg[n] > 0 ? tg[n] / i[n] : 1); sum += p * 0.25 * f; letzt = Math.min(t + 9e5, jetzt); kum.push([letzt, sum]); }
+  if (tag !== null) { if (tag + 864e5 <= jetzt) ende.push([tag + 864e5 - 1, sum]); else ende.push([letzt, sum]); }
+  return { kw, tage, kum, ende };
+}
+function zeigeWpFenster(d, v) {
+  if (!$("wpf")) return;
+  const s = d.s || {}, k = d.k || {};
+  WPF = wpFensterDaten(d, v, s, k);
+  const f1 = (x) => zahl(Math.round((x || 0) * 10) / 10, 1), pct = (a, b) => b > 0 && a != null ? Math.round(Math.min(a / b, 1) * 100) + " %" : "–";
+  const FARBE = { wp: "#3b82f6", bw: "#f87171", ll: "#facc15" };
+  FW.wpf = Object.assign(FW.wpf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
+    links: { e: "kW", dec: 1, max: () => Math.max(2.5, ...["wp", "bw", "ll"].flatMap((n) => WPF.kw[n].map((p) => p[1]))) },
+    rechts: { e: "kWh", max: () => Math.max(4, ...WPF.kum.map((p) => p[1] || 0)) },
+    daten: ({ X, YL, x0, x1 }) => { let g = "";
+      for (const n of ["ll", "wp", "bw"]) { const p = WPF.kw[n].filter(([t]) => t >= x0 - 18e5 && t <= x1 + 9e5); if (!p.length) continue;
+        let dd = "", offen = false;
+        for (let i = 0; i < p.length; i++) { const [t, w] = p[i], nx = i + 1 < p.length ? p[i + 1][0] : t + 9e5, lueck = i > 0 && t - p[i - 1][0] > 9e5 * 1.5;
+          if (!offen || lueck) { if (offen) dd += `L${X(p[i - 1][0] + 9e5).toFixed(1)} ${YL(0)}Z`; dd += `M${X(t).toFixed(1)} ${YL(0)}`; offen = true; }
+          dd += `L${X(t).toFixed(1)} ${YL(w).toFixed(1)}L${X(Math.min(nx, t + 9e5)).toFixed(1)} ${YL(w).toFixed(1)}`; }
+        if (offen) dd += `L${X(p[p.length - 1][0] + 9e5).toFixed(1)} ${YL(0)}Z`;
+        g += `<path d="${dd}" fill="${FARBE[n]}" fill-opacity="0.45" stroke="${FARBE[n]}" stroke-width="1.2"/>`; }
+      return g; },
+    oben: ({ X, YR, x0, x1 }) => { let g = "", p = "";
+      for (const [t, l] of WPF.kum) { if (l == null) { p += " "; continue; } if (t < x0 - 864e5 || t > x1 + 864e5) continue; p += (p === "" || p.endsWith(" ") ? "M" : "L") + X(t).toFixed(1) + " " + YR(l).toFixed(1); }
+      g += `<g clip-path="url(#wpf_clip)"><path d="${p.replace(/ +/g, " ").replace(/ M/g, "M").trim()}" fill="none" stroke="#e5e7eb" stroke-opacity="0.6" stroke-width="1.5"/></g>`;
+      for (const [t, l] of WPF.ende) { if (t < x0 - 5e3 || t > x1 + 5e3) continue; const x = WPF.tage[fwKey(t - 1000)] || {}, tot = (x.wp || 0) + (x.bw || 0);
+        const gr = x.gwp == null && x.gbw == null ? null : (x.gwp || 0) + (x.gbw || 0);
+        g += fwKreis(X(t), YR(l), f1(tot + (x.ll || 0)) + " kWh", gr == null || !(tot > 0) ? null : Math.min(Math.max(gr / tot, 0), 1)); }
+      return g; },
+    kopf: (t, b) => { const x = WPF.tage[fwKey(t)]; if (!x) return ""; const ges = (x.wp || 0) + (x.bw || 0) + (x.ll || 0); if (!(ges > 0)) return "";
+      const teile = [["WP", x.wp], ["BWWP", x.bw]].concat(x.ll > 0.05 ? [["LLWP", x.ll]] : []);
+      if (b >= 60 * teile.length + 40) return teile.map(([n, vv]) => `${n} ${f1(vv)} kWh`).join(" · ");
+      if (b >= 150) return teile.map(([n, vv]) => `${n} ${f1(vv)}`).join(" · ") + " kWh";
+      return f1(ges) + " kWh"; },
+    leiste: (t) => { const x = WPF.tage[fwKey(t)]; if (!x) return []; const gw = Math.min(x.gwp || 0, x.wp || 0), gb = Math.min(x.gbw || 0, x.bw || 0);
+      return [{ v: gw, farbe: "#3b82f6" }, { v: (x.wp || 0) - gw, farbe: "#1d4ed8" }, { v: gb, farbe: "#f87171" }, { v: (x.bw || 0) - gb, farbe: "#dc2626" }, { v: x.ll || 0, farbe: "#facc15" }]; },
+    tip: (t, { x0, x1 }) => { const tol = (x1 - x0) * 0.012, e0 = WPF.ende.find(([te]) => Math.abs(te - t) < tol);
+      if (e0) { const kk = fwKey(e0[0] - 1000), x = WPF.tage[kk] || {}, heute = kk === fwKey(Date.now());
+        const ges = (x.wp || 0) + (x.bw || 0) + (x.ll || 0), gr = x.gwp == null && x.gbw == null ? null : (x.gwp || 0) + (x.gbw || 0);
+        let h = `<b>${new Date(e0[0] - 1000).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${heute ? " (bis jetzt)" : ""}: ${f1(ges)} kWh</b>`;
+        if (gr != null) h += `<br><span style="color:#22c55e">●</span> PV/Akku ${f1(gr)} kWh (${pct(gr, (x.wp || 0) + (x.bw || 0))}) · <span style="color:#ef4444">●</span> Netz ${f1((x.wp || 0) + (x.bw || 0) - gr)} kWh`;
+        h += `<br><span style="color:#3b82f6">●</span> WP ${f1(x.wp)} kWh${x.gwp != null ? " · PV/Akku " + pct(x.gwp, x.wp) : ""}`;
+        h += `<br><span style="color:#f87171">●</span> BWWP ${f1(x.bw)} kWh${x.gbw != null ? " · PV/Akku " + pct(x.gbw, x.bw) : ""}`;
+        if (x.ll > 0.05) h += `<br><span style="color:#facc15">●</span> LLWP ${f1(x.ll)} kWh`;
+        return fwBox(h); }
+      const at = (a) => { let r = 0; for (const [tt, vv] of a) { if (tt <= t && t < tt + 9e5) r = vv; if (tt > t) break; } return r; };
+      const bw = at(WPF.kw.bw), ll = at(WPF.kw.ll), y = wertBei(WPF.kum.filter((p) => p[1] != null), t, 9e5);
+      let h = `<b>${new Date(t).toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}</b>`
+        + `<br><span style="color:#3b82f6">●</span> WP ${f1(at(WPF.kw.wp))} kW · <span style="color:#f87171">●</span> BWWP ${f1(bw)} kW${bw > 1 ? " (Heizstab)" : ""}`
+        + (ll > 0.05 ? `<br><span style="color:#facc15">●</span> LLWP ${f1(ll)} kW` : "") + (y != null ? `<br><span style="color:#9ca3af">seit 0:00: ${f1(y)} kWh</span>` : "");
+      const lauf = (zlSeg.wp || []).find(([a, b]) => t >= a && t <= b);
+      if (lauf) { const info = zlLauf.find((x) => x[0] === "wp" && Math.abs(x[1] - lauf[0]) <= 6 * 6e4);
+        h += `<hr style="border:0;border-top:1px solid #52525b;margin:5px 0"><b>WP-Lauf ${new Date(lauf[0]).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}–${lauf[2] ? "läuft" : new Date(lauf[1]).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</b>`
+          + (info ? `<br>${info[2]}` : ""); }
+      return fwBox(h); } });
+  fensterZeichnen("wpf");
+}
+window.addEventListener("resize", () => { for (const id of Object.keys(FW)) fensterZeichnen(id); });
 
 // ---------- „Wann starten?“ (29.09.2026, wie Dashboard) ----------
 function zeigeWann(d) {
@@ -631,10 +871,11 @@ function zlHimmel(id, x0, ende, L, R, T, y2, X, hm) {
   const Y0 = T - 10, SY = (h) => Y0 - Math.max(h, 0) / 65 * 16;
   svg += `<line x1="${L}" x2="${R}" y1="${Y0}" y2="${Y0}" stroke="#e5e7eb" stroke-opacity="0.15"/>`;
   svg += `<path d="M${pts[0][0].toFixed(1)} ${Y0}${pts.map(([x, h]) => `L${x.toFixed(1)} ${SY(h).toFixed(1)}`).join("")}L${pts[pts.length - 1][0].toFixed(1)} ${Y0}Z" fill="#facc15" fill-opacity="0.28" stroke="#fbbf24" stroke-width="1.2" stroke-opacity="0.8" stroke-linejoin="round"/>`;
-  if ((R - L) / Math.max((ende - x0) / 864e5, 0.01) >= 220)   // Auf-/Untergangszeit, wenn ein Tag mind. 220 px breit ist
+  const tagB = (R - L) / Math.max((ende - x0) / 864e5, 0.01), kurz = tagB < 180;   // Auf-/Untergangszeit ab 110 px je Tag (03.10.2026, wie Dashboard), schmal ohne ☀
+  if (tagB >= 110)
     for (let i = 1; i < pts.length; i++) { const [xa, ha] = pts[i - 1], [xb, hb] = pts[i]; if ((ha < 0) === (hb < 0)) continue;
       const x = xa + (xb - xa) * ha / (ha - hb), auf = hb >= 0, t = x0 + (x - L) / (R - L) * (ende - x0);
-      svg += `<text x="${x + (auf ? -4 : 4)}" y="${Y0 - 2}" fill="#fbbf24" fill-opacity="0.85" font-size="10" text-anchor="${auf ? "end" : "start"}">${auf ? "☀↑ " : ""}${hm(t)}${auf ? "" : " ↓"}</text>`; }
+      svg += `<text x="${x + (auf ? -4 : 4)}" y="${Y0 - 2}" fill="#fbbf24" fill-opacity="0.85" font-size="${kurz ? 9 : 10}" text-anchor="${auf ? "end" : "start"}">${auf ? (kurz ? "↑" : "☀↑ ") : ""}${hm(t)}${auf ? "" : (kurz ? "↓" : " ↓")}</text>`; }
   return svg;
 }
 function zlAchse(x0, ende, L, R, T, y2, schmal, X, tg) {
@@ -711,6 +952,10 @@ function kreuzZeig(el, ev, dauer) {
   const q = pt.matrixTransform(el.getScreenCTM().inverse());
   if (q.x < c.L || q.x > c.R || q.y < c.T - 10 || q.y > c.B + 10) { tipWeg(); return; }
   const t = c.x0 + (q.x - c.L) / (c.R - c.L) * (c.x1 - c.x0), dt = new Date(t);
+  if (c.html) { const h = c.html(t); if (!h) { tipWeg(); return; }   // Fenster-Grafiken (03.10.2026): eigener Tooltip-Inhalt
+    let l = el.querySelector(".kz-linie"); if (!l) { l = document.createElementNS("http://www.w3.org/2000/svg", "line"); l.setAttribute("class", "kz-linie"); el.appendChild(l); }
+    for (const [k, v] of [["x1", q.x], ["x2", q.x], ["y1", c.T], ["y2", c.B], ["stroke", "#e5e7eb"], ["stroke-width", "1.2"], ["stroke-dasharray", "3 3"], ["pointer-events", "none"]]) l.setAttribute(k, v);
+    tipZeig(h, ev.clientX, ev.clientY, dauer); return; }
   const kopf = `${["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}. ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
   const z = c.reihen.map((r) => [r, wertBei(r.p, t, r.gap || 45 * 6e4)]).filter(([, v]) => v !== null && !isNaN(v));
   if (!z.length) { tipWeg(); return; }
@@ -1112,13 +1357,18 @@ function zeigeTemperaturen(d) {
 }
 
 // ---------- Laden ----------
+let VERLAUF = null, VERLAUF_T = 0;
 async function holen() {
   try {
     const r = await fetch(DATEN + "?t=" + Date.now(), { cache: "no-store" });
     const d = await r.json();
+    if (!VERLAUF || Date.now() - VERLAUF_T > 12e4) try {   // Verlaufsdaten der Fenster-Grafiken (03.10.2026), HA schickt alle 5 min
+      VERLAUF = await (await fetch(DATEN.replace("data.json", "verlauf.json") + "?t=" + Date.now(), { cache: "no-store" })).json(); VERLAUF_T = Date.now(); } catch (e) {}
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
+    try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
+    try { zeigeWpFenster(d, VERLAUF); } catch (e) { console.warn("wpf", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
