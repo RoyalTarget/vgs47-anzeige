@@ -304,7 +304,7 @@ function zeigeTabellen(s, k, lp, gh) {
   ];
   const sw = F.reduce((a, f) => a + (num(s, f[2]) ?? 0), 0);
   const sh = F.reduce((a, f) => a + (k[f[3]] ?? 0), 0);
-  $("pvflaeche").innerHTML = "<tr><th>Fläche</th><th>jetzt</th><th>heute kWh</th><th>max heute</th></tr>"
+  if ($("pvflaeche")) $("pvflaeche").innerHTML = "<tr><th>Fläche</th><th>jetzt</th><th>heute kWh</th><th>max heute</th></tr>"
     + F.map(([n, m, p, h, mx]) => `<tr><td>${n} <span class="klein">${m}</span></td><td>${w0(p)}</td><td>${kw(h)}</td><td>${mx ? w0(mx) : "–"}</td></tr>`).join("")
     + `<tr class="summe"><td>Summe</td><td>${zahl(sw, 0)} W</td><td>${zahl(sh, 2)}</td><td></td></tr>`;
 }
@@ -573,6 +573,14 @@ const zlEnde = {};            // Fensterende je Leiste (ms), null = live
 let zlSeg = {};               // Kürzel → [[von, bis, läuft]]
 let zlLauf = [];              // [Kürzel, Start ms, Text] aus den Lauf-Protokollen (03.10.2026)
 const zlInfo = (c, a) => { const c2 = c === 'hz' ? 'bw' : c; const r = zlLauf.find((x) => x[0] === c2 && Math.abs(x[1] - a) <= 6 * 6e4); return r ? '\n' + r[2] : ''; };
+// Kurzfazit zum Wärmebild (03.10.2026): d.ft = Markdown-Text aus sensor.fbh_kurzfazit (**fett**, <small>, Absätze)
+function zeigeFazit(d) {
+  const el = $("fbh_fazit"); if (!el) return; const t = d.ft || "";
+  el.hidden = !t; if (!t) return;
+  const sicher = escH(t).replace(/&lt;small&gt;/g, "<small>").replace(/&lt;\/small&gt;/g, "</small>");
+  el.innerHTML = sicher.split(/\n\s*\n/).map((p) => "<p>" + p.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>") + "</p>").join("");
+}
+
 function zeigeZeitleiste(d) {
   const z = (d.zl || []).slice().sort((a, b) => a[1] - b[1]), jetzt = Date.now(), seg = {};
   const codes = [...new Set(z.map((r) => r[0]))];
@@ -1110,7 +1118,7 @@ async function holen() {
     const d = await r.json();
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
-    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
+    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
