@@ -583,6 +583,7 @@ function fensterZeichnen(id) {
       return g; }).join("") + (jetzt < hi ? `<line x1="${UX(jetzt)}" x2="${UX(jetzt)}" y1="1" y2="${UH + 3}" stroke="#e5e7eb" stroke-width="1.5"/>` : ""),
     setze: (a, b) => { c.win = { std: false, von: a, bis: b }; fensterZeichnen(id); },
     std: () => { c.win = { std: true }; fensterZeichnen(id); } });
+  fwTorte(id);
   // Ziehen im Feld = verschieben (einmal anmelden)
   if (!svgEl.__fw) { svgEl.__fw = true; svgEl.style.touchAction = "pan-y"; svgEl.style.cursor = "grab"; let dr = null;
     svgEl.addEventListener("pointerdown", (ev) => { dr = { x: ev.clientX, a: FW[id].x0, b: FW[id].x1, moved: false }; });
@@ -598,6 +599,89 @@ const fwKreis = (cx, cy, txt, torte) => `${torte !== undefined ? (torte === null
   + `<rect x="${cx - txt.length * 3.4 - 5}" y="${cy - 30}" width="${txt.length * 6.8 + 10}" height="18" rx="3" fill="#27272a" stroke="#9ca3af"/>`
   + `<text x="${cx}" y="${cy - 17}" fill="#f3f4f6" font-size="11" font-weight="700" text-anchor="middle">${txt}</text>`;
 const fwBox = (s) => `<div style="line-height:1.55">${s}</div>`;
+
+// ---------- Torte unter den Fenster-Grafiken (03.10.2026, wie Dashboard) ----------
+// FW[id].torte = {start, einheit, dec, ringnamen, rechne(von, bis, modus) → {ringe: [[{n, v, f}]…], hinweis}}
+// Knöpfe Fenster (= sichtbarer Bereich) · Woche · Monat · Jahr · Alles; Langzeitwerte aus verlauf.json „tl“.
+const FW_TK = [["fenster", "Fenster"], ["woche", "Woche"], ["monat", "Monat"], ["jahr", "Jahr"], ["alles", "Alles"]];
+let TL = {};   // Datum → {Kürzel: Wert} aus der Langzeitstatistik
+function tlSetzen(v) { TL = {}; for (const [d, k, w] of (v && v.tl) || []) (TL[d] = TL[d] || {})[k] = w; }
+const fwBogen = (cx, cy, r0, r1, a0, a1) => { if (a1 - a0 >= 2 * Math.PI - 1e-6) a1 = a0 + 2 * Math.PI - 1e-4;
+  const p = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)], g = a1 - a0 > Math.PI ? 1 : 0;
+  const [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r1} ${r1} 0 ${g} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}L${x2.toFixed(2)} ${y2.toFixed(2)}A${r0} ${r0} 0 ${g} 0 ${x3.toFixed(2)} ${y3.toFixed(2)}Z`; };
+function fwTorte(id) {
+  const c = FW[id], svgEl = $(id); if (!c || !c.torte || !svgEl) return;
+  let box = $(id + "_torte");
+  if (!box) { box = document.createElement("div"); box.id = id + "_torte"; box.className = "fw-torte";
+    box.innerHTML = `<div class="fw-knoepfe">${FW_TK.map(([m, n]) => `<button data-m="${m}">${n}</button>`).join("")}<span class="fw-zeit"></span></div>`
+      + `<svg class="fw-tsvg" viewBox="0 0 200 200"></svg><div class="fw-liste"></div>`;
+    ($(id + "_ueb") || svgEl).after(box);
+    box.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { c.tModus = b.dataset.m; fwTorte(id); })); }
+  const m = c.tModus || "fenster", jetzt = Date.now(), h0 = new Date(); h0.setHours(0, 0, 0, 0);
+  box.querySelectorAll("button").forEach((b) => b.classList.toggle("an", b.dataset.m === m));
+  const n = { woche: 7, monat: 30, jahr: 365 }[m];
+  const [von, bis] = m === "fenster" ? [Math.max(c.x0, c.torte.start), Math.min(c.x1, jetzt)]
+    : [n ? Math.max(h0.getTime() - (n - 1) * 864e5, c.torte.start) : c.torte.start, jetzt];
+  const erg = c.torte.rechne(von, bis, m) || {}, e = c.torte.einheit, dec = c.torte.dec || 0;
+  const ringe = (erg.ringe || []).map((r) => r.filter((x) => x.v > 0)).filter((r) => r.length), sum = (r) => r.reduce((a, x) => a + x.v, 0);
+  const R = ringe.length > 1 ? [[46, 64], [68, 92]] : [[56, 92]];
+  let svg = "";
+  ringe.forEach((r, i) => { const t = sum(r); let a = 0;
+    for (const x of r) { const w = x.v / t * 2 * Math.PI, [r0, r1] = R[i];
+      svg += `<path d="${fwBogen(100, 100, r0, r1, a, a + w)}" fill="${x.f}" stroke="#1c1c1c" stroke-width="1.2"><title>${x.n}: ${zahl(x.v, dec)} ${e} (${Math.round(x.v / t * 100)} %)</title></path>`;
+      if (x.v / t >= 0.07) { const am = a + w / 2, rm = (r0 + r1) / 2;
+        svg += `<text x="${(100 + rm * Math.sin(am)).toFixed(1)}" y="${(100 - rm * Math.cos(am) + 4).toFixed(1)}" fill="#fff" font-size="${i ? 11 : 10}" font-weight="700" text-anchor="middle" pointer-events="none" style="paint-order:stroke" stroke="rgba(0,0,0,.45)" stroke-width="2.5">${Math.round(x.v / t * 100)} %</text>`; }
+      a += w; } });
+  if (!ringe.length) svg += `<circle cx="100" cy="100" r="74" fill="none" stroke="#3f3f46" stroke-width="36"/>`;
+  svg += `<text x="100" y="96" fill="#e5e7eb" font-size="17" font-weight="700" text-anchor="middle">${ringe.length ? zahl(sum(ringe[0]), dec) : "–"}</text><text x="100" y="114" fill="#9ca3af" font-size="11" text-anchor="middle">${e}</text>`;
+  box.querySelector(".fw-tsvg").innerHTML = svg;
+  box.querySelector(".fw-liste").innerHTML = ringe.map((r, i) => { const t = sum(r);
+    return `<div class="fw-rname">${(c.torte.ringnamen || [])[ringe.length > 1 ? i : 0] || ""}</div>`
+      + r.map((x) => `<div class="fw-zeile"><i style="background:${x.f}"></i><span>${x.n}</span><b>${zahl(x.v, dec)} ${e}</b><em>${Math.round(x.v / t * 100)} %</em></div>`).join(""); }).join("")
+    + (erg.hinweis ? `<div class="fw-hinweis">${erg.hinweis}</div>` : "");
+  const f = (t) => new Date(t).toLocaleDateString("de-DE", { day: "numeric", month: "numeric" }), hm = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  box.querySelector(".fw-zeit").textContent = f(von) === f(bis - 1) ? f(von) + (bis - von < 864e5 - 6e4 ? " " + hm(von) + "–" + hm(bis) : "")
+    : `${f(von)} – ${f(bis - 1)} (${Math.max(Math.round((bis - von) / 864e5), 1)} Tage)`;
+}
+// Tage zwischen von und bis (lokale Mitternacht), mit Anteil des Tages im Bereich
+function fwTage(von, bis) { const l = [], d = new Date(von); d.setHours(0, 0, 0, 0);
+  for (let t = d.getTime(); t < bis; t += 864e5) { const a = Math.max(t, von), b = Math.min(t + 864e5, bis); if (b > a) l.push([fwKey(t), a, b, (b - a) / 864e5]); }
+  return l; }
+const WF_ART = [["Dusche", "Dusche", "#ef4444", 1, "a_dusche"], ["Badewanne?", "Badewanne", "#f97316", 1, "a_badewanne"], ["Abspülen / Becken?", "Abspülen", "#fb7185", 1, "a_abspuelen"],
+  ["warm kurz", "warm kurz", "#fca5a5", 1, "a_warm_kurz"], ["WC?", "WC", "#60a5fa", 0, "a_wc"], ["kalt", "kalt sonst", "#2563eb", 0, "a_kalt"],
+  ["Waschmaschine", "Waschmaschine", "#a78bfa", 0, "a_waschmaschine"], ["Spülmaschine", "Spülmaschine", "#2dd4bf", 0, "a_spuelmaschine"]];
+function wfTorteRechne(von, bis) {
+  // Einzel-Zapfungen, soweit vorhanden (genau); davor Tageswerte der Langzeitstatistik (ganze Tage), Rest = ohne Aufteilung
+  const ab = WF && WF.kum.length ? WF.kum[0][0] : bis, art = {}, ring = { warm: 0, kalt: 0, unb: 0 }; let ohne = 0;
+  for (const e of (WF && WF.ev) || []) { if (e.t < Math.max(von, ab) || e.t >= bis) continue; const a = WF_ART.find((x) => x[0] === e.art);
+    if (a) art[a[1]] = (art[a[1]] || 0) + e.l; else ohne += e.l; ring[e.warm === true ? "warm" : e.warm === false ? "kalt" : "unb"] += e.l; }
+  for (const [k, a, b, anteil] of fwTage(von, Math.min(ab, bis))) { const x = TL[k]; if (!x) continue;
+    let s = 0; for (const q of WF_ART) { const v = (x[q[4]] || 0) * anteil; art[q[1]] = (art[q[1]] || 0) + v; ring[q[3] ? "warm" : "kalt"] += v; s += v; }
+    const rest = Math.max((x.vol || 0) * 1000 * anteil - s, 0); ohne += rest; ring.unb += rest; }
+  const rd = (r) => r.map((x) => ({ ...x, v: Math.round(x.v) }));
+  return { ringe: [rd([{ n: "warm", v: ring.warm, f: "#ef4444" }, { n: "kalt", v: ring.kalt, f: "#3b82f6" }, { n: "ohne Aufteilung", v: ring.unb, f: "#6b7280" }]),
+    rd(WF_ART.map((a) => ({ n: a[1], v: art[a[1]] || 0, f: a[2] })).sort((x, y) => y.v - x.v).concat([{ n: "ohne Aufteilung", v: ohne, f: "#6b7280" }]))],
+    hinweis: ohne >= 1 ? "grau = vor dem 24.09.2026 bzw. noch ohne Statistik je Art" : "" };
+}
+function wpTorteRechne(von, bis) {
+  // je Tag: ganze Tage aus den Tageswerten (WPF.tage, davor Langzeitstatistik), angeschnittene Tage anteilig nach der Leistungskurve
+  let wp = 0, bw = 0, ll = 0, gr = 0, unb = 0;
+  const integ = (n, a, b) => { let s = 0; for (const [t, p] of (WPF && WPF.kw[n]) || []) { const x = Math.max(t, a), y = Math.min(t + 9e5, b); if (y > x) s += p * (y - x) / 36e5; } return s; };
+  for (const [k, a, b, anteil] of fwTage(von, bis)) {
+    const tg = (WPF && WPF.tage[k]) || null, x = TL[k] || {};
+    const d = tg ? { wp: tg.wp || 0, bw: tg.bw || 0, ll: tg.ll || 0, gwp: tg.gwp, gbw: tg.gbw }
+      : { wp: x.cmi_wp || 0, bw: x.keller_bwwp_shelly_energie || 0, ll: x.klima_betrieb_heute || 0, gwp: x.wp_strom_gratis_heute ?? null, gbw: x.bwwp_strom_gratis_heute ?? null };
+    let f = { wp: 1, bw: 1, ll: 1 };
+    if (anteil < 0.999) { const t0 = new Date(a); t0.setHours(0, 0, 0, 0); const ganz = t0.getTime() + 864e5;
+      for (const n of ["wp", "bw", "ll"]) { const g = integ(n, t0.getTime(), Math.min(ganz, Date.now())), s = integ(n, a, b); f[n] = g > 0.01 ? s / g : anteil; } }
+    wp += d.wp * f.wp; bw += d.bw * f.bw; ll += d.ll * f.ll;
+    if (d.gwp == null && d.gbw == null) unb += d.wp * f.wp + d.bw * f.bw; else gr += Math.min((d.gwp || 0) * f.wp + (d.gbw || 0) * f.bw, d.wp * f.wp + d.bw * f.bw); }
+  unb += ll; const rd = (v) => Math.round(v * 10) / 10;
+  return { ringe: [[{ n: "WP", v: rd(wp), f: "#3b82f6" }, { n: "BWWP", v: rd(bw), f: "#f87171" }, { n: "LLWP (Daikin)", v: rd(ll), f: "#facc15" }],
+    [{ n: "PV/Akku", v: rd(gr), f: "#22c55e" }, { n: "Netz", v: rd(Math.max(wp + bw + ll - gr - unb, 0)), f: "#ef4444" }, { n: "ohne Aufteilung", v: rd(unb), f: "#6b7280" }]],
+    hinweis: unb > 0.05 ? "grau = LLWP bzw. Tage ohne PV/Netz-Aufteilung" : "" };
+}
 
 // --- Wasser: jede Zapfung (Protokoll; davor aus dem SYR-Zählerverlauf rekonstruiert, Regeln wie zapfungen.yaml) ---
 let WF = null;
@@ -656,6 +740,7 @@ function zeigeWasserFenster(d, v) {
   WF = wasserFensterDaten(d, v);
   const F = (t) => { const x = new Date(t); return x.toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }); };
   FW.wf = Object.assign(FW.wf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
+    torte: { start: new Date(2026, 8, 23).getTime(), einheit: "l", dec: 0, ringnamen: ["warm / kalt", "nach Art"], rechne: wfTorteRechne },
     links: { e: "l", max: () => Math.max(20, ...WF.ev.map((e) => e.l)) }, rechts: { e: "l", max: () => Math.max(100, ...WF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, YR, x0, x1, schmal }) => { let g = ""; const bw = schmal ? 3 : 4;
       for (const e of WF.ev) { if (e.t < x0 - 36e5 || e.t > x1 + 36e5) continue; const col = e.warm === true ? "#ef4444" : e.warm === false ? "#3b82f6" : "#9ca3af";
@@ -715,6 +800,7 @@ function zeigeWpFenster(d, v) {
   const f1 = (x) => zahl(Math.round((x || 0) * 10) / 10, 1), pct = (a, b) => b > 0 && a != null ? Math.round(Math.min(a / b, 1) * 100) + " %" : "–";
   const FARBE = { wp: "#3b82f6", bw: "#f87171", ll: "#facc15" };
   FW.wpf = Object.assign(FW.wpf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
+    torte: { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["je Gerät", "woher"], rechne: wpTorteRechne },
     links: { e: "kW", dec: 1, max: () => Math.max(2.5, ...["wp", "bw", "ll"].flatMap((n) => WPF.kw[n].map((p) => p[1]))) },
     rechts: { e: "kWh", max: () => Math.max(4, ...WPF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, x0, x1 }) => { let g = "";
@@ -1364,6 +1450,7 @@ async function holen() {
     const d = await r.json();
     if (!VERLAUF || Date.now() - VERLAUF_T > 12e4) try {   // Verlaufsdaten der Fenster-Grafiken (03.10.2026), HA schickt alle 5 min
       VERLAUF = await (await fetch(DATEN.replace("data.json", "verlauf.json") + "?t=" + Date.now(), { cache: "no-store" })).json(); VERLAUF_T = Date.now(); } catch (e) {}
+    tlSetzen(VERLAUF);
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
