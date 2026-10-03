@@ -199,3 +199,16 @@ tr.teil.hz-an td { color: #facc15; }
 @media (max-width: 700px) { .fbhbild { height: 500px; } }
 .fbh-fazit { margin-top: 10px; line-height: 1.5; font-size: .95em; }
 .fbh-fazit p { margin: .3em 0; } .fbh-fazit small { color: var(--grau, #9ca3af); }
+
+/* Torte unter den Fenster-Grafiken (03.10.2026) */
+.fw-torte { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; justify-content: center; padding: 8px 4px 4px; margin-top: 6px; border-top: 1px solid rgba(128,128,128,.2); }
+.fw-knoepfe { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+.fw-knoepfe button { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 12px; border: 1px solid #52525b; background: transparent; color: #d4d4d8; cursor: pointer; }
+.fw-knoepfe button.an { background: #e5e7eb; color: #18181b; }
+.fw-zeit { font-size: 12px; color: var(--leise, #9ca3af); margin-left: 6px; }
+.fw-tsvg { width: 200px; max-width: 52vw; height: auto; flex: none; }
+.fw-liste { min-width: 200px; max-width: 340px; flex: 1; }
+.fw-rname { margin: 8px 0 2px; color: #9ca3af; font-size: 11px; } .fw-rname:first-child { margin-top: 0; }
+.fw-zeile { display: flex; gap: 6px; align-items: center; font-size: 12.5px; line-height: 1.6; }
+.fw-zeile i { width: 10px; height: 10px; border-radius: 50%; flex: none; } .fw-zeile span { flex: 1; } .fw-zeile em { font-style: normal; color: #9ca3af; width: 40px; text-align: right; }
+.fw-hinweis { margin-top: 6px; color: #9ca3af; font-size: 11px; }
