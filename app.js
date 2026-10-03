@@ -736,10 +736,6 @@ function wasserFensterDaten(d, v) {
     warm: Math.round(num(s, "sensor.warmwasser_heute_liter") ?? 0), dusch: num(s, "sensor.duschen_heute") ?? 0 };
   // Protokoll
   const ev = [];
-  for (const p of (v && v.zp) || d.zp || []) { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) continue;
-    const dt = new Date(jahr, m[2] - 1, m[1], m[3], m[4]); if (dt.getTime() > jetzt + 864e5) dt.setFullYear(jahr - 1);
-    ev.push({ t: dt.getTime() + (p[1] || 0) * 3e4, l: p[2], warm: !!p[3], art: p[4], p: { start: p[0], dauer_min: p[1], max_lh: p[5] } }); }
-  const ab = ev.length ? Math.min(...ev.map((e) => e.t)) - 3e5 : Infinity;
   // Binärsensoren → An-Phasen
   const ph = {}; for (const c of ["w", "m", "s"]) ph[c] = { ab: Infinity, an: [] };
   const bn = ((v && v.wv && v.wv.bn) || []).slice().sort((a, b) => a[1] - b[1]), offen = {};
@@ -747,15 +743,27 @@ function wasserFensterDaten(d, v) {
     if (o && offen[c] == null) offen[c] = ms; else if (!o && offen[c] != null) { p.an.push([offen[c], ms]); offen[c] = null; } }
   for (const c in offen) if (offen[c] != null) ph[c].an.push([offen[c], jetzt]);
   const an = (p, a, b) => p.an.some(([x, y]) => x < b && y > a);
+  // Warm-Regel (03.10.2026, wie zapfungen.yaml): warm nur mit Anstieg T.Warmwasser ≥ 0,5 K; Maschine läuft, nicht warm,
+  // ≤ 25 l Waschmaschine / ≤ 12 l Spülmaschine → Maschine (3 min Toleranz); gilt auch für ältere Protokolleinträge ohne dww
+  const T = []; if (v && v.wv && v.wv.ts) { let [t, x] = v.wv.ts; T.push([t * 1000, x / 10]); for (const [dt, dx] of v.wv.tw || []) { t += dt; x += dx; T.push([t * 1000, x / 10]); } }
+  const anstieg = (a, b) => { let t0 = null, mx = null; for (const [t, x] of T) { if (t <= a) t0 = x; else if (t <= b + 12e4) mx = Math.max(mx ?? x, x); else break; }
+    return t0 == null ? null : Math.max((mx ?? t0) - t0, 0); };
+  const einordnen = (t0, t1, l, dauer, wBin) => { const b = t1 + 18e4, dw = wBin ? anstieg(t0, t1) : null, warm = wBin === null ? null : !!wBin && (dw === null || dw >= 0.5);
+    const g = t0 >= ph.m.ab && an(ph.m, t0 - 6e4, b) ? "Waschmaschine" : t0 >= ph.s.ab && an(ph.s, t0, b) ? "Spülmaschine" : "";
+    const art = warm === null ? "" : g && !warm && l <= (g === "Spülmaschine" ? 12 : 25) ? g : warm && l >= 100 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
+      : warm && dauer >= 3 ? "Abspülen / Becken?" : warm ? "warm kurz" : l >= 3 && l <= 12 && dauer <= 3 ? "WC?" : "kalt";
+    return { warm, art }; };
+  for (const p of (v && v.zp) || d.zp || []) { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) continue;
+    const dt = new Date(jahr, m[2] - 1, m[1], m[3], m[4]); if (dt.getTime() > jetzt + 864e5) dt.setFullYear(jahr - 1);
+    const a0 = dt.getTime(), a1 = a0 + Math.max((p[1] || 1) - 1, 0) * 6e4, e = p[6] != null ? { warm: !!p[3], art: p[4] } : einordnen(a0, a1, p[2], p[1] || 1, !!p[3]);
+    ev.push({ t: a0 + (p[1] || 0) * 3e4, l: p[2], warm: e.warm, art: e.art, p: { start: p[0], dauer_min: p[1], max_lh: p[5] } }); }
+  const ab = ev.length ? Math.min(...ev.map((e) => e.t)) - 3e5 : Infinity;
   // Zählerverlauf → Rekonstruktion + Liter seit 0:00
   const pts = []; if (v && v.wv && v.wv.vs) { let [t, l] = v.wv.vs; pts.push([t * 1000, l]); for (const [dt, dl] of v.wv.vd || []) { t += dt; l += dl; pts.push([t * 1000, l]); } }
   const kum = [], ende = []; let basis = null, tag = null, prev = null, akt = null;
   const schliesse = () => { if (!akt || akt.l < 1 || akt.t1 >= ab) { akt = null; return; }
     const l = Math.round(akt.l), dauer = Math.max(Math.round((akt.t1 - akt.t0) / 6e4 + 1), 1), b = akt.t1 + 6e4;
-    const warm = akt.t0 >= ph.w.ab ? an(ph.w, akt.t0, b) : null;
-    const g = akt.t0 >= ph.m.ab && an(ph.m, akt.t0, b) ? "Waschmaschine" : akt.t0 >= ph.s.ab && an(ph.s, akt.t0, b) ? "Spülmaschine" : "";
-    const art = warm === null ? "" : g && !warm && l <= 25 ? g : warm && l >= 100 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
-      : warm && dauer >= 3 ? "Abspülen / Becken?" : warm ? "warm kurz" : l >= 3 && l <= 12 && dauer <= 3 ? "WC?" : "kalt";
+    const { warm, art } = einordnen(akt.t0, akt.t1, l, dauer, akt.t0 >= ph.w.ab ? an(ph.w, akt.t0, b) : null);
     ev.push({ t: (akt.t0 + akt.t1) / 2, l, warm, art, nach: true, p: { dauer_min: dauer } }); akt = null; };
   for (const [t, vl] of pts) { const m = mn(t);
     if (m !== tag) { if (tag !== null && prev) { const w = Math.max(prev[1] - basis, 0); kum.push([m - 1, w], [m - 0.5, null]); ende.push([m - 1, w]); }
@@ -818,8 +826,7 @@ function wpFensterDaten(d, v, s, k) {
   for (const [b, a, c, e] of (v && v.pw) || []) { const t = b * 900000;
     if (a != null) kw.wp.push([t, a / 100]); if (c != null) kw.bw.push([t, c / 100]); if (e != null) kw.ll.push([t, e / 100]); }
   const tage = {};
-  for (const t of tagesListe(s, k, d.h)) { const x = tage[t.d] = { wp: t.teile[0] + t.teile[1], bw: t.teile[2] + t.teile[3], gwp: t.teile[0], gbw: t.teile[2], ll: 0 };
-    if (t.d < "2026-09-26") { x.gwp = null; x.gbw = null; } }
+  for (const t of tagesListe(s, k, d.h)) { const x = tage[t.d] = { wp: t.teile[0] + t.teile[1], bw: t.teile[2] + t.teile[3], gwp: t.teile[0], gbw: t.teile[2], ll: 0 }; }   // PV/Netz-Aufteilung je Tag aus warmepumpen_tageswerte (auch 22.–25.09. vorhanden)
   // Integral je Tag (kWh) aus den 15-min-Mitteln; LLWP-Tageswert nur daraus
   const integ = {}; for (const n of ["wp", "bw", "ll"]) for (const [t, p] of kw[n]) { const kk = fwKey(t), x = integ[kk] = integ[kk] || { wp: 0, bw: 0, ll: 0 }; x[n] += p * 0.25; }
   for (const [kk, x] of Object.entries(integ)) { const tg = tage[kk] = tage[kk] || { wp: 0, bw: 0, gwp: null, gbw: null, ll: 0 }; tg.ll = x.ll; }
