@@ -40,11 +40,6 @@
   </section>
 
   <section>
-    <h2>Klima</h2>
-    <div id="klima" class="raster drei"></div>
-  </section>
-
-  <section>
     <h2>Wärmequellen – wann lief was</h2>
     <div class="karte">
       <svg id="zeitleiste" viewBox="0 0 1000 190" class="zeitleiste" aria-label="Laufzeiten WP, BWWP, LLWP"></svg>
@@ -70,47 +65,9 @@
   </section>
 
   <section>
-    <h2>Woher kommt der Strom <span class="grau" style="font-size:.7em;font-weight:400">(48 h · ziehen, Leiste, Griffe = bis 14 Tage)</span></h2>
-    <div class="karte">
-      <svg id="herkunft" viewBox="0 0 1000 162" class="zeitleiste" aria-label="Stromherkunft: oben Haus bezieht PV/Akku/Netz, unten Akku lädt/Einspeisung"></svg>
-      <div class="zl-hinweis">Oben: woher das Haus seinen Strom bezieht (Anteile) · unten: Akku lädt / Einspeisung</div>
-      <div class="prog-legende"><span class="l" style="--c:#facc15">PV</span><span class="l" style="--c:#3b82f6">Akku</span><span class="l" style="--c:#f97316">Netz</span><span class="l" style="--c:#93c5fd">unten: Akku lädt</span><span class="l" style="--c:#22c55e">unten: Einspeisung</span></div>
-    </div>
+    <h2>Klima</h2>
+    <div id="klima" class="raster drei"></div>
   </section>
-
-  <section>
-    <h2>PV-Prognose</h2>
-    <div class="karte">
-      <div id="progtext"></div>
-      <svg id="progkurve" viewBox="0 0 1000 330" class="progkurve" aria-label="PV und Verbrauch: Ist und Prognose"></svg>
-      <div class="prog-legende"><span class="l pv">PV</span><span class="l pvp">PV Prognose</span><span class="l vb">Verbrauch</span><span class="l vbp">Verbrauch Prognose Victron</span><span class="l vbe">Verbrauch Prognose eigen</span><span class="l soc">Akku %</span><span class="l socp">Akku Prognose</span></div>
-      <div class="grau" style="font-size:12px;margin-top:4px">Im Diagramm ziehen oder die Tagesleiste antippen = blättern (−4 … +7 Tage) · gelbe Griffe am Rahmen ziehen = zoomen · Doppelklick/-tippen = vorgestern bis übermorgen · alte Prognosen blass</div>
-    </div>
-  </section>
-
-  <section>
-    <h2>PV-Überschuss</h2>
-    <div class="raster zwei-fest pv-zeile">
-      <div class="karte"><svg id="pvtacho" viewBox="0 0 200 130" class="tacho" aria-label="ungenutzter PV-Strom"></svg></div>
-      <div class="karte" id="pvtext"></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Haushaltsgeräte – wann lief was</h2>
-    <div class="karte">
-      <svg id="zeitleiste2" viewBox="0 0 1000 230" class="zeitleiste" aria-label="Laufzeiten Haushaltsgeräte"></svg>
-      <svg id="zeitleiste2_ueb" viewBox="0 0 1000 48" class="zeitleiste zl-ueb" aria-label="14 Tage – antippen oder ziehen"></svg>
-      <div class="zl-hinweis">Unten antippen/ziehen oder im Feld wischen = zurückblättern (14 Tage) <button id="zeitleiste2_jetzt" class="zl-jetzt" hidden>↦ Jetzt</button></div>
-      <div class="prog-legende"><span class="l" style="--c:#06b6d4">Waschmaschine</span><span class="l" style="--c:#a855f7">Trockner</span><span class="l" style="--c:#22c55e">Spülmaschine</span><span class="l" style="--c:#f59e0b">Entfeuchter</span></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Wann starten?</h2>
-    <div class="karte"><div id="wann_kurz" class="wann-kurz"></div><details class="wann-det"><summary>Details</summary><table class="tab" id="wann"></table><div class="fuss" id="wann_fuss"></div></details></div>
-  </section>
-
 
   <div class="zwei">
     <section>
@@ -139,8 +96,50 @@
   </div>
 
   <section>
+    <h2>Woher kommt der Strom <span class="grau" style="font-size:.7em;font-weight:400">(48 h · ziehen, Leiste, Griffe = bis 14 Tage)</span></h2>
+    <div class="karte">
+      <svg id="herkunft" viewBox="0 0 1000 162" class="zeitleiste" aria-label="Stromherkunft: oben Haus bezieht PV/Akku/Netz, unten Akku lädt/Einspeisung"></svg>
+      <div class="zl-hinweis">Oben: woher das Haus seinen Strom bezieht (Anteile) · unten: Akku lädt / Einspeisung</div>
+      <div class="prog-legende"><span class="l" style="--c:#facc15">PV</span><span class="l" style="--c:#3b82f6">Akku</span><span class="l" style="--c:#f97316">Netz</span><span class="l" style="--c:#93c5fd">unten: Akku lädt</span><span class="l" style="--c:#22c55e">unten: Einspeisung</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>PV-Überschuss</h2>
+    <div class="raster zwei-fest pv-zeile">
+      <div class="karte"><svg id="pvtacho" viewBox="0 0 200 130" class="tacho" aria-label="ungenutzter PV-Strom"></svg></div>
+      <div class="karte" id="pvtext"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>PV-Prognose</h2>
+    <div class="karte">
+      <div id="progtext"></div>
+      <svg id="progkurve" viewBox="0 0 1000 330" class="progkurve" aria-label="PV und Verbrauch: Ist und Prognose"></svg>
+      <div class="prog-legende"><span class="l pv">PV</span><span class="l pvp">PV Prognose</span><span class="l vb">Verbrauch</span><span class="l vbp">Verbrauch Prognose Victron</span><span class="l vbe">Verbrauch Prognose eigen</span><span class="l soc">Akku %</span><span class="l socp">Akku Prognose</span></div>
+      <div class="grau" style="font-size:12px;margin-top:4px">Im Diagramm ziehen oder die Tagesleiste antippen = blättern (−4 … +7 Tage) · gelbe Griffe am Rahmen ziehen = zoomen · Doppelklick/-tippen = vorgestern bis übermorgen · alte Prognosen blass</div>
+    </div>
+  </section>
+
+  <section>
     <h2>PV-Anlage 3D</h2>
     <div class="karte" style="padding:0;overflow:hidden"><iframe src="pv3d.html?v=202610021308" title="PV-Anlage 3D" class="pv3d" loading="lazy"></iframe></div>
+  </section>
+
+  <section>
+    <h2>Haushaltsgeräte – wann lief was</h2>
+    <div class="karte">
+      <svg id="zeitleiste2" viewBox="0 0 1000 230" class="zeitleiste" aria-label="Laufzeiten Haushaltsgeräte"></svg>
+      <svg id="zeitleiste2_ueb" viewBox="0 0 1000 48" class="zeitleiste zl-ueb" aria-label="14 Tage – antippen oder ziehen"></svg>
+      <div class="zl-hinweis">Unten antippen/ziehen oder im Feld wischen = zurückblättern (14 Tage) <button id="zeitleiste2_jetzt" class="zl-jetzt" hidden>↦ Jetzt</button></div>
+      <div class="prog-legende"><span class="l" style="--c:#06b6d4">Waschmaschine</span><span class="l" style="--c:#a855f7">Trockner</span><span class="l" style="--c:#22c55e">Spülmaschine</span><span class="l" style="--c:#f59e0b">Entfeuchter</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Wann starten?</h2>
+    <div class="karte"><div id="wann_kurz" class="wann-kurz"></div><details class="wann-det"><summary>Details</summary><table class="tab" id="wann"></table><div class="fuss" id="wann_fuss"></div></details></div>
   </section>
 
   <section>
