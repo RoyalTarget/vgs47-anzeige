@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FBH Wärmebild</title>
+<!-- Fußbodenheizung: Rücklauf je Kreis als Wärmebild (30.09.2026). Zeilen = Kreise aus sensor.fbh_kreise (packages/fbh.yaml),
+     Spalten = 10-min-Abschnitte. Modus „Abweichung“: Kreis-RL minus gemeinsamer RL an der PMG (blau = kälter = zu wenig
+     Durchfluss/langes Rohr, rot = wärmer = zu viel Durchfluss), grau = Heizkreispumpe aus. Modus „Temperatur“: 20–35 °C.
+     Daten live aus dem Elternfenster (HA-iframe, gleiche Herkunft): history/history_during_period, 14 Tage.
+     Bedienung wie die übrigen Leisten: im Feld ziehen = blättern, Leiste unten: Rahmen ziehen = verschieben, gelbe Griffe =
+     zoomen, daneben tippen = springen, Doppelklick/-tippen = Standard (48 h bis jetzt). -->
+<style>
+  :root { --bg: #1c1c1c; --fg: #e5e7eb; --grau: #9ca3af; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 12px system-ui, -apple-system, sans-serif; overflow: hidden; }
+  #kopf { display: flex; align-items: center; gap: 6px; padding: 6px 10px 0; height: 26px; box-sizing: border-box; }
+  #kopf .t { color: var(--grau); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #kopf button { background: #27272a; color: var(--fg); border: 1px solid #52525b; border-radius: 6px; padding: 2px 8px; font: inherit; cursor: pointer; }
+  #kopf button.an { background: #3f3f46; border-color: #e5e7eb; }
+  #jetzt[hidden] { display: none; }
+  canvas { display: block; }
+  #feld { touch-action: pan-y; cursor: grab; }
+  #leiste { touch-action: none; cursor: pointer; }
+  #tip { position: fixed; display: none; pointer-events: none; background: rgba(24,24,27,.97); border: 1px solid #52525b; border-radius: 8px;
+         padding: 6px 9px; line-height: 1.45; z-index: 5; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="kopf"><span class="t" id="titel">Rücklauf je Kreis</span>
+  <button id="jetzt" hidden title="zurück zu jetzt">↦ Jetzt</button>
+  <button id="m_abw" class="an" title="Abweichung vom Mittel aller gemessenen Kreise">Abweichung</button>
+  <button id="m_temp" title="Rücklauftemperatur 20–35 °C">Temperatur</button></div>
+<canvas id="feld"></canvas>
+<canvas id="leiste"></canvas>
+<div id="tip"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const H48 = 48 * 36e5, TAGE = 14, BIN = 6e5, VL = 'sensor.cmi_hk_vorlauf', RLG = 'sensor.cmi_hk_ruecklauf', PU = 'binary_sensor.cmi_hk_pumpe';
+let modus = 'abw', win = { live: true, breite: H48, bis: 0 }, daten = null, geo = null;
+try { const m = localStorage.getItem('fbh_modus'); if (m === 'temp' || m === 'abw') modus = m; } catch (e) {}
+
+function hassEcht() { try { const h = parent !== window && parent.document.querySelector('home-assistant')?.hass; if (h && h.states) return h; } catch (e) {} return null; }
+// Anzeigeseite (03.10.2026): ohne HA kommen die Daten aus dem Gist (fb = [Unix-s, Index, Wert] 10-min-Mittel 48 h, fi = Reihenfolge der Indizes,
+// fk = Kreisliste). WEB.h ist dann ein Ersatz-„hass“ mit den letzten Werten, damit Zeichnen/Tooltip unverändert bleiben.
+const GIST = 'https://gist.githubusercontent.com/RoyalTarget/f9832b91288808b13a203ac1635b6232/raw/data.json';
+const WEB = { h: null, d: null, t: 0 };
+function hass() { return hassEcht() || WEB.h; }
+function kreise(h) { const k = h?.states['sensor.fbh_kreise']?.attributes?.kreise; return Array.isArray(k) ? k : []; }
+const zahl = (v, d = 1) => v === null || v === undefined || isNaN(v) ? '–' : v.toFixed(d).replace('.', ',');
+
+// ---------- Farben ----------
+const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function skala(stops, v) { if (v <= stops[0][0]) return stops[0][1]; for (let i = 1; i < stops.length; i++) if (v <= stops[i][0]) {
+  const [a, ca] = stops[i - 1], [b, cb] = stops[i]; return mix(ca, cb, (v - a) / (b - a)); } return stops[stops.length - 1][1]; }
+const S_ABW = [[-3, hex('#2563eb')], [-1.5, hex('#60a5fa')], [-0.4, hex('#3f3f46')], [0.4, hex('#3f3f46')], [1.5, hex('#f87171')], [3, hex('#dc2626')]];
+const S_TEMP = [[20, hex('#1e3a8a')], [24, hex('#3b82f6')], [27, hex('#8b5cf6')], [30, hex('#c026d3')], [33, hex('#e11d48')], [35, hex('#f59e0b')]];
+const farbe = (v) => { const c = skala(modus === 'abw' ? S_ABW : S_TEMP, v); return `rgb(${c[0]},${c[1]},${c[2]})`; };
+
+// ---------- Daten ----------
+async function ws(msg) { const h = hass(); if (!h) throw new Error('kein hass');
+  for (let i = 0; i < 3; i++) { try { return await Promise.race([h.callWS(msg), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 20000))]); }
+    catch (e) { await new Promise((r) => setTimeout(r, 2000)); } } return {}; }
+
+// zeitgewichtetes Mittel je 10-min-Abschnitt (jeder Wert gilt bis zum nächsten); binär: Anteil „on“
+function binne(pkte, t0, n, bin, binaer) {
+  const out = new Array(n).fill(null); if (!pkte.length) return out; let i = 0, cur = null;
+  for (let k = 0; k < n; k++) { const a = t0 + k * bin, b = a + bin; let t = a, acc = 0, dur = 0;
+    while (i < pkte.length && pkte[i][0] <= t) { cur = pkte[i][1]; i++; }
+    while (t < b) { const nt = i < pkte.length && pkte[i][0] < b ? pkte[i][0] : b;
+      if (cur !== null) { acc += cur * (nt - t); dur += nt - t; } t = nt; if (t < b) { cur = pkte[i][1]; i++; } }
+    out[k] = dur > bin / 3 ? acc / dur : (binaer && dur > 0 ? acc / dur : null); }
+  return out; }
+
+async function ladeWeb() {
+  try { const r = await fetch(GIST + '?t=' + Date.now(), { cache: 'no-store' }); WEB.d = await r.json(); } catch (e) { setTimeout(lade, 30000); return; }
+  const d = WEB.d, fi = d.fi || [], fb = d.fb || [], K = d.fk || []; if (!fb.length) return;
+  const t0 = fb[0][0] * 1000, n = Math.round((fb[fb.length - 1][0] * 1000 - t0) / BIN) + 1, serie = {};
+  for (const [b, i, v] of fb) { const e = fi[i]; if (!e) continue; (serie[e] = serie[e] || new Array(n).fill(null))[Math.round((b * 1000 - t0) / BIN)] = v; }
+  const states = { 'sensor.fbh_kreise': { attributes: { kreise: K } } };
+  for (const e in serie) { const s = serie[e]; let l = null; for (let i = s.length - 1; i >= 0; i--) if (s[i] !== null) { l = s[i]; break; } states[e] = { state: String(l) }; }
+  WEB.h = { states }; const da = K.filter((k) => serie[k.e]), reihen = {}; for (const k of da) reihen[k.e] = serie[k.e];
+  const ref = new Array(n).fill(null);
+  for (let i = 0; i < n; i++) { let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i]; if (v !== null) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
+  const q = serie['sensor.cmi_hk_durchfluss'] || new Array(n).fill(null);
+  daten = { t0, n, K, reihen, ref, vl: serie[VL] || new Array(n).fill(null), rl: serie[RLG] || new Array(n).fill(null),
+    pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), geladen: Date.now() };
+  zeichne();
+}
+
+async function lade() {
+  let inHA = false; try { inHA = parent !== window && !!parent.document.querySelector('home-assistant'); } catch (e) {}
+  if (!inHA) { await ladeWeb(); return; }
+  const h = hass(); if (!h) { setTimeout(lade, 2000); return; }
+  const K = kreise(h), jetzt = Date.now(), t0 = Math.floor((jetzt - TAGE * 864e5) / BIN) * BIN, n = Math.ceil((jetzt - t0) / BIN);
+  const da = K.filter((k) => h.states[k.e]), ids = [...da.map((k) => k.e), VL, RLG, PU];
+  const r = await ws({ type: 'history/history_during_period', start_time: new Date(t0).toISOString(), end_time: new Date(jetzt).toISOString(),
+    entity_ids: ids, minimal_response: true, no_attributes: true, significant_changes_only: false });
+  const pk = (id, bin) => (r[id] || []).map((x) => [(x.lu ?? x.last_updated) * 1000, bin ? (x.s === 'on' ? 1 : x.s === 'off' ? 0 : null) : parseFloat(x.s)])
+    .filter((p) => bin ? p[1] !== null : !isNaN(p[1]));
+  const reihen = {}; for (const k of da) reihen[k.e] = binne(pk(k.e), t0, n, BIN);
+  const ref = new Array(n).fill(null);   // Bezug: Mittel aller gemessenen Kreise (Anlegefühler messen systematisch tiefer als der PMG-Fühler)
+  for (let i = 0; i < n; i++) { let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i]; if (v !== null) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
+  daten = { t0, n, K, reihen, ref, vl: binne(pk(VL), t0, n, BIN), rl: binne(pk(RLG), t0, n, BIN), pu: binne(pk(PU, true), t0, n, BIN, true), geladen: jetzt };
+  zeichne();
+}
+
+// ---------- Fenster ----------
+function fenster() { const jetzt = Date.now(), lo = daten ? daten.t0 : jetzt - TAGE * 864e5;
+  const b = Math.min(Math.max(win.breite, 3 * 36e5), jetzt - lo); let bis = win.live ? jetzt : Math.min(Math.max(win.bis, lo + b), jetzt);
+  return [bis - b, bis, lo, jetzt]; }
+function setze(von, bis) { const jetzt = Date.now(); win = { live: bis >= jetzt - 6e4, breite: bis - von, bis };
+  $('jetzt').hidden = win.live && Math.abs(win.breite - H48) < 6e4; plan(); }
+function standard() { if (raf) { cancelAnimationFrame(raf); raf = null; } win = { live: true, breite: H48, bis: 0 }; $('jetzt').hidden = true; zeichne(); }
+let raf = null; const plan = () => { if (!raf) raf = requestAnimationFrame(() => { raf = null; zeichne(); }); };
+
+// ---------- Zeichnen ----------
+function leinwand(c, w, h) { const dpr = window.devicePixelRatio || 1; c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  c.style.width = w + 'px'; c.style.height = h + 'px'; const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); return g; }
+
+function zeichne() {
+  const W = document.body.clientWidth, HT = window.innerHeight, schmal = W < 560;
+  const KOPF = 26, ACHSE = 18, LEISTE = 40, LEG = 18, LW = schmal ? 58 : 64, RW = schmal ? 44 : 78;
+  const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'];
+  const zeilenHoehe = Math.max(8, Math.min(22, (HT - KOPF - ACHSE - LEISTE - LEG - 6 - gruppen.length * 13) / Math.max(K.length, 1)));
+  const FH = ACHSE + gruppen.length * 13 + K.length * zeilenHoehe + LEG + 4;
+  const g = leinwand($('feld'), W, FH); g.clearRect(0, 0, W, FH);
+  const X0 = LW, X1 = W - RW, [von, bis] = daten ? fenster() : [Date.now() - H48, Date.now()], X = (t) => X0 + (t - von) / (bis - von) * (X1 - X0);
+  $('titel').textContent = modus === 'abw' ? (schmal ? 'Abweichung vom Mittel' : 'Rücklauf je Kreis – Abweichung vom Mittel aller Kreise (blau = kälter, rot = wärmer)')
+    : (schmal ? 'Rücklauf 20–35 °C' : 'Rücklauf je Kreis – Temperatur 20–35 °C');
+  // Zeitachse oben: Mitternacht mit Datum, Stunden
+  g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle'; g.fillStyle = '#9ca3af';
+  const spanne = bis - von, schritt = spanne > 6 * 864e5 ? 24 : spanne > 3 * 864e5 ? 12 : spanne > 864e5 * 1.2 ? (schmal ? 12 : 6) : spanne > 12 * 36e5 ? 3 : 1;
+  const tag = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  for (let t = new Date(von).setMinutes(0, 0, 0); t <= bis; t += 36e5) { const d = new Date(t); if (t < von || d.getHours() % schritt) continue;
+    const x = X(t), mn = d.getHours() === 0; g.textAlign = 'center';
+    g.fillStyle = mn ? '#e5e7eb' : '#9ca3af'; g.font = (mn ? '600 ' : '') + '11px system-ui, sans-serif';
+    g.fillText(mn ? `${tag[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.` : `${String(d.getHours()).padStart(2, '0')}:00`, Math.min(Math.max(x, X0 + 24), X1 - 24), ACHSE / 2); }
+  // Zeilen
+  const zl = []; let y = ACHSE; g.textAlign = 'left';
+  for (const G of gruppen) { const ks = K.filter((k) => k.g === G); if (!ks.length) continue;
+    g.fillStyle = '#e5e7eb'; g.font = '600 11px system-ui, sans-serif'; g.fillText(G, 4, y + 7);
+    const n = ks.filter((k) => h?.states[k.e]).length; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText(`${n}/${ks.length}`, 26, y + 7);
+    y += 13; for (const k of ks) { zl.push({ k, y, h: zeilenHoehe }); y += zeilenHoehe; } }
+  const iv = daten ? Math.max(0, Math.floor((von - daten.t0) / BIN)) : 0, ib = daten ? Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN)) : 0;
+  const zeitAus = (i) => daten.t0 + i * BIN;
+  for (const z of zl) { const r = daten?.reihen[z.k.e], hy = z.h - 1;
+    g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${Math.min(11, z.h + 1)}px system-ui, sans-serif`; g.textAlign = 'left';
+    g.fillText(z.k.k, 8, z.y + z.h / 2);
+    if (!r) { g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, hy); if (z.h >= 10) { g.fillStyle = '#52525b'; g.textAlign = 'center';
+      g.fillText('noch kein Fühler', (X0 + X1) / 2, z.y + z.h / 2); } continue; }
+    let sa = 0, sn = 0;
+    for (let i = iv; i < ib; i++) { const v = r[i]; if (v === null) continue; const an = (daten.pu[i] ?? 0) >= 0.5, rl = daten.ref[i];
+      const xa = X(zeitAus(i)), xb = X(zeitAus(i + 1)); if (xb < X0 || xa > X1) continue;
+      let col; if (modus === 'abw') { if (!an || rl === null) col = '#2a2a2e'; else { col = farbe(v - rl); sa += v - rl; sn++; } }
+      else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
+      g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy); g.globalAlpha = 1; }
+    // rechts: aktueller Wert + Ø Abweichung im Fenster (nur Pumpe an)
+    const s = h?.states[z.k.e]?.state, akt = parseFloat(s); g.textAlign = 'right';
+    g.fillStyle = '#f59e0b'; g.font = `600 ${Math.min(11, z.h + 1)}px system-ui, sans-serif`;
+    g.fillText(isNaN(akt) ? '–' : zahl(akt) + (schmal ? '' : ' °C'), schmal ? W - 4 : X1 + 44, z.y + z.h / 2);
+    if (!schmal && sn) { const m = sa / sn; g.fillStyle = Math.abs(m) < 0.4 ? '#9ca3af' : m < 0 ? '#60a5fa' : '#f87171'; g.font = `${Math.min(10, z.h)}px system-ui, sans-serif`;
+      g.fillText((m > 0 ? '+' : '') + zahl(m), W - 4, z.y + z.h / 2); } }
+  // Mitternachtslinien + Jetzt
+  g.strokeStyle = 'rgba(229,231,235,.55)'; g.lineWidth = 1;
+  for (let t = new Date(von).setHours(24, 0, 0, 0); t < bis; t += 864e5) { const x = Math.round(X(t)) + 0.5; g.beginPath(); g.moveTo(x, ACHSE); g.lineTo(x, y); g.stroke(); }
+  // Legende: Text – Farbbalken – Text
+  const ly = y + 4; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
+  const tl = modus === 'abw' ? '−3 K kälter' : '20 °C', tr = modus === 'abw' ? '+3 K wärmer · grau = Pumpe aus' : '35 °C · blass = Pumpe aus';
+  g.fillText(tl, X0, ly + 7); const lx = X0 + g.measureText(tl).width + 6, lb = Math.max(60, Math.min(180, X1 - lx - g.measureText(tr).width - 12));
+  for (let i = 0; i < lb; i++) { const v = modus === 'abw' ? -3 + 6 * i / lb : 20 + 15 * i / lb; g.fillStyle = farbe(v); g.fillRect(lx + i, ly + 3, 1.2, 8); }
+  g.fillStyle = '#9ca3af'; g.fillText(tr, lx + lb + 6, ly + 7);
+  if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2 + 0); }
+  geo = { X0, X1, von, bis, zl, ACHSE, yEnde: y };
+  zeichneLeiste(W);
+}
+
+function zeichneLeiste(W) {
+  const LH = 40, g = leinwand($('leiste'), W, LH); g.clearRect(0, 0, W, LH); if (!daten) return;
+  const [von, bis, lo, hi] = fenster(), U = (t) => 8 + (t - lo) / (hi - lo) * (W - 16), UH = 22, reihen = daten.K.filter((k) => daten.reihen[k.e]);
+  g.fillStyle = '#27272a'; g.beginPath(); g.roundRect(8, 2, W - 16, UH, 3); g.fill();
+  // Mini-Wärmebild: je Kreis eine dünne Zeile, Stundenmittel
+  const st = 6, zh = (UH - 6) / Math.max(reihen.length, 1);
+  reihen.forEach((k, zi) => { const r = daten.reihen[k.e];
+    for (let i = 0; i < daten.n; i += st) { let a = 0, n = 0, an = 0;
+      for (let j = i; j < Math.min(i + st, daten.n); j++) { an += (daten.pu[j] ?? 0) >= 0.5 ? 1 : 0; const v = r[j]; if (v === null) continue;
+        const d = modus === 'abw' ? (daten.ref[j] === null ? null : v - daten.ref[j]) : v; if (d !== null) { a += d; n++; } }
+      if (!n) continue; g.fillStyle = modus === 'abw' && an < st / 2 ? '#34343a' : farbe(a / n);
+      g.fillRect(U(daten.t0 + i * BIN), 5 + zi * zh, Math.max(U(daten.t0 + (i + st) * BIN) - U(daten.t0 + i * BIN), 1), Math.max(zh - 0.5, 1)); } });
+  g.font = '10px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  for (let t = new Date(lo).setHours(24, 0, 0, 0); t < hi; t += 864e5) { const d = new Date(t); g.strokeStyle = '#52525b'; g.beginPath(); g.moveTo(U(t) + 0.5, 2); g.lineTo(U(t) + 0.5, UH + 2); g.stroke();
+    if (W > 600 || d.getDate() % 2 === 0) { g.fillStyle = '#9ca3af'; g.fillText(`${d.getDate()}.${d.getMonth() + 1}.`, U(t + 432e5), UH + 14); } }
+  // weißer Rahmen + gelbe Griffe (zoombar) – wie die übrigen Leisten
+  const xa = U(von), xb = U(bis);
+  g.fillStyle = 'rgba(229,231,235,.12)'; g.strokeStyle = '#e5e7eb'; g.lineWidth = 1.5; g.beginPath(); g.roundRect(xa, 1, xb - xa, UH + 2, 3); g.fill(); g.stroke();
+  g.fillStyle = '#facc15'; for (const x of [xa, xb]) { g.beginPath(); g.roundRect(x - 3.5, 0, 7, UH + 4, 2); g.fill(); }
+  g.strokeStyle = '#1c1c1c'; g.lineWidth = 1.4; for (const x of [xa, xb]) { g.beginPath(); g.moveTo(x, UH / 2 - 4); g.lineTo(x, UH / 2 + 8); g.stroke(); }
+}
+
+// ---------- Bedienung ----------
+function doppel(e, fn) { let t0 = 0, x0 = 0, xd = 0;
+  e.addEventListener('pointerdown', (ev) => { xd = ev.clientX; });
+  e.addEventListener('pointerup', (ev) => { if (Math.abs(ev.clientX - xd) > 8) { t0 = 0; return; } const t = ev.timeStamp || Date.now();
+    if (t - t0 < 450 && Math.abs(ev.clientX - x0) < 30) { t0 = 0; fn(); } else { t0 = t; x0 = ev.clientX; } });
+  e.addEventListener('dblclick', fn); }
+
+const feld = $('feld'), tip = $('tip'); let dr = null;
+function zeigeTip(ev) { if (!geo || !daten) return; const r = feld.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+  const z = geo.zl.find((q) => y >= q.y && y < q.y + q.h); if (!z || x < geo.X0 || x > geo.X1) { tip.style.display = 'none'; return; }
+  const t = geo.von + (x - geo.X0) / (geo.X1 - geo.X0) * (geo.bis - geo.von), i = Math.floor((t - daten.t0) / BIN), rr = daten.reihen[z.k.e];
+  const d = new Date(daten.t0 + i * BIN), an = (daten.pu[i] ?? 0) >= 0.5, v = rr ? rr[i] : null, vl = daten.vl[i], rl = daten.rl[i], mw = daten.ref[i];
+  const zeit = `${['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  let s = `<b>${z.k.g} · ${z.k.k}</b>${z.k.m ? ` <span style="color:#9ca3af">(${z.k.m} m)</span>` : ''}${z.k.l ? `<br><span style="color:#9ca3af">${z.k.l}${z.k.a ? ' · Abgang ' + z.k.a : ''}</span>` : ''}${z.k.soll || z.k.mp || z.k.ist != null ? `<br><span style="color:#9ca3af">${z.k.soll ? 'Röhrchen Soll ' + String(z.k.soll).replace('.', ',') + ' l/min' : (z.k.ist != null ? 'Röhrchen' : '')}${z.k.ist != null ? ' · <b style="color:#e5e7eb">Ist ' + String(z.k.ist).replace('.', ',') + (z.k.soll ? ' (' + Math.round(z.k.ist / z.k.soll * 100) + ' %)' : '') + '</b>' + (z.k.ist_d ? ' <span style="color:#6b7280">' + z.k.ist_d + '</span>' : '') : ''}${z.k.sp ? ' · Soll-Spreizung ' + String(z.k.sp).replace('.', ',') + ' K' : ''}${z.k.mp ? ' · Plan ' + z.k.mp + ' m + 10 m Anb.' : ''}</span>` : ''}<br><span style="color:#9ca3af">${zeit} · Pumpe ${an ? 'an' : 'aus'}</span><br>`;
+  if (!rr) s += '<span style="color:#9ca3af">noch kein Fühler</span>';
+  else { s += `RL Kreis <b style="color:#f59e0b">${zahl(v)} °C</b><br>PMG: VL <span style="color:#ef4444">${zahl(vl)}</span> / RL <span style="color:#3b82f6">${zahl(rl)}</span> °C`;
+    if (v !== null && mw !== null) s += `<br>Abweichung vom Mittel (${zahl(mw)}) <b style="color:${Math.abs(v - mw) < 0.4 ? '#e5e7eb' : v < mw ? '#60a5fa' : '#f87171'}">${v - mw > 0 ? '+' : ''}${zahl(v - mw)} K</b>`;
+    if (v !== null && rl !== null) s += `<br><span style="color:#9ca3af">zum PMG-RL ${v - rl > 0 ? '+' : ''}${zahl(v - rl)} K</span>`;
+    if (v !== null && vl !== null) s += ` · Spreizung ${zahl(vl - v)} K`; }
+  tip.innerHTML = s; tip.style.display = 'block';
+  const tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(Math.max(ev.clientX - tw / 2, 4), window.innerWidth - tw - 4) + 'px';
+  tip.style.top = (ev.clientY - th - 12 < 0 ? ev.clientY + 16 : ev.clientY - th - 12) + 'px'; }
+feld.addEventListener('pointerdown', (ev) => { const [von, bis] = fenster(); dr = { x: ev.clientX, von, bis, moved: false, typ: ev.pointerType }; try { feld.setPointerCapture(ev.pointerId); } catch (e) {} });
+feld.addEventListener('pointermove', (ev) => { if (!dr) { if (ev.pointerType === 'mouse') zeigeTip(ev); return; }
+  const dx = ev.clientX - dr.x; if (Math.abs(dx) > 5) dr.moved = true; if (!dr.moved) return; tip.style.display = 'none';
+  const k = (dr.bis - dr.von) / (geo.X1 - geo.X0); setze(dr.von - dx * k, dr.bis - dx * k); });
+const ende = (ev) => { if (dr && !dr.moved && ev && ev.type === 'pointerup') zeigeTip(ev); dr = null; };
+feld.addEventListener('pointerup', ende); feld.addEventListener('pointercancel', () => { dr = null; });
+feld.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') tip.style.display = 'none'; });
+doppel(feld, standard);
+
+const leiste = $('leiste'); let gm = null;
+function lage(ev) { const r = leiste.getBoundingClientRect(), [von, bis, lo, hi] = fenster();
+  const zt = (x) => lo + (x - r.left - 8) / (r.width - 16) * (hi - lo), xt = (t) => r.left + 8 + (t - lo) / (hi - lo) * (r.width - 16);
+  return { t: zt(ev.clientX), a: von, b: bis, xa: xt(von), xb: xt(bis), tol: ev.pointerType === 'touch' ? 18 : 8 }; }
+leiste.addEventListener('pointerdown', (ev) => { if (!daten) return; const q = lage(ev), mitte = (q.xa + q.xb) / 2, eng = q.xb - q.xa < 3 * q.tol;
+  if (Math.abs(ev.clientX - q.xa) <= q.tol && (!eng || ev.clientX < mitte)) gm = { m: 'l' };
+  else if (Math.abs(ev.clientX - q.xb) <= q.tol) gm = { m: 'r' };
+  else if (ev.clientX > q.xa && ev.clientX < q.xb) gm = { m: 'm', off: q.t - q.a, w: q.b - q.a };
+  else { const w = q.b - q.a; gm = { m: 'm', off: w / 2, w }; setze(q.t - w / 2, q.t + w / 2); }
+  try { leiste.setPointerCapture(ev.pointerId); } catch (e) {} });
+leiste.addEventListener('pointermove', (ev) => { if (!daten) return; const q = lage(ev);
+  if (!gm) { leiste.style.cursor = Math.abs(ev.clientX - q.xa) <= q.tol || Math.abs(ev.clientX - q.xb) <= q.tol ? 'ew-resize' : (ev.clientX > q.xa && ev.clientX < q.xb ? 'grab' : 'pointer'); return; }
+  if (gm.m === 'l') setze(Math.min(q.t, q.b - 3 * 36e5), q.b); else if (gm.m === 'r') setze(q.a, Math.max(q.t, q.a + 3 * 36e5)); else setze(q.t - gm.off, q.t - gm.off + gm.w); });
+leiste.addEventListener('pointerup', () => { gm = null; }); leiste.addEventListener('pointercancel', () => { gm = null; });
+doppel(leiste, standard);
+$('jetzt').addEventListener('click', standard);
+for (const [id, m] of [['m_abw', 'abw'], ['m_temp', 'temp']]) $(id).addEventListener('click', () => { modus = m;
+  try { localStorage.setItem('fbh_modus', m); } catch (e) {} $('m_abw').classList.toggle('an', m === 'abw'); $('m_temp').classList.toggle('an', m === 'temp'); zeichne(); });
+$('m_abw').classList.toggle('an', modus === 'abw'); $('m_temp').classList.toggle('an', modus === 'temp');
+
+new ResizeObserver(() => zeichne()).observe(document.body);
+zeichne(); lade();
+setInterval(() => { if (!document.hidden) lade(); }, 5 * 6e4);   // alle 5 min neu laden
+setInterval(() => { if (!document.hidden && !dr && !gm) zeichne(); }, 3e4);   // aktuelle Werte rechts
+document.addEventListener('visibilitychange', () => { if (!document.hidden && daten && Date.now() - daten.geladen > 2 * 6e4) lade(); });
+window.__fbh = { get daten() { return daten; }, get win() { return win; }, standard };
+</script>
+</body>
+</html>
