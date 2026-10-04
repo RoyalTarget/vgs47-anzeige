@@ -603,8 +603,8 @@ const fwBox = (s) => `<div style="line-height:1.55">${s}</div>`;
 
 // ---------- Torte unter den Fenster-Grafiken (03.10.2026, wie Dashboard) ----------
 // FW[id].torte = {start, einheit, dec, ringnamen, rechne(von, bis, modus) → {ringe: [[{n, v, f}]…], hinweis}}
-// Knöpfe Fenster (= sichtbarer Bereich) · Woche · Monat · Jahr · Alles; Langzeitwerte aus verlauf.json „tl“.
-const FW_TK = [["fenster", "Fenster"], ["woche", "Woche"], ["monat", "Monat"], ["jahr", "Jahr"], ["alles", "Alles"]];
+// Knöpfe Fenster (= sichtbarer Bereich) · 7 Tage · 30 Tage · 365 Tage · Alles; Langzeitwerte aus verlauf.json „tl“.
+const FW_TK = [["fenster", "Fenster"], ["woche", "7 Tage"], ["monat", "30 Tage"], ["jahr", "365 Tage"], ["alles", "Alles"]];   // 04.10.2026: rollierend → „x Tage“
 let TL = {};   // Datum → {Kürzel: Wert} aus der Langzeitstatistik
 // Spalten von „tl“ (SQL „Tageswerte lang“, 03.10.2026): [Datum, …] in dieser Reihenfolge; Liter bzw. kWh
 const TL_K = ["a_dusche", "a_badewanne", "a_abspuelen", "a_warm_kurz", "a_wc", "a_kalt", "a_waschmaschine", "a_spuelmaschine", "vol",
