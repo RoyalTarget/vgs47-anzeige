@@ -183,7 +183,7 @@
   "img": "sp_bwwp_mitte_1.svg",
   "conds": [
    [
-    "sensor.cmi_t_speicher_mitte",
+    "sensor.cmi_bwwp_mitte",
     null,
     30
    ]
@@ -193,7 +193,7 @@
   "img": "sp_bwwp_mitte_2.svg",
   "conds": [
    [
-    "sensor.cmi_t_speicher_mitte",
+    "sensor.cmi_bwwp_mitte",
     29.99,
     38
    ]
@@ -203,7 +203,7 @@
   "img": "sp_bwwp_mitte_3.svg",
   "conds": [
    [
-    "sensor.cmi_t_speicher_mitte",
+    "sensor.cmi_bwwp_mitte",
     37.99,
     45
    ]
@@ -213,7 +213,7 @@
   "img": "sp_bwwp_mitte_4.svg",
   "conds": [
    [
-    "sensor.cmi_t_speicher_mitte",
+    "sensor.cmi_bwwp_mitte",
     44.99,
     50
    ]
@@ -223,7 +223,7 @@
   "img": "sp_bwwp_mitte_5.svg",
   "conds": [
    [
-    "sensor.cmi_t_speicher_mitte",
+    "sensor.cmi_bwwp_mitte",
     49.99,
     55
    ]
@@ -233,7 +233,7 @@
   "img": "sp_bwwp_mitte_6.svg",
   "conds": [
    [
-    "sensor.cmi_t_speicher_mitte",
+    "sensor.cmi_bwwp_mitte",
     54.99,
     null
    ]
