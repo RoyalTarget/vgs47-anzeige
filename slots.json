@@ -622,7 +622,7 @@
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
-  "entity": "sensor.cmi_t_speicher_mitte",
+  "entity": "sensor.cmi_bwwp_mitte",
   "unit": "°C",
   "dec": 1
  },
