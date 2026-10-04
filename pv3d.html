@@ -298,6 +298,7 @@ async function aktualisieren() {
   const s = sonneSetzen();
   document.querySelector('#kopf b').textContent = `☀️ PV jetzt ${zahl(summe / 1000, 2)} kW`;
   document.getElementById('kopf2').textContent = `heute ${zahl(heute, 1)} kWh · Sonne ${s.el > 0 ? zahl(s.el) + '° hoch, aus ' + himmel(s.az) : 'unter dem Horizont'}${quelle === 'web' ? ' · Stand ≤ 1 min' : ''}`;
+  anfordern();   // neue Farben/Schilder/Sonnenstand zeichnen
 }
 const himmel = (az) => ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'][Math.round(az / 45) % 8];
 
@@ -335,7 +336,7 @@ document.getElementById('zmerk').onclick = () => { try { localStorage.setItem('p
 
 // ---------- Größe + Schleife ----------
 function groesse() { const w = cv.clientWidth, h = cv.clientHeight; renderer.setSize(w, h, false); cam.aspect = w / h;
-  cam.fov = w / h < 1.1 ? 50 : 38; cam.updateProjectionMatrix(); }
+  cam.fov = w / h < 1.1 ? 50 : 38; cam.updateProjectionMatrix(); try { anfordern(); } catch (e) {} }
 new ResizeObserver(groesse).observe(cv); groesse(); reset();
 // Schilder ausblenden, wenn das Haus zwischen Kamera und Schild liegt (Sichtstrahl gegen Hausflächen, ohne Module/Glas)
 const verdecker = () => inner.children.filter((o) => o.isMesh && !module.includes(o) && o.material !== matGlas && o.material !== matGlasDach);
@@ -343,8 +344,17 @@ const sr = new THREE.Raycaster(), wp = new THREE.Vector3();
 function sichtbarkeit() { const vd = verdecker();
   for (const { s } of Object.values(schilder)) { s.getWorldPosition(wp); const d = wp.distanceTo(cam.position);
     sr.set(cam.position, wp.clone().sub(cam.position).normalize()); sr.far = d - 0.4; s.visible = sr.intersectObjects(vd, false).length === 0; } }
-let fr = 0;
-(function schleife() { controls.update(); if (fr++ % 6 === 0) sichtbarkeit(); renderer.render(scene, cam); requestAnimationFrame(schleife); })();
+// Zeichnen nur bei Bedarf (04.10.2026): vorher Dauerschleife mit 60 Bildern/s → iPhone/Dashboard träge.
+// Jetzt: beim Drehen (inkl. Auslaufen der Dämpfung), nach neuen Werten, nach Größenänderung; sonst steht die Szene.
+let fr = 0, laeuft = false, bedarf = true, zieht = false;
+function anfordern() { bedarf = true; if (!laeuft) { laeuft = true; requestAnimationFrame(schleife); } }
+function schleife() { const bew = controls.update();
+  if (bew || bedarf) { if (!bew || fr++ % 6 === 0) sichtbarkeit(); renderer.render(scene, cam); bedarf = false; }
+  if (bew || zieht) requestAnimationFrame(schleife); else laeuft = false; }
+controls.addEventListener('change', anfordern);
+controls.addEventListener('start', () => { zieht = true; anfordern(); });
+controls.addEventListener('end', () => { zieht = false; anfordern(); });
+anfordern();
 aktualisieren(); setInterval(aktualisieren, 5000);
 window.__pv3d = { schilder, cam, inner, THREE, controls };   // für Tests
 </script>
