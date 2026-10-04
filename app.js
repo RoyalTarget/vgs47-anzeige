@@ -610,7 +610,8 @@ let TL = {};   // Datum → {Kürzel: Wert} aus der Langzeitstatistik
 const TL_K = ["a_dusche", "a_badewanne", "a_abspuelen", "a_warm_kurz", "a_wc", "a_kalt", "a_waschmaschine", "a_spuelmaschine", "vol",
   "cmi_wp", "keller_bwwp_shelly_energie", "klima_betrieb_heute", "wp_strom_gratis_heute", "bwwp_strom_gratis_heute",
   "haus", "netz", "einsp", "akku_ent", "akku_lad", "g_waschmaschine", "g_trockner", "g_spulmaschine", "g_kuhlschrank", "g_kuhlschrank_garage",
-  "g_entfeuchter", "g_nerdaxe", "g_iceriver", "g_tv_sony"];
+  "g_entfeuchter", "g_nerdaxe", "g_iceriver", "g_tv_sony",
+  "h_pv", "h_akku", "h_netz", "ak_pv", "ak_netz"];   // 04.10.2026: haus_herkunft.yaml (Haus aus PV/Akku/Netz, Akku aus PV/Netz), ab 24.09.
 function tlSetzen(v) { TL = {}; for (const r of (v && v.tl) || []) { if (!Array.isArray(r)) continue; const x = TL[r[0]] = {}; TL_K.forEach((k, i) => { if (r[i + 1] != null) x[k] = r[i + 1]; }); } }
 const fwBogen = (cx, cy, r0, r1, a0, a1) => { if (a1 - a0 >= 2 * Math.PI - 1e-6) a1 = a0 + 2 * Math.PI - 1e-4;
   const p = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)], g = a1 - a0 > Math.PI ? 1 : 0;
@@ -704,13 +705,16 @@ const FW_FREMD = {};
 function fwTorteFremd(id, torte, x0, x1) { const c = FW_FREMD[id] = FW_FREMD[id] || { torte }; c.x0 = x0; c.x1 = x1; fwTorte(id, c); }
 const rd1 = (v) => Math.round(v * 10) / 10;
 const HK_TORTE = { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["Haus bezieht", "PV-Strom geht"],
-  rechne: (von, bis, m) => { let pv = 0, akku = 0, netz = 0, lad = 0, einsp = 0;
+  rechne: (von, bis, m) => { let pv = 0, akku = 0, netz = 0, lad = 0, einsp = 0, nl = 0;
     if (m === "fenster") for (const r of hkDaten) { const a = Math.max(r[0], von), b = Math.min(r[0] + r[8], bis); if (b <= a) continue; const f = (b - a) / 3.6e9;
       pv += r[1] * f; akku += r[2] * f; netz += r[3] * f; lad += r[4] * f; einsp += r[5] * f; }
-    else for (const [k, , , an] of fwTage(von, bis)) { const x = TL[k]; if (!x) continue; const h = (x.haus || 0) * an, n = (x.netz || 0) * an, ak = Math.min((x.akku_ent || 0) * an, Math.max(h - n, 0));
+    else for (const [k, , , an] of fwTage(von, bis)) { const x = TL[k]; if (!x) continue;
+      if (x.h_netz != null) { pv += (x.h_pv || 0) * an; akku += (x.h_akku || 0) * an; netz += x.h_netz * an; lad += (x.ak_pv || 0) * an; nl += (x.ak_netz || 0) * an; einsp += (x.einsp || 0) * an; continue; }
+      const h = (x.haus || 0) * an, n = (x.netz || 0) * an, ak = Math.min((x.akku_ent || 0) * an, Math.max(h - n, 0));   // vor 24.09.2026: alte Näherung
       netz += n; akku += ak; pv += Math.max(h - n - ak, 0); lad += (x.akku_lad || 0) * an; einsp += (x.einsp || 0) * an; }
     return { ringe: [[{ n: "PV direkt", v: rd1(pv), f: "#facc15" }, { n: "Akku", v: rd1(akku), f: "#3b82f6" }, { n: "Netz", v: rd1(netz), f: "#f97316" }],
-      [{ n: "ins Haus", v: rd1(pv), f: "#facc15" }, { n: "in den Akku", v: rd1(lad), f: "#93c5fd" }, { n: "Einspeisung", v: rd1(einsp), f: "#22c55e" }]] }; } };
+      [{ n: "ins Haus", v: rd1(pv), f: "#facc15" }, { n: "in den Akku", v: rd1(lad), f: "#93c5fd" }, { n: "Einspeisung", v: rd1(einsp), f: "#22c55e" }]],
+      hinweis: "Akku = was im Haus ankommt (nach Wandlerverlust)" + (nl >= 0.05 ? ` · zusätzlich Netz → Akku ${rd1(nl).toFixed(1).replace(".", ",")} kWh (Nachladen an der Reserve)` : "") }; } };
 const GER_TORTE = { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["Gruppen", "je Gerät"],
   rechne: (von, bis) => {
     const G = [["Waschmaschine", "g_waschmaschine", "Wäsche", "#06b6d4"], ["Trockner", "g_trockner", "Wäsche", "#a855f7"], ["Spülmaschine", "g_spulmaschine", "Küche & Kühlen", "#22c55e"],
@@ -1205,8 +1209,10 @@ function zeigeHerkunft(d) {
     const f = roh.filter((w, j) => Math.abs(j - i) <= 1 && Math.abs(w[0] - v[0]) <= 600);
     const mw = (k) => f.reduce((x, w) => x + (w[k] || 0), 0) / f.length;
     const h = Math.max(mw(1), 0), batt = mw(2), netz = mw(3), pvg = Math.max(mw(4), 0);
-    const n = Math.min(Math.max(netz, 0), h), a = Math.min(Math.max(-batt, 0), h - n);
-    let q = [Math.max(h - n - a, 0), a, n]; const s = q[0] + q[1] + q[2];
+    // Aufteilung wie packages/haus_herkunft.yaml (04.10.2026): Akku = Rest nach PV, also AC-seitig nach Wandlerverlust
+    const n = Math.min(Math.max(netz, 0), h), lad = Math.max(batt, 0), na = Math.min(Math.max(netz - h, 0), lad);
+    const pvh = Math.min(h - n, Math.max(pvg - (lad - na) - Math.max(-netz, 0), 0));
+    let q = [pvh, Math.max(h - n - pvh, 0), n]; const s = q[0] + q[1] + q[2];
     if (s > 0) { q = q.map((x) => (x / s < 0.08 ? 0 : x)); const s2 = q.reduce((x, y) => x + y, 0) || 1; q = q.map((x) => Math.round(x / s2 * 20) / 20 * s); }
     const laden = batt >= 150 ? batt : 0, einsp = -netz >= 150 ? -netz : 0;
     return [v[0] * 1000, q[0], q[1], q[2], laden, einsp, h, pvg, v[5] ? 36e5 : 6e5];   // ältere Tage Stundenmittel (30.09.2026)
