@@ -125,6 +125,10 @@ function gaube([xa, xb], seite) {
   fm.position.copy(P((xa + xb) / 2, fy, TR + 1.0)); if (seite === 'so') fm.rotation.y = Math.PI; inner.add(fm);
 }
 gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
+// Motorfenster (Nutzer 05.10.2026): je Glasseite die mittlere Scheibe, oben am First angeschlagen (Kettenantrieb D+H),
+// West = Straßenseite (NW, Shelly 2PM cover.fenster_west), Ost = Gartenseite (SO, noch ohne Shelly). Bei 100 % ≈ 10° über waagrecht.
+// Position nur im HA-iframe (Anzeigeseite/Gist bewusst ohne → Fenster dort immer zu).
+const FENSTER = { west: 'cover.fenster_west', ost: null }, OFFEN_UEBER_WAAGRECHT = 10, FLUEGEL = {};
 // Glas-Firstaufbau (Foto 01.10.2026): sitzt AUF dem First – graue senkrechte Wände ≈ 0,45 m über der Dachfläche,
 // darauf ein Satteldach aus Glas (je Seite 3 Scheiben mit hellen Rahmen), First ≈ 0,3 m über dem Hausfirst.
 // Vorher lag er mit +9,05/+9,45 unter der Dachfläche (First +10,07) und war unsichtbar.
@@ -132,8 +136,17 @@ gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
   const matRahmen = new THREE.MeshStandardMaterial({ color: 0xc7ccd3, roughness: 0.5, metalness: 0.4, side: THREE.DoubleSide });
   for (const y of [y0, y1]) poly([[xa, y, zDach(y) - 0.2], [xb, y, zDach(y) - 0.2], [xb, y, zw], [xa, y, zw]], matRahmen);
   for (const x of [xa, xb]) poly([[x, y0, zDach(y0) - 0.2], [x, T / 2, FI], [x, y1, zDach(y1) - 0.2], [x, y1, zw], [x, T / 2, zf], [x, y0, zw]], matRahmen);
-  poly([[xa, y0, zw], [xb, y0, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlasDach, false);
-  poly([[xa, y1, zw], [xb, y1, zw], [xb, T / 2, zf], [xa, T / 2, zf]], matGlasDach, false);
+  const x3 = [xa, xa + (xb - xa) / 3, xa + 2 * (xb - xa) / 3, xb];
+  for (const [y, seite] of [[y0, 'ost'], [y1, 'west']]) {
+    for (const [a, b] of [[x3[0], x3[1]], [x3[2], x3[3]]]) poly([[a, y, zw], [b, y, zw], [b, T / 2, zf], [a, T / 2, zf]], matGlasDach, false);
+    const an = P(x3[1], T / 2, zf), rel = (q) => P(...q).sub(an), dreh = new THREE.Group(); dreh.position.copy(an); inner.add(dreh);
+    const e = [[x3[1], y, zw], [x3[2], y, zw], [x3[2], T / 2, zf], [x3[1], T / 2, zf]].map(rel), g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute([e[0], e[1], e[2], e[0], e[2], e[3]].flatMap((v) => [v.x, v.y, v.z]), 3)); g.computeVertexNormals();
+    dreh.add(new THREE.Mesh(g, matGlasDach));
+    for (const [i, j] of [[0, 1], [1, 2], [2, 3], [3, 0]]) { const v = e[j].clone().sub(e[i]), k = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, v.length()), matRahmen);   // Flügelrahmen ringsum
+      k.position.copy(e[i]).add(e[j]).multiplyScalar(0.5); k.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), v.clone().normalize()); k.position.y += 0.03; dreh.add(k); }
+    FLUEGEL[seite] = { dreh, vz: y > T / 2 ? -1 : 1, max: Math.atan2(zf - zw, T / 2 - y0) + OFFEN_UEBER_WAAGRECHT * Math.PI / 180, ist: 0, soll: 0, pos: 0 };
+  }
   // Rahmen: Sprossen zwischen den Scheiben (quer zum First), Traufkante und Firstkappe
   const stab = (p, q, d = 0.07) => { const v = P(...q).sub(P(...p)), m = new THREE.Mesh(new THREE.BoxGeometry(d, d, v.length()), matRahmen);
     m.position.copy(P(...p).add(P(...q)).multiplyScalar(0.5)); m.lookAt(P(...q)); inner.add(m); };
@@ -295,9 +308,13 @@ async function aktualisieren() {
     for (const m of module) if (m.userData.key === k && !m.userData.geplant) { const mat = m.material[4]; mat.color.copy(col); mat.emissive.copy(col).multiplyScalar(p > 5 ? 0.35 : 0); }
     schildMalen(k, zahl(p) + ' W', '#' + col.getHexString());
   }
-  const s = sonneSetzen();
+  const s = sonneSetzen(), st = haZustaende(); let fText = '';
+  for (const [seite, ent] of Object.entries(FENSTER)) { const f = FLUEGEL[seite], x = ent && st && st[ent];
+    const pos = x ? Math.max(0, Math.min(Number(x.attributes?.current_position ?? (x.state === 'open' ? 100 : 0)) || 0, 100)) : 0;
+    f.pos = pos; f.soll = f.max * pos / 100; if (pos > 0) fText += ` · 🪟 ${seite === 'west' ? 'West' : 'Ost'} ${pos} %`; }
+  if (Object.values(FLUEGEL).some((f) => Math.abs(f.soll - f.ist) > 0.001)) anfordern();
   document.querySelector('#kopf b').textContent = `☀️ PV jetzt ${zahl(summe / 1000, 2)} kW`;
-  document.getElementById('kopf2').textContent = `heute ${zahl(heute, 1)} kWh · Sonne ${s.el > 0 ? zahl(s.el) + '° hoch, aus ' + himmel(s.az) : 'unter dem Horizont'}${quelle === 'web' ? ' · Stand ≤ 1 min' : ''}`;
+  document.getElementById('kopf2').textContent = `heute ${zahl(heute, 1)} kWh · Sonne ${s.el > 0 ? zahl(s.el) + '° hoch, aus ' + himmel(s.az) : 'unter dem Horizont'}${quelle === 'web' ? ' · Stand ≤ 1 min' : ''}${fText}`;
   anfordern();   // neue Farben/Schilder/Sonnenstand zeichnen
 }
 const himmel = (az) => ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'][Math.round(az / 45) % 8];
@@ -348,15 +365,16 @@ function sichtbarkeit() { const vd = verdecker();
 // Jetzt: beim Drehen (inkl. Auslaufen der Dämpfung), nach neuen Werten, nach Größenänderung; sonst steht die Szene.
 let fr = 0, laeuft = false, bedarf = true, zieht = false;
 function anfordern() { bedarf = true; if (!laeuft) { laeuft = true; requestAnimationFrame(schleife); } }
-function schleife() { const bew = controls.update();
+function schleife() { const bew = controls.update(); let fl = false;
+  for (const f of Object.values(FLUEGEL)) { const d = f.soll - f.ist; if (Math.abs(d) > 0.001) { f.ist += Math.sign(d) * Math.min(Math.abs(d), 0.012); f.dreh.rotation.x = f.vz * f.ist; fl = bedarf = true; } }
   if (bew || bedarf) { if (!bew || fr++ % 6 === 0) sichtbarkeit(); renderer.render(scene, cam); bedarf = false; }
-  if (bew || zieht) requestAnimationFrame(schleife); else laeuft = false; }
+  if (bew || zieht || fl) requestAnimationFrame(schleife); else laeuft = false; }
 controls.addEventListener('change', anfordern);
 controls.addEventListener('start', () => { zieht = true; anfordern(); });
 controls.addEventListener('end', () => { zieht = false; anfordern(); });
 anfordern();
 aktualisieren(); setInterval(aktualisieren, 5000);
-window.__pv3d = { schilder, cam, inner, THREE, controls };   // für Tests
+window.__pv3d = { schilder, cam, inner, THREE, controls, FLUEGEL };   // für Tests
 </script>
 </body>
 </html>
