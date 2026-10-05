@@ -551,7 +551,7 @@
     "on"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     null,
     2.0
    ]
@@ -565,7 +565,7 @@
     "on"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     2.0,
     4.0
    ]
@@ -579,7 +579,7 @@
     "on"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     4.0,
     null
    ]
@@ -593,7 +593,7 @@
     "on"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     null,
     2.0
    ]
@@ -607,7 +607,7 @@
     "on"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     2.0,
     4.0
    ]
@@ -621,7 +621,7 @@
     "on"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     4.0,
     null
    ]
@@ -639,7 +639,7 @@
     "off"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     null,
     2.0
    ]
@@ -657,7 +657,7 @@
     "off"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     2.0,
     4.0
    ]
@@ -675,7 +675,7 @@
     "off"
    ],
    [
-    "sensor.cmi_wp_leistung_thermisch",
+    "sensor.wp_leistung_thermisch_gesamt",
     4.0,
     null
    ]
