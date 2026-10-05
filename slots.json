@@ -28,7 +28,7 @@
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "therm. ",
-  "entity": "sensor.cmi_wp_leistung_thermisch",
+  "entity": "sensor.wp_leistung_thermisch_gesamt",
   "unit": "kW",
   "dec": 2
  },
@@ -39,7 +39,7 @@
   "anchor": "start",
   "color": "#e5e7eb",
   "prefix": "elektr. ",
-  "entity": "sensor.cmi_wp_leistung_elektrisch",
+  "entity": "sensor.wp_leistung_elektrisch_gesamt",
   "unit": "kW",
   "dec": 2
  },
