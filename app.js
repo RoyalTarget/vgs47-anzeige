@@ -61,7 +61,7 @@ function zeigeSchema(s, sk) {
     if (!sl.entity) continue;
     let v = num(s, sl.entity), unit = sl.unit, dec = sl.dec;
     // elektrische WP-Leistung kommt in W
-    if (sl.entity === "sensor.cmi_wp_leistung_elektrisch") { unit = "W"; dec = 0; }
+    if (sl.entity === "sensor.wp_leistung_elektrisch_gesamt") { unit = "W"; dec = 0; }
     const txt = v === null ? "—" : zahl(v, dec) + (unit ? " " + unit : "");
     $("slot_" + sl.id).textContent = (sl.prefix || "") + txt;
   }
@@ -120,7 +120,7 @@ function zeigeFluss(s) {
     [soc === null ? "–" : zahl(soc, 0) + " %", (entl > laden ? "↑ " + watt(entl) : "↓ " + watt(laden))], "Batterie");
   $("fluss").innerHTML = svg;
 
-  const geraete = [["Wärmepumpe", "sensor.cmi_wp_leistung_elektrisch"], ["BWWP", "sensor.keller_bwwp_shelly_leistung"],
+  const geraete = [["Wärmepumpe", "sensor.wp_leistung_elektrisch_gesamt"], ["BWWP", "sensor.keller_bwwp_shelly_leistung"],
     ["Klima ≈", "sensor.klima_leistung_geschatzt"], ["Entfeuchter", "sensor.keller_entfeuchter_power"],
     ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung"], ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung"],
     ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"]]
