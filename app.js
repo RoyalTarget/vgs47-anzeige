@@ -1496,6 +1496,18 @@ function zeigeTemperaturen(d) {
     { n: "Außen Prognose", f: "#93c5fd", e: "°C", p: fp, gap: 90 * 6e4 }] });
 }
 
+// ---------- Als Nächstes (06.10.2026) ----------
+// Gleiche Karte wie im Dashboard (lib/vgs_schwellen.js). Sie erwartet ein hass-Objekt → Ersatz aus data.json (s) + verlauf.json (ns).
+// Ohne callWS gibt es keine Tendenz-Pfeile (Verlauf ist hier nicht abrufbar).
+function zeigeSchwellen(d, v) {
+  const el = $("schwellen"); if (!el || !customElements.get("vgs-schwellen-card")) return;
+  const ns = (v && v.ns) || {}, st = {};
+  for (const [e, x] of Object.entries({ ...(d.s || {}), ...(ns.s || {}) })) st[e] = { state: String(x), attributes: {} };
+  st["sensor.naechster_start"] = { state: "", attributes: { geraete: ns.g || {} } };
+  if (!el._cfg) { el.setConfig({ titel: false }); el._cfg = true; }
+  el.hass = { states: st, callWS: () => Promise.reject(new Error("Anzeigeseite: kein Verlauf")) };
+}
+
 // ---------- Laden ----------
 let VERLAUF = null, VERLAUF_T = 0;
 async function holen() {
@@ -1510,6 +1522,7 @@ async function holen() {
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
     try { zeigeWpFenster(d, VERLAUF); } catch (e) { console.warn("wpf", e); }
+    try { zeigeSchwellen(d, VERLAUF); } catch (e) { console.warn("schwellen", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
