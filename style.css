@@ -213,3 +213,8 @@ tr.teil.hz-an td { color: #facc15; }
 .fw-zeile i { width: 10px; height: 10px; border-radius: 50%; flex: none; } .fw-zeile span { flex: 1; } .fw-zeile em { font-style: normal; color: #9ca3af; width: 40px; text-align: right; }
 .fw-knoepfe .fw-det { border-style: dashed; margin-left: 6px; } .fw-knoepfe .fw-det[hidden] { display: none; } .fw-tsvg { cursor: pointer; }
 .fw-hinweis { margin-top: 6px; color: #9ca3af; font-size: 11px; }
+
+/* „Als Nächstes“ (06.10.2026): dieselbe Karte wie im Dashboard (lib/vgs_schwellen.js), HA-Farbvariablen auf die Seitenfarben */
+.schwellen-karte { padding: 0; overflow: hidden; }
+vgs-schwellen-card { display: block; --primary-text-color: var(--text); --secondary-text-color: var(--leise);
+  --divider-color: var(--rand); --card-background-color: var(--karte); }
