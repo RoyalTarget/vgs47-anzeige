@@ -127,7 +127,7 @@ function gaube([xa, xb], seite) {
 gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
 // Motorfenster (Nutzer 05.10.2026): je Glasseite die mittlere Scheibe, oben am First angeschlagen (Kettenantrieb D+H),
 // West = Straßenseite (NW, Shelly 2PM cover.fenster_west), Ost = Gartenseite (SO, Shelly 2PM cover.fenster_ost seit 06.10.2026). Bei 100 % ≈ 85° gegen senkrecht = 5° unter waagrecht (Nutzer 06.10.2026, vorher fälschlich 10° darüber).
-// Position nur im HA-iframe (Anzeigeseite/Gist bewusst ohne → Fenster dort immer zu).
+// Position im HA-iframe live, auf der Anzeigeseite aus data.json „fe“ (seit 06.10.2026).
 const FENSTER = { west: 'cover.fenster_west', ost: 'cover.fenster_ost' }, OFFEN_UEBER_WAAGRECHT = -5, FLUEGEL = {};
 // Glas-Firstaufbau (Foto 01.10.2026): sitzt AUF dem First – graue senkrechte Wände ≈ 0,45 m über der Dachfläche,
 // darauf ein Satteldach aus Glas (je Seite 3 Scheiben mit hellen Rahmen), First ≈ 0,3 m über dem Hausfirst.
@@ -308,7 +308,10 @@ async function aktualisieren() {
     for (const m of module) if (m.userData.key === k && !m.userData.geplant) { const mat = m.material[4]; mat.color.copy(col); mat.emissive.copy(col).multiplyScalar(p > 5 ? 0.35 : 0); }
     schildMalen(k, zahl(p) + ' W', '#' + col.getHexString());
   }
-  const s = sonneSetzen(), st = haZustaende(); let fText = '';
+  // Fenster: im HA-iframe live, auf der Anzeigeseite aus data.json „fe“ = [West %, Ost %] (06.10.2026, Nutzerwunsch)
+  const fe = quelle === 'web' ? werte.cache?.d?.fe : null;
+  const st = haZustaende() || (fe ? { 'cover.fenster_west': { attributes: { current_position: fe[0] } }, 'cover.fenster_ost': { attributes: { current_position: fe[1] } } } : null);
+  const s = sonneSetzen(); let fText = '';
   for (const [seite, ent] of Object.entries(FENSTER)) { const f = FLUEGEL[seite], x = ent && st && st[ent];
     const pos = x ? Math.max(0, Math.min(Number(x.attributes?.current_position ?? (x.state === 'open' ? 100 : 0)) || 0, 100)) : 0;
     f.pos = pos; f.soll = f.max * pos / 100; if (pos > 0) fText += `${fText ? ' · ' : ''}🪟 ${seite === 'west' ? 'West' : 'Ost'} ${pos} %`; }
