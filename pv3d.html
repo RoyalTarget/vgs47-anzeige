@@ -126,9 +126,9 @@ function gaube([xa, xb], seite) {
 }
 gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
 // Motorfenster (Nutzer 05.10.2026): je Glasseite die mittlere Scheibe, oben am First angeschlagen (Kettenantrieb D+H),
-// West = Straßenseite (NW, Shelly 2PM cover.fenster_west), Ost = Gartenseite (SO, Shelly 2PM cover.fenster_ost seit 06.10.2026). Bei 100 % ≈ 10° über waagrecht.
+// West = Straßenseite (NW, Shelly 2PM cover.fenster_west), Ost = Gartenseite (SO, Shelly 2PM cover.fenster_ost seit 06.10.2026). Bei 100 % ≈ 85° gegen senkrecht = 5° unter waagrecht (Nutzer 06.10.2026, vorher fälschlich 10° darüber).
 // Position nur im HA-iframe (Anzeigeseite/Gist bewusst ohne → Fenster dort immer zu).
-const FENSTER = { west: 'cover.fenster_west', ost: 'cover.fenster_ost' }, OFFEN_UEBER_WAAGRECHT = 10, FLUEGEL = {};
+const FENSTER = { west: 'cover.fenster_west', ost: 'cover.fenster_ost' }, OFFEN_UEBER_WAAGRECHT = -5, FLUEGEL = {};
 // Glas-Firstaufbau (Foto 01.10.2026): sitzt AUF dem First – graue senkrechte Wände ≈ 0,45 m über der Dachfläche,
 // darauf ein Satteldach aus Glas (je Seite 3 Scheiben mit hellen Rahmen), First ≈ 0,3 m über dem Hausfirst.
 // Vorher lag er mit +9,05/+9,45 unter der Dachfläche (First +10,07) und war unsichtbar.
