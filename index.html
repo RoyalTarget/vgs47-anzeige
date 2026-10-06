@@ -88,8 +88,7 @@
       </div>
       <h3>Last je Phase</h3>
       <div class="karte raster drei-fest" id="phasen"></div>
-      <h3>Stromzähler</h3>
-      <div class="raster zwei-fest" id="zaehler"></div>
+      <div class="karte" style="padding:0;margin-top:10px"><vgs-zaehler-card id="zaehler_strom"></vgs-zaehler-card></div>
     </section>
   </div>
 
@@ -148,7 +147,8 @@
 
   <section>
     <h2>Wasser</h2>
-    <div id="wasser" class="raster vier"></div>
+    <div class="karte" style="padding:0;margin-bottom:10px"><vgs-zaehler-card id="zaehler_wasser"></vgs-zaehler-card></div>
+    <div id="wasser" class="raster drei-fest"></div>
     <div class="karte" style="margin-top:10px"><h3 style="margin:0 0 4px">Jede Zapfung · Linie = Liter seit 0:00 · Kreis = Tagessumme</h3>
       <svg id="wf" viewBox="0 0 1000 330" class="zeitleiste" aria-label="Wasser – jede Zapfung, 14 Tage"></svg>
       <div class="prog-legende"><span class="l" style="--c:#ef4444">warm</span><span class="l" style="--c:#3b82f6">kalt</span><span class="l" style="--c:#9ca3af">ohne Aufteilung</span><span class="l" style="--c:#e5e7eb">Liter seit 0:00</span></div>
@@ -158,6 +158,7 @@
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
 <script src="lib/vgs_schwellen.js?v=202610061519"></script>
-<script src="app.js?v=202610061519"></script>
+<script src="lib/vgs_zaehler.js?v=202610061639"></script>
+<script src="app.js?v=202610061639"></script>
 </body>
 </html>
