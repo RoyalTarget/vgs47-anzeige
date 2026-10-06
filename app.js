@@ -1512,7 +1512,17 @@ function zeigeSchwellen(d, v) {
   for (const [e, x] of Object.entries({ ...(d.s || {}), ...(ns.s || {}) })) st[e] = { state: String(x), attributes: {} };
   st["sensor.naechster_start"] = { state: "", attributes: { geraete: ns.g || {} } };
   if (!el._cfg) { el.setConfig({ titel: false }); el._cfg = true; }
-  el.hass = { states: st, callWS: () => Promise.reject(new Error("Anzeigeseite: kein Verlauf")) };
+  // Tendenz-Pfeile (06.10.2026): HA schickt je Fühler 1-min-Proben der letzten 31 min (ns.h) → als Verlauf an die Karte,
+  // zeitlich so verschoben, dass die jüngste Probe „jetzt“ ist (verlauf.json kommt nur alle 5 min)
+  const h = ns.h || {};
+  const callWS = async (m) => {
+    if (m.type !== "history/history_during_period") throw new Error("Anzeigeseite: nicht unterstützt");
+    const neu = Math.max(0, ...Object.values(h).flatMap((l) => l.map((x) => x[0]))), dt = neu ? Date.now() / 1000 - neu : 0, r = {};
+    for (const e of m.entity_ids || []) if (h[e] && h[e].length) r[e] = h[e].map(([t, w]) => ({ s: String(w), lu: t + dt }));
+    return r;
+  };
+  if (el._hver !== v) { el._hver = v; el._trendT = 0; }   // neue Proben → Karte rechnet Tendenz neu
+  el.hass = { states: st, callWS };
 }
 
 // ---------- Laden ----------
