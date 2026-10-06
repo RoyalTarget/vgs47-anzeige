@@ -162,10 +162,18 @@ function zeigeBatterie(s, ap) {
 
   $("phasen").innerHTML = [1, 2, 3].map((i) =>
     `<div class="phase"><div class="name">L${i}</div><div class="zahl">${watt(num(s, "sensor.venus_verbrauchsleistung_l" + i))}</div></div>`).join("");
-  const kwh = (e) => { const v = num(s, e); return v === null ? "–" : zahl(v, 0) + " kWh"; };
-  $("zaehler").innerHTML =
-    `<div class="kachel"><div class="name">Bezug</div><div class="zahl">${kwh("sensor.stromzahler_bezug")}</div></div>`
-    + `<div class="kachel"><div class="name">Einspeisung</div><div class="zahl">${kwh("sensor.stromzahler_einspeisung")}</div></div>`;
+}
+
+// ---------- Stadtwerke-Zähler (06.10.2026, Nostalgie) ----------
+// Gleiche Karte wie im Dashboard (lib/vgs_zaehler.js), hass-Ersatz aus data.json (s); Ablesung (input_number) fehlt hier → ohne „seit Ablesung“.
+function zeigeZaehler(s) {
+  if (!customElements.get("vgs-zaehler-card")) return;
+  const st = {}; for (const [e, x] of Object.entries(s)) st[e] = { state: String(x), attributes: {} };
+  for (const [id, art] of [["zaehler_strom", "strom"], ["zaehler_wasser", "wasser"]]) {
+    const el = $(id); if (!el) continue;
+    if (!el._cfg) { el.setConfig({ art }); el._cfg = true; }
+    el.hass = { states: st };
+  }
 }
 
 // ---------- Klima ----------
@@ -189,8 +197,7 @@ function zeigeWasser(s) {
   const alarm = s["sensor.syr_connect_245124253_getala"];
   const ventil = { open: "Geöffnet", closed: "Geschlossen", opening: "Öffnet", closing: "Schließt" }[s["valve.syr_connect_245124253_getab"]] ?? "–";
   const k = (n, z, farbe) => `<div class="kachel"><div class="name">${n}</div><div class="zahl"${farbe ? ` style="color:${farbe}"` : ""}>${z}</div></div>`;
-  $("wasser").innerHTML = k("Wasserzähler", zv === null ? "–" : zahl(zv, 0) + " m³")
-    + k("Heute", hv === null ? "–" : zahl(hv, 0) + " L")
+  $("wasser").innerHTML = k("Heute", hv === null ? "–" : zahl(hv, 0) + " L")
     + (alarm === "no_alarm" ? k("Alarm", "Kein Alarm", "var(--gruen)") : k("Alarm", alarm ?? "–", "var(--vl)"))
     + k("Ventil", ventil);
 }
@@ -1523,6 +1530,7 @@ async function holen() {
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
     try { zeigeWpFenster(d, VERLAUF); } catch (e) { console.warn("wpf", e); }
     try { zeigeSchwellen(d, VERLAUF); } catch (e) { console.warn("schwellen", e); }
+    try { zeigeZaehler(s); } catch (e) { console.warn("zaehler", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
       + (alt > 5 ? " · Daten veraltet" : "");
