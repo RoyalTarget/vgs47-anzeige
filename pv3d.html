@@ -26,7 +26,7 @@
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="kopf"><b>☀️ PV jetzt –</b><br><span class="g" id="kopf2"></span></div>
+<div id="kopf"><b>☀️ PV jetzt –</b><br><span class="g" id="kopf2"></span><br><span id="kopf3"></span></div>
 <div id="legende">Leistung je Modul<div class="bar"></div>0 · · · 425 W</div>
 <div id="hinweis">Ziehen = drehen · Modul antippen/zeigen = Werte</div>
 <div id="knoepfe"><button id="zin" title="näher">+</button><button id="zout" title="weiter">−</button><button id="zmerk" title="Diese Ansicht als Startansicht merken">📌</button><button id="zreset" title="Zur Startansicht (Doppelklick: Standard)">⟲</button></div>
@@ -311,10 +311,11 @@ async function aktualisieren() {
   const s = sonneSetzen(), st = haZustaende(); let fText = '';
   for (const [seite, ent] of Object.entries(FENSTER)) { const f = FLUEGEL[seite], x = ent && st && st[ent];
     const pos = x ? Math.max(0, Math.min(Number(x.attributes?.current_position ?? (x.state === 'open' ? 100 : 0)) || 0, 100)) : 0;
-    f.pos = pos; f.soll = f.max * pos / 100; if (pos > 0) fText += ` · 🪟 ${seite === 'west' ? 'West' : 'Ost'} ${pos} %`; }
+    f.pos = pos; f.soll = f.max * pos / 100; if (pos > 0) fText += `${fText ? ' · ' : ''}🪟 ${seite === 'west' ? 'West' : 'Ost'} ${pos} %`; }
   if (Object.values(FLUEGEL).some((f) => Math.abs(f.soll - f.ist) > 0.001)) anfordern();
   document.querySelector('#kopf b').textContent = `☀️ PV jetzt ${zahl(summe / 1000, 2)} kW`;
-  document.getElementById('kopf2').textContent = `heute ${zahl(heute, 1)} kWh · Sonne ${s.el > 0 ? zahl(s.el) + '° hoch, aus ' + himmel(s.az) : 'unter dem Horizont'}${quelle === 'web' ? ' · Stand ≤ 1 min' : ''}${fText}`;
+  document.getElementById('kopf2').textContent = `heute ${zahl(heute, 1)} kWh · Sonne ${s.el > 0 ? zahl(s.el) + '° hoch, aus ' + himmel(s.az) : 'unter dem Horizont'}${quelle === 'web' ? ' · Stand ≤ 1 min' : ''}`;
+  document.getElementById('kopf3').textContent = fText;   // Fenster eigene Zeile (06.10.2026: kollidierte am iPhone mit der Legende)
   anfordern();   // neue Farben/Schilder/Sonnenstand zeichnen
 }
 const himmel = (az) => ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'][Math.round(az / 45) % 8];
