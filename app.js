@@ -908,49 +908,20 @@ window.addEventListener("resize", () => { for (const id of Object.keys(FW)) fens
 
 // ---------- „Wann starten?“ (29.09.2026, wie Dashboard) ----------
 function zeigeWann(d) {
-  const s = d.s || {}, w = d.ws || [], eur = (v) => (v === null || v === undefined ? "–" : zahl(v, 2) + " €");
-  let egal = true, html = "<tr><th></th><th>Empfehlung</th><th>jetzt</th><th>am besten</th><th>spart</th></tr>";
-  const heute = new Date().toDateString();
-  for (const [n, st, kj, kb, er, start, spanne, kwh] of w) {
-    if (spanne > 0.05) egal = false;
-    const morgen = start && new Date(zeitpunkt(start)).toDateString() !== heute ? " (morgen)" : "";
-    let emp;
-    if (st === "läuft") emp = "▶️ läuft";
-    else if (st === "jetzt") emp = `<span style="color:#22c55e">✓ jetzt</span>` + (spanne <= 0.02 ? ` <span class="grau">egal wann</span>` : "");
-    else if (!st || st === "unavailable" || st === "unknown") emp = "–";
-    else emp = `<span style="color:#f59e0b">🕒 ab ${st}${morgen}</span>` + ((er || 0) <= 0.02 ? ` <span class="grau">gleich teuer, mehr Sonne</span>` : "");
-    html += `<tr><td>${n}</td><td>${emp}</td><td>${eur(kj)}</td><td>${eur(kb)}</td><td>${(er || 0) > 0.005 ? eur(er) : "–"}</td></tr>`;
-  }
-  $("wann").innerHTML = html;
-  // Kurzansicht wie im Dashboard (29.09.2026): Gratis-Fenster (d.af aus sensor.akku_prognose) + eine Zeile je Gerät
-  const tagTxt = (t) => { const x = new Date(zeitpunkt(t)), h = new Date(); const m = new Date(); m.setDate(m.getDate() + 1);
-    return x.toDateString() === h.toDateString() ? "heute" : x.toDateString() === m.toDateString() ? "morgen" : ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][x.getDay()]; };
-  const uhr = (t) => new Date(zeitpunkt(t)).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  const f = d.af;
-  let k = f ? `<div class="fenster">☀️ <b>Gratis-Fenster ${tagTxt(f.start)} ${uhr(f.start)}–${uhr(f.ende)}</b> · ≈ ${zahl(f.kwh, 0)} kWh übrig – Akku voll, große Verbraucher dorthin legen</div>`
-    : `<div class="fenster grau">🔋 Kein Gratis-Fenster in Sicht – ${d.am && d.am[0] != null && d.am[1] ? (d.am[0] >= 99 ? `Akku wird ${tagTxt(d.am[1])} voll (≈ ${uhr(d.am[1])}), danach bleibt aber kaum Überschuss` : `Akku kommt ${tagTxt(d.am[1])} nur bis ≈ ${zahl(d.am[0], 0)} % (${uhr(d.am[1])})`) : "Akku wird voraussichtlich nicht voll"}, jede kWh kostet ungefähr gleich</div>`;
-  // Ampel (07.10.2026, wie Dashboard): Gerätesymbol farbig – grün jetzt ok · gelb günstiger/gratis später (> 4 h) ·
-  // rot bitte warten (≤ 4 h) · blau läuft; „lohnt“ ab 0,10 € Ersparnis. Symbole = Material Design Icons (wie HA).
-  const ICON = {"Waschmaschine": "M14.83,11.17C16.39,12.73 16.39,15.27 14.83,16.83C13.27,18.39 10.73,18.39 9.17,16.83L14.83,11.17M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M7,4A1,1 0 0,0 6,5A1,1 0 0,0 7,6A1,1 0 0,0 8,5A1,1 0 0,0 7,4M10,4A1,1 0 0,0 9,5A1,1 0 0,0 10,6A1,1 0 0,0 11,5A1,1 0 0,0 10,4M12,8A6,6 0 0,0 6,14A6,6 0 0,0 12,20A6,6 0 0,0 18,14A6,6 0 0,0 12,8Z", "Trockner": "M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M7,4A1,1 0 0,0 6,5A1,1 0 0,0 7,6A1,1 0 0,0 8,5A1,1 0 0,0 7,4M10,4A1,1 0 0,0 9,5A1,1 0 0,0 10,6A1,1 0 0,0 11,5A1,1 0 0,0 10,4M12,8A6,6 0 0,0 6,14A6,6 0 0,0 12,20A6,6 0 0,0 18,14A6,6 0 0,0 12,8M8.11,10.5H10C9.76,11.88 10,12.67 10.58,13.29C11.68,14.36 12.16,15.71 11.89,17.5H10C10.24,16.12 10,15.33 9.42,14.71C8.32,13.64 7.85,12.29 8.11,10.5M12.11,10.5H14C13.76,11.88 14,12.67 14.58,13.29C15.68,14.36 16.16,15.71 15.89,17.5H14C14.24,16.12 14,15.33 13.42,14.71C12.32,13.64 11.85,12.29 12.11,10.5Z", "Spülmaschine": "M18,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V4A2,2 0 0,0 18,2M10,4A1,1 0 0,1 11,5A1,1 0 0,1 10,6A1,1 0 0,1 9,5A1,1 0 0,1 10,4M7,4A1,1 0 0,1 8,5A1,1 0 0,1 7,6A1,1 0 0,1 6,5A1,1 0 0,1 7,4M18,20H6V8H18V20M14.67,15.33C14.69,16.03 14.41,16.71 13.91,17.21C12.86,18.26 11.15,18.27 10.09,17.21C9.59,16.71 9.31,16.03 9.33,15.33C9.4,14.62 9.63,13.94 10,13.33C10.37,12.5 10.81,11.73 11.33,11L12,10C13.79,12.59 14.67,14.36 14.67,15.33"};
-  const sym = (n, c) => { const key = Object.keys(ICON).find((x) => n.includes(x));
-    return key ? `<svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align:-5px;fill:${c}" aria-hidden="true"><path d="${ICON[key]}"/></svg>` : ""; };
-  const bis = (t) => { const mi = Math.round((new Date(zeitpunkt(t)) - Date.now()) / 60e3);
-    return mi < 1 ? "gleich" : mi < 90 ? `in ${mi} min` : `in ${Math.round(mi / 60)} h`; };
-  for (const [n, st, kj, kb, er, start, spanne, kwh, u0] of w) {
-    const zeit = start ? uhr(start) + (new Date(zeitpunkt(start)).toDateString() === heute ? "" : " morgen") : "";
-    const h = start ? (new Date(zeitpunkt(start)) - Date.now()) / 36e5 : null;
-    let c, t;
-    if (st === "läuft") { c = "#3b82f6"; t = "<b>läuft</b>"; }
-    else if (!st || st === "unavailable" || st === "unknown") { c = "#6b7280"; t = "–"; }
-    else if ((er || 0) >= 0.10 && h !== null && h > 0 && h <= 4) { c = "#ef4444"; t = `<b>bitte warten bis ${zeit}</b> (${bis(start)}) · spart ${eur(er)}`; }
-    else if ((er || 0) >= 0.10 && h !== null && h > 4) { c = "#facc15"; t = `<b>${(kb || 0) < 0.02 ? "gratis" : "günstiger"} ab ${zeit}</b> (${bis(start)}) · spart ${eur(er)}`; }
-    else if ((u0 || 0) >= (kwh || 1) * 0.8) { c = "#22c55e"; t = "<b>jetzt</b> – Sonne reicht"; }
-    else { c = "#22c55e"; t = `<b>jetzt</b> – billiger wird es nicht (≈ ${eur(kj)})` + (zeit && st !== "jetzt" ? ` · <span class="grau">☀️ mehr Sonne ab ${zeit}</span>` : ""); }
-    k += `<div>${sym(n, c)}&nbsp; ${n.replace(/^\S+\s/, "")}&nbsp;&nbsp;${t}</div>`;
-  }
-  $("wann_kurz").innerHTML = k;
-  $("wann_fuss").innerHTML = (egal ? "Der Akku wird voraussichtlich nicht voll – die Kosten sind fast gleich, mittags ist trotzdem sicherer. · " : "")
-    + `Mehrkosten je Lauf · Strom ${zahl(num(s, "input_number.strompreis_bezug") ?? 0, 2)} ct, Einspeisung ${zahl(num(s, "input_number.einspeiseverguetung") ?? 0, 0)} ct · Verbrauch je Lauf wie der letzte (${w.map((x) => zahl(x[7] ?? 0, 2)).join(" / ")} kWh)`;
+  // 07.10.2026: Ampel-Karte (lib/vgs_wann.js, dieselbe Datei wie im Dashboard) – Modell aus d.ws / d.af / d.am
+  const el = $("wann_karte"); if (!el) return;
+  const KEY = [["Wasch", "waschmaschine"], ["Trock", "trockner"], ["Spül", "spulmaschine"]];
+  const ICON_N = {waschmaschine: "Waschmaschine", trockner: "Trockner", spulmaschine: "Spülmaschine"};
+  const ws = d.ws || [];
+  const geraete = KEY.map(([such, k]) => {
+    const r = ws.find((x) => String(x[0]).includes(such)) || [];
+    const [, st, kj, kb, er, start, , kwh, u0] = r;
+    return { k, n: ICON_N[k], zustand: st || "unavailable", laeuft: st === "läuft", seit: null,
+      kj, kb, er, start: start ? zeitpunkt(start) : null, kwh, u0 };
+  });
+  el.modell = { geraete: geraete.map((g) => ({ ...g, i: window.vgsWann ? window.vgsWann.icon(g.k) : "" })),   // Symbolpfade aus der Karte
+    fenster: d.af ? { ...d.af, start: zeitpunkt(d.af.start), ende: zeitpunkt(d.af.ende) } : null,
+    maxSoc: d.am ? d.am[0] : null, maxZeit: d.am && d.am[1] ? zeitpunkt(d.am[1]) : null };
 }
 
 // ---------- Zeitleisten 48 h mit Verschieben über 14 Tage (29.09.2026) ----------
