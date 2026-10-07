@@ -48,9 +48,9 @@ const AUSRICHTUNG = -135;                             // Drehung: Südwest-Giebe
 
 // ---------- Flächen ----------
 const F = {
-  gaube_ost: { name: 'Gaube Ost', sub: 'MPPT5 250/70 · Gartenseite (SO), 7°', n: 3, p: 'sensor.mppt5_gaube_ost_leistung_pv_ertrag', h: 'sensor.mppt5_gaube_ost_ertrag_heute', m: 'sensor.mppt5_gaube_ost_maximalleistung_heute' },
+  gaube_ost: { name: 'Gaube Ost', sub: 'MPPT1 250/70 · Gartenseite (SO), 7°', n: 3, p: 'sensor.mppt1_gaube_ost_leistung_pv_ertrag', h: 'sensor.mppt1_gaube_ost_ertrag_heute', m: 'sensor.mppt1_gaube_ost_maximalleistung_heute' },
   dach_ost: { name: 'Dach Ost', sub: 'RS 450 #2 · Gartenseite (SO), 40°', n: 5, p: 'sensor.mppt2_leistung_pv_tracker_2_dach_ost', h: 'sensor.mppt2_ertrag_tracker_2_dach_ost_heute', m: 'sensor.mppt2_maximalleistung_tracker_2_dach_ost_heute' },
-  gaube_west: { name: 'Gaube West', sub: 'MPPT4 250/70 · Straßenseite (NW), 7°', n: 3, p: 'sensor.mppt4_gaube_west_leistung_pv_ertrag', h: 'sensor.mppt4_gaube_west_ertrag_heute', m: 'sensor.mppt4_gaube_west_maximalleistung_heute' },
+  gaube_west: { name: 'Gaube West', sub: 'MPPT3 250/70 · Straßenseite (NW), 7°', n: 3, p: 'sensor.mppt3_gaube_west_leistung_pv_ertrag', h: 'sensor.mppt3_gaube_west_ertrag_heute', m: 'sensor.mppt3_gaube_west_maximalleistung_heute' },
   dach_west: { name: 'Dach West', sub: 'RS 450 #5 · Straßenseite (NW), 40°', n: 5, p: 'sensor.mppt2_leistung_pv_tracker_5_dach_west', h: 'sensor.mppt2_ertrag_tracker_5_dach_west_heute', m: 'sensor.mppt2_maximalleistung_tracker_5_dach_west_heute' },
   fassade_oben: { name: 'Fassade Süd oben', sub: 'RS 450 #3 · Südwest-Giebel, senkrecht', n: 4, p: 'sensor.mppt2_leistung_pv_tracker_3_sued_oben', h: 'sensor.mppt2_ertrag_tracker_3_sued_oben_heute', m: 'sensor.mppt2_maximalleistung_tracker_3_sued_oben_heute' },
   fassade_unten: { name: 'Fassade Süd unten', sub: 'RS 450 #4 · Südwest-Giebel, senkrecht', n: 4, p: 'sensor.mppt2_leistung_pv_tracker_4_sued_unten', h: 'sensor.mppt2_ertrag_tracker_4_sued_unten_heute', m: 'sensor.mppt2_maximalleistung_tracker_4_sued_unten_heute' },
@@ -238,7 +238,8 @@ function schild(key, pos) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); s.scale.set(2.2, 0.62, 1); s.position.copy(P(...pos)); s.renderOrder = 10;
   inner.add(s); schilder[key] = { c, t, s };
 }
-schild('gaube_ost', [2.9, 0.4, 9.4]); schild('dach_ost', [2.9, 2.6, 10.6]); schild('gaube_west', [2.48, T - 0.4, 9.4]); schild('dach_west', [2.48, T - 2.6, 10.6]);
+// Dach-Schilder über der Mitte aller 5 Module (2 quer über der Gaube + 3 hochkant zum Giebel, x ≈ 5,2) – Nutzer 07.10.2026
+schild('gaube_ost', [2.9, 0.4, 9.4]); schild('dach_ost', [4.1, 2.6, 10.6]); schild('gaube_west', [2.48, T - 0.4, 9.4]); schild('dach_west', [4.1, T - 2.6, 10.6]);
 schild('fassade_oben', [B + 0.8, 8.9, 7.0]); schild('fassade_unten', [B + 0.8, 8.9, 5.0]); schild('bkw', [2.55, T + 1.2, 4.0]);
 function schildMalen(key, txt, farbe) {
   const { c, t } = schilder[key], g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
