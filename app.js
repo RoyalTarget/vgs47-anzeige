@@ -301,11 +301,11 @@ function zeigeTabellen(s, k, lp, gh) {
   const kw = (e) => (k[e] == null ? "–" : zahl(k[e], 2));
   const w0 = (e) => { const v = num(s, e); return v === null ? "–" : zahl(v, 0) + " W"; };
   const F = [
-    ["Dach Ost", "MPPT1", "sensor.mppt1_1_dach_ost_leistung_pv_ertrag", "sensor.mppt1_1_dach_ost_ertrag_heute", "sensor.mppt1_1_dach_ost_maximalleistung_heute"],
+    ["Dach Ost", "RS 450 #2", "sensor.mppt2_leistung_pv_tracker_2_dach_ost", "sensor.mppt2_ertrag_tracker_2_dach_ost_heute", "sensor.mppt2_maximalleistung_tracker_2_dach_ost_heute"],
     ["Dach West", "RS 450 #5", "sensor.mppt2_leistung_pv_tracker_5_dach_west", "sensor.mppt2_ertrag_tracker_5_dach_west_heute", "sensor.mppt2_maximalleistung_tracker_5_dach_west_heute"],
     ["Fassade Süd oben", "RS 450 #3", "sensor.mppt2_leistung_pv_tracker_3_sued_oben", "sensor.mppt2_ertrag_tracker_3_sued_oben_heute", "sensor.mppt2_maximalleistung_tracker_3_sued_oben_heute"],
     ["Fassade Süd unten", "RS 450 #4", "sensor.mppt2_leistung_pv_tracker_4_sued_unten", "sensor.mppt2_ertrag_tracker_4_sued_unten_heute", "sensor.mppt2_maximalleistung_tracker_4_sued_unten_heute"],
-    ["Gaube Ost", "RS 450 #2", "sensor.mppt2_leistung_pv_tracker_2_gaube_ost", "sensor.mppt2_ertrag_tracker_2_gaube_ost_heute", "sensor.mppt2_maximalleistung_tracker_2_gaube_ost_heute"],
+    ["Gaube Ost", "MPPT5 250/70", "sensor.mppt5_gaube_ost_leistung_pv_ertrag", "sensor.mppt5_gaube_ost_ertrag_heute", "sensor.mppt5_gaube_ost_maximalleistung_heute"],
     ["Gaube West", "MPPT4 250/70", "sensor.mppt4_gaube_west_leistung_pv_ertrag", "sensor.mppt4_gaube_west_ertrag_heute", "sensor.mppt4_gaube_west_maximalleistung_heute"],
     ["Balkonkraftwerk", "EM111, Windfang West", "sensor.em111_bkw_gesamtleistung", "sensor.pv_balkonkraftwerk_heute", null],
   ];
