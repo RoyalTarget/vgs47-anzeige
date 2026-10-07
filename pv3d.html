@@ -48,8 +48,8 @@ const AUSRICHTUNG = -135;                             // Drehung: Südwest-Giebe
 
 // ---------- Flächen ----------
 const F = {
-  gaube_ost: { name: 'Gaube Ost', sub: 'RS 450 #2 · Gartenseite (SO), 7°', n: 3, p: 'sensor.mppt2_leistung_pv_tracker_2_gaube_ost', h: 'sensor.mppt2_ertrag_tracker_2_gaube_ost_heute', m: 'sensor.mppt2_maximalleistung_tracker_2_gaube_ost_heute' },
-  dach_ost: { name: 'Dach Ost', sub: 'MPPT1 150/35 · Gartenseite (SO), 40°', n: 2, p: 'sensor.mppt1_1_dach_ost_leistung_pv_ertrag', h: 'sensor.mppt1_1_dach_ost_ertrag_heute', m: 'sensor.mppt1_1_dach_ost_maximalleistung_heute' },
+  gaube_ost: { name: 'Gaube Ost', sub: 'MPPT5 250/70 · Gartenseite (SO), 7°', n: 3, p: 'sensor.mppt5_gaube_ost_leistung_pv_ertrag', h: 'sensor.mppt5_gaube_ost_ertrag_heute', m: 'sensor.mppt5_gaube_ost_maximalleistung_heute' },
+  dach_ost: { name: 'Dach Ost', sub: 'RS 450 #2 · Gartenseite (SO), 40°', n: 5, p: 'sensor.mppt2_leistung_pv_tracker_2_dach_ost', h: 'sensor.mppt2_ertrag_tracker_2_dach_ost_heute', m: 'sensor.mppt2_maximalleistung_tracker_2_dach_ost_heute' },
   gaube_west: { name: 'Gaube West', sub: 'MPPT4 250/70 · Straßenseite (NW), 7°', n: 3, p: 'sensor.mppt4_gaube_west_leistung_pv_ertrag', h: 'sensor.mppt4_gaube_west_ertrag_heute', m: 'sensor.mppt4_gaube_west_maximalleistung_heute' },
   dach_west: { name: 'Dach West', sub: 'RS 450 #5 · Straßenseite (NW), 40°', n: 5, p: 'sensor.mppt2_leistung_pv_tracker_5_dach_west', h: 'sensor.mppt2_ertrag_tracker_5_dach_west_heute', m: 'sensor.mppt2_maximalleistung_tracker_5_dach_west_heute' },
   fassade_oben: { name: 'Fassade Süd oben', sub: 'RS 450 #3 · Südwest-Giebel, senkrecht', n: 4, p: 'sensor.mppt2_leistung_pv_tracker_3_sued_oben', h: 'sensor.mppt2_ertrag_tracker_3_sued_oben_heute', m: 'sensor.mppt2_maximalleistung_tracker_3_sued_oben_heute' },
@@ -227,7 +227,7 @@ for (const dx of [-0.59, 0.59]) { const xm = (WF[0] + WF[1]) / 2, d = WFT / 2 + 
 for (const [key, xm, so] of [['dach_west', 5.3, false], ['dach_ost', 5.2, true]]) {
   const cosA = 1 / Math.hypot(1, NEIG);
   for (let k = 0; k < 3; k++) { const sl = 0.3 + ML / 2 + k * (ML + 0.03), d = sl * cosA, y = so ? d : T - d;
-    modul(key, [xm, y, zDach(y)], so ? [1, 0, 0] : [-1, 0, 0], so ? [0, 1, NEIG] : [0, -1, NEIG], MB, ML, [0, 0, 1], key !== 'dach_west'); }   // Dach West seit 01.10.2026 montiert
+    modul(key, [xm, y, zDach(y)], so ? [1, 0, 0] : [-1, 0, 0], so ? [0, 1, NEIG] : [0, -1, NEIG], MB, ML, [0, 0, 1], false); }   // Dach West seit 01.10.2026, Dach Ost seit 07.10.2026 montiert
 }
 
 // Wert-Schilder über den Flächen
