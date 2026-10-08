@@ -685,7 +685,7 @@ function wfTorteRechne(von, bis) {
   const rd = (r) => r.map((x) => ({ ...x, v: Math.round(x.v) }));
   return { ringe: [rd([{ n: "warm", v: ring.warm, f: "#ef4444" }, { n: "kalt", v: ring.kalt, f: "#3b82f6" }, { n: "ohne Aufteilung", v: ring.unb, f: "#6b7280" }]),
     rd(WF_ART.map((a) => ({ n: a[1], v: art[a[1]] || 0, f: a[2] })).sort((x, y) => y.v - x.v).concat([{ n: "ohne Aufteilung", v: ohne, f: "#6b7280" }]))],
-    hinweis: ohne >= 1 ? "grau = vor dem 24.09.2026 bzw. noch ohne Statistik je Art" : "" };
+    hinweis: ohne >= 1 ? "grau = ohne Zuordnung (Warm-Erkennung ab 25.09.2026)" : "" };
 }
 function wpTorteRechne(von, bis) {
   // je Tag: ganze Tage aus den Tageswerten (WPF.tage, davor Langzeitstatistik), angeschnittene Tage anteilig nach der Leistungskurve
@@ -798,7 +798,7 @@ function zeigeWasserFenster(d, v) {
   WF = wasserFensterDaten(d, v);
   const F = (t) => { const x = new Date(t); return x.toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }); };
   FW.wf = Object.assign(FW.wf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
-    torte: { start: new Date(2026, 8, 23).getTime(), einheit: "l", dec: 0, ringnamen: ["warm / kalt", "wer hat es verbraucht"], rechne: wfTorteRechne },
+    torte: { start: new Date(2026, 8, 25).getTime(), einheit: "l", dec: 0, ringnamen: ["warm / kalt", "wer hat es verbraucht"], rechne: wfTorteRechne },
     links: { e: "l", max: () => Math.max(20, ...WF.ev.map((e) => e.l)) }, rechts: { e: "l", max: () => Math.max(100, ...WF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, YR, x0, x1, schmal }) => { let g = ""; const bw = schmal ? 3 : 4;
       for (const e of WF.ev) { if (e.t < x0 - 36e5 || e.t > x1 + 36e5) continue; const col = e.warm === true ? "#ef4444" : e.warm === false ? "#3b82f6" : "#9ca3af";
