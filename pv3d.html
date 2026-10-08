@@ -238,8 +238,9 @@ function schild(key, pos) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); s.scale.set(2.2, 0.62, 1); s.position.copy(P(...pos)); s.renderOrder = 10;
   inner.add(s); schilder[key] = { c, t, s };
 }
-// Dach-Schilder über der Mitte aller 5 Module (2 quer über der Gaube + 3 hochkant zum Giebel, x ≈ 5,2) – Nutzer 07.10.2026
-schild('gaube_ost', [2.9, 0.4, 8.2]); schild('dach_ost', [4.6, 2.6, 10.6]); schild('gaube_west', [2.48, T - 0.4, 8.2]); schild('dach_west', [4.6, T - 2.6, 10.6]);
+// Dach-Schilder: 08.10.2026 (Nutzer: „verwechselt man“) nach vorn zum Giebel und ~0,5 m über die eigene Dachfläche gesetzt
+// (vorher x 4,6 / z 10,6 = über dem First → wirkten wie vertauscht)
+schild('gaube_ost', [2.9, 0.4, 8.2]); schild('dach_ost', [5.0, 2.9, 9.15]); schild('gaube_west', [2.48, T - 0.4, 8.2]); schild('dach_west', [5.0, T - 2.9, 9.15]);
 schild('fassade_oben', [B + 0.8, 8.9, 7.0]); schild('fassade_unten', [B + 0.8, 8.9, 5.0]); schild('bkw', [2.55, T + 1.2, 4.0]);
 function schildMalen(key, txt, farbe) {
   const { c, t } = schilder[key], g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
