@@ -566,7 +566,7 @@
    ],
    [
     "sensor.wp_leistung_thermisch_gesamt",
-    2.0,
+    1.999,
     4.0
    ]
   ]
@@ -580,7 +580,7 @@
    ],
    [
     "sensor.wp_leistung_thermisch_gesamt",
-    4.0,
+    3.999,
     null
    ]
   ]
@@ -608,7 +608,7 @@
    ],
    [
     "sensor.wp_leistung_thermisch_gesamt",
-    2.0,
+    1.999,
     4.0
    ]
   ]
@@ -622,7 +622,7 @@
    ],
    [
     "sensor.wp_leistung_thermisch_gesamt",
-    4.0,
+    3.999,
     null
    ]
   ]
@@ -658,7 +658,7 @@
    ],
    [
     "sensor.wp_leistung_thermisch_gesamt",
-    2.0,
+    1.999,
     4.0
    ]
   ]
@@ -676,7 +676,7 @@
    ],
    [
     "sensor.wp_leistung_thermisch_gesamt",
-    4.0,
+    3.999,
     null
    ]
   ]
@@ -704,7 +704,7 @@
    ],
    [
     "sensor.hk_leistung",
-    1.5,
+    1.499,
     3.5
    ]
   ]
@@ -718,7 +718,7 @@
    ],
    [
     "sensor.hk_leistung",
-    3.5,
+    3.499,
     null
    ]
   ]
@@ -746,7 +746,7 @@
    ],
    [
     "sensor.puffer_bilanz",
-    1.5,
+    1.499,
     3.0
    ]
   ]
@@ -760,7 +760,7 @@
    ],
    [
     "sensor.puffer_bilanz",
-    3.0,
+    2.999,
     null
    ]
   ]
@@ -788,7 +788,7 @@
    ],
    [
     "sensor.puffer_bilanz",
-    -3.0,
+    -3.001,
     -1.5
    ]
   ]
@@ -802,7 +802,7 @@
    ],
    [
     "sensor.puffer_bilanz",
-    -1.5,
+    -1.501,
     null
    ]
   ]
@@ -830,7 +830,7 @@
    ],
    [
     "sensor.syr_connect_245124253_getflo",
-    300,
+    299.999,
     600
    ]
   ]
@@ -844,7 +844,7 @@
    ],
    [
     "sensor.syr_connect_245124253_getflo",
-    600,
+    599.999,
     null
    ]
   ]
@@ -872,7 +872,7 @@
    ],
    [
     "sensor.cmi_hk_mischer",
-    25,
+    24.999,
     60
    ]
   ]
@@ -886,7 +886,7 @@
    ],
    [
     "sensor.cmi_hk_mischer",
-    60,
+    59.999,
     97
    ]
   ]
