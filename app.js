@@ -814,7 +814,24 @@ function wasserFensterDaten(d, v) {
     if (e.art) { const a = x.arten[e.art] = x.arten[e.art] || { n: 0, l: 0 }; a.n++; a.l += e.l; }
     if (e.warm !== null) x.ev_warm = (x.ev_warm || 0) + (e.warm ? e.l : 0); }
   for (const x of Object.values(tage)) if (x.warm == null && x.ev_warm != null) x.warm = Math.min(x.ev_warm, x.ges);
-  return { tage, ev, kum, ende, wwt: (v && v.wwt) || [38, 40, 42], ga: (v && v.ga) || null };
+  // 08.10.2026 (Nutzer): Gartenwasser (am SYR vorbei) als grüne Säulen + in Linie/Tageskreis, wie Dashboard.
+  // gev: Vortage aus ga.l {d, t, l, was}, heute aus ga.h {t, l, was}; Tage nur mit Tagessumme (ga.t, vor 08.10.) → geschätzt 07:00 + 18:45
+  const ga = (v && v.ga) || null, gev = [], hk2 = fwKey(jetzt);
+  const gz = (dd, hm) => { const [y, mo, da] = dd.split("-").map(Number), [h, mi] = (hm || "12:00").split(":").map(Number); return new Date(y, mo - 1, da, h, mi).getTime(); };
+  if (ga) { for (const x of ga.l || []) gev.push({ t: gz(x.d, x.t), l: x.l, was: x.was });
+    for (const x of ga.h || []) gev.push({ t: gz(hk2, x.t), l: x.l, was: x.was });
+    const mit = new Set(gev.map((e) => fwKey(e.t)));
+    for (const [k, x] of Object.entries(ga.t || {})) { if (mit.has(k) || !(x && x[0] > 0)) continue;
+      gev.push({ t: gz(k, "07:00"), l: x[0] / 2, was: "Gießplan morgens", est: true }, { t: gz(k, "18:45"), l: x[0] / 2, was: "Gießplan abends", est: true }); }
+    gev.sort((a, b) => a.t - b.t); }
+  for (const e of gev) { const x = tage[fwKey(e.t)]; if (x) x.gl = (x.gl || 0) + e.l; }
+  let kumG = kum, endeG = ende;
+  if (gev.length) { const gOff = (t) => { let sm = 0; const k = fwKey(t); for (const e of gev) if (e.t <= t && fwKey(e.t) === k) sm += e.l; return sm; };
+    const syrBei = (t) => { let w = null; for (const [tt, vv] of kum) { if (tt > t) break; w = vv == null || fwKey(tt) !== fwKey(t) ? null : vv; } return w; };
+    const zus = []; for (const e of gev) { const w = syrBei(e.t); if (w != null) zus.push([e.t - 1, w], [e.t, w]); }
+    kumG = kum.concat(zus).sort((a, b) => a[0] - b[0]).map(([t, w]) => [t, w == null ? null : Math.round(w + gOff(t))]);
+    endeG = ende.map(([t, w]) => [t, w == null ? null : Math.round(w + gOff(t))]); }
+  return { tage, ev, kum: kumG, ende: endeG, gev, wwt: (v && v.wwt) || [38, 40, 42], ga };
 }
 const WF_IC = { "Dusche": "🚿", "Badewanne?": "🛁", "Waschmaschine": "🧺", "Spülmaschine": "🍽️", "WC?": "🚽", "Abspülen / Becken?": "🚰" };
 function zeigeWasserFenster(d, v) {
@@ -823,34 +840,41 @@ function zeigeWasserFenster(d, v) {
   const F = (t) => { const x = new Date(t); return x.toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }); };
   FW.wf = Object.assign(FW.wf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
     torte: { start: new Date(2026, 8, 25).getTime(), einheit: "l", dec: 0, ringnamen: ["heiß / kalt", "wer hat es verbraucht"], rechne: wfTorteRechne },
-    links: { e: "l", max: () => Math.max(20, ...WF.ev.map((e) => e.l)) }, rechts: { e: "l", max: () => Math.max(100, ...WF.kum.map((p) => p[1] || 0)) },
+    links: { e: "l", max: () => Math.max(20, ...WF.ev.map((e) => e.l), ...WF.gev.map((e) => e.l)) }, rechts: { e: "l", max: () => Math.max(100, ...WF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, YR, x0, x1, schmal }) => { let g = ""; const bw = schmal ? 3 : 4;
       for (const e of WF.ev) { if (e.t < x0 - 36e5 || e.t > x1 + 36e5) continue; const col = e.warm === true ? "#ef4444" : e.warm === false ? "#3b82f6" : "#9ca3af";
         g += `<rect x="${(X(e.t) - bw / 2).toFixed(1)}" y="${YL(e.l).toFixed(1)}" width="${bw}" height="${Math.max(YL(0) - YL(e.l), 1).toFixed(1)}" fill="${col}"/>`; }
+      for (const e of WF.gev) { if (e.t < x0 - 36e5 || e.t > x1 + 36e5) continue;   // Garten (08.10.2026), geschätzte hell
+        g += `<rect x="${(X(e.t) - bw / 2).toFixed(1)}" y="${YL(e.l).toFixed(1)}" width="${bw}" height="${Math.max(YL(0) - YL(e.l), 1).toFixed(1)}" fill="${e.est ? "#86efac" : "#22c55e"}"${e.est ? ' fill-opacity="0.55"' : ""}/>`; }
       let p = ""; for (const [t, l] of WF.kum) { if (l == null) { p += " "; continue; } p += (p === "" || p.endsWith(" ") ? "M" : "L") + X(t).toFixed(1) + " " + YR(l).toFixed(1); }
       return g + `<path d="${p.replace(/ M/g, "M").trim()}" fill="none" stroke="#e5e7eb" stroke-opacity="0.6" stroke-width="1.5"/>`; },
     oben: ({ X, YR, x0, x1 }) => WF.ende.filter(([t]) => t >= x0 - 5e3 && t <= x1 + 5e3).map(([t, l]) => { const x = WF.tage[fwKey(t - 1000)] || {};
-      return fwKreis(X(t), YR(l), (x.ges || l) + " l"); }).join(""),
+      return fwKreis(X(t), YR(l), (x.ges ? x.ges + Math.round(x.gl || 0) : l) + " l"); }).join(""),
     kopf: (t, b) => { const x = WF.tage[fwKey(t)]; if (!x || !x.ges) return "";
       const IC = [["Dusche", "🚿"], ["Badewanne?", "🛁"], ["Waschmaschine", "🧺"], ["Spülmaschine", "🍽️"]], ar = x.arten || {};
       let ic = IC.filter(([a]) => ar[a]).map(([a, i]) => i + (ar[a].n > 1 && !/maschine/.test(a) ? ar[a].n : "")).join(" ");
       if (!ar["Dusche"] && x.dusch) ic = "🚿" + (x.dusch > 1 ? x.dusch : "") + (ic ? " " + ic : "");
       const gk = wfGK(fwKey(t)); if (gk && gk.g >= 1) ic += (ic ? " " : "") + "🌱";
-      return b >= 90 ? `${x.ges} l${ic ? " · " + ic : ""}` : `${x.ges} l`; },
+      const ges = x.ges + Math.round(x.gl || 0);   // inkl. Garten (08.10.2026)
+      return b >= 90 ? `${ges} l${ic ? " · " + ic : ""}` : `${ges} l`; },
     leiste: (t) => { const x = WF.tage[fwKey(t)]; if (!x) return []; const h = wfTag(fwKey(t));
       const gk = wfGK(fwKey(t)) || { g: 0, k: 0 }, z = [{ v: gk.k, farbe: "#0ea5e9" }, { v: gk.g, farbe: "#22c55e" }];   // Küche kalt, Garten (08.10.2026)
       if (h) return [{ v: h.heiss, farbe: "#ef4444" }, { v: h.misch, farbe: "#93c5fd" }, { v: Math.max(x.ges - h.heiss - h.misch, 0), farbe: "#2563eb" }].concat(z);
       return (x.warm != null ? [{ v: Math.min(x.warm, x.ges), farbe: "#ef4444" }, { v: Math.max(x.ges - x.warm, 0), farbe: "#3b82f6" }] : [{ v: x.ges, farbe: "#6b7280" }]).concat(z); },
     tip: (t, { x0, x1 }) => { const tol = (x1 - x0) * 0.012, e0 = WF.ende.find(([te]) => Math.abs(te - t) < tol);
       if (e0) { const k = fwKey(e0[0] - 1000), x = WF.tage[k] || {}, ges = x.ges || 0, heute = k === fwKey(Date.now());
-        let s = `<b>${new Date(e0[0] - 1000).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${heute ? " (bis jetzt)" : ""}: ${ges} l</b>`;
+        const gl = Math.round(x.gl || 0);
+        let s = `<b>${new Date(e0[0] - 1000).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${heute ? " (bis jetzt)" : ""}: ${ges + gl} l</b>${gl ? ` <span style="color:#9ca3af">(Haus ${ges} l + 🌱 Garten ${gl} l)</span>` : ""}`;
         const h = wfTag(k); if (h) s += wfTagText(x, h);
         else if (x.warm != null) s += `<br><span style="color:#ef4444">●</span> warm ${x.warm} l (${ges ? Math.round(x.warm / ges * 100) : 0} %) · <span style="color:#3b82f6">●</span> kalt ${Math.max(ges - x.warm, 0)} l`;
         const ar = Object.entries(x.arten || {}).filter(([a]) => WF_IC[a]).sort((a, b) => b[1].l - a[1].l);
         if (ar.length) s += "<br>" + ar.map(([a, vv]) => `${WF_IC[a]} ${a.replace("?", "")} ${/maschine/.test(a) ? vv.n + (vv.n === 1 ? " Füllung" : " Füllungen") : vv.n + "×"} · ${vv.l} l`).join("<br>");
-        const gk = wfGK(k); if (gk && (gk.g >= 1 || gk.k >= 1)) s += `<br><span style="color:#22c55e">●</span> 🌱 Garten (Plan) ${Math.round(gk.g)} l · <span style="color:#0ea5e9">●</span> Küche kalt ≈ ${Math.round(gk.k)} l<br>mit Stadtwerke-Zähler ≈ <b>${Math.round(ges + gk.g + gk.k)} l</b>`;
+        const gk = wfGK(k); if (gk && (gk.g >= 1 || gk.k >= 1)) s += `<br><span style="color:#22c55e">●</span> 🌱 Garten (Plan) ${Math.round(gk.g)} l · <span style="color:#0ea5e9">●</span> Küche kalt ≈ ${Math.round(gk.k)} l<br>mit Küche kalt ≈ <b>${Math.round(ges + gk.g + gk.k)} l</b>`;
         return fwBox(s); }
+      let gb = null; for (const e of WF.gev) if (!gb || Math.abs(e.t - t) < Math.abs(gb.t - t)) gb = e;   // Garten (08.10.2026)
       let b = null; for (const e of WF.ev) if (!b || Math.abs(e.t - t) < Math.abs(b.t - t)) b = e;
+      if (gb && Math.abs(gb.t - t) <= (x1 - x0) * 0.01 && (!b || Math.abs(gb.t - t) < Math.abs(b.t - t)))
+        return fwBox(`<b>${F(gb.t)}</b><br><span style="color:#22c55e">●</span> <b>🌱 Garten</b> · ${Math.round(gb.l)} l<br>${gb.was || ""}${gb.est ? '<br><span style="color:#9ca3af;font-size:11px">geschätzt aus der Tagessumme (vor der Eve-Messung)</span>' : ""}`);
       if (!b || Math.abs(b.t - t) > (x1 - x0) * 0.01) { const y = wertBei(WF.kum.filter((p) => p[1] != null), t, 36e5 * 6); return y == null ? "" : fwBox(`${F(t)}<br>seit 0:00: <b>${Math.round(y)} l</b>`); }
       const col = b.warm === true ? "#ef4444" : b.warm === false ? "#3b82f6" : "#9ca3af", art = b.warm === true ? "warm" : b.warm === false ? "kalt" : "warm/kalt unbekannt";
       return fwBox(`<b>${F(b.t)}</b> · ${b.p.dauer_min || "?"} min<br><span style="color:${col}">●</span> <b>${b.art || art}</b> · ${b.l} l ${b.art ? art : ""}${b.p.max_lh ? " · max " + b.p.max_lh + " l/h" : ""}`
