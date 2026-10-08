@@ -709,7 +709,7 @@ function wfTorteRechne(von, bis) {
   return { ringe: [rd([{ n: "heiß (Speicher)", v: ring.heiss, f: "#ef4444" }, { n: "kalt zugemischt", v: ring.misch, f: "#93c5fd" }, { n: "kalt direkt", v: ring.kalt, f: "#2563eb" }, { n: "ohne Aufteilung", v: ring.unb, f: "#6b7280" }]),
     rd(WF_ART.map((a) => ({ n: a[1], v: art[a[1]] || 0, f: a[2] })).concat([{ n: "Garten (Plan)", v: art["Garten (Plan)"] || 0, f: "#22c55e" }, { n: "Küche kalt (Annahme)", v: art["Küche kalt (Annahme)"] || 0, f: "#0ea5e9" }]).sort((x, y) => y.v - x.v).concat([{ n: "ohne Aufteilung", v: ohne, f: "#6b7280" }]))],
     hinweis: "heiß = ab Speicher (~" + Math.round(Tw) + " °C); zugemischt = Kaltwasser in Dusche/Wanne/Becken (Annahme " + wt.join("/") + " °C)" + (ohne >= 1 ? " · grau = ohne Zuordnung (Warm-Erkennung ab 25.09.2026)" : "")
-      + " · Garten = Gießplan (vorne " + dz(gp[0]) + " / hinten " + dz(gp[1]) + " l/min), Küche kalt = Annahme " + dz(gp[2]) + " l/Tag – beide am SYR vorbei" };
+      + " · Garten = Eve-Laufzeit × l/min, vor 08.10. Gießplan (vorne " + dz(gp[0]) + " / hinten " + dz(gp[1]) + " l/min), Küche kalt = Annahme " + dz(gp[2]) + " l/Tag – beide am SYR vorbei" };
 }
 function wpTorteRechne(von, bis) {
   // je Tag: ganze Tage aus den Tageswerten (WPF.tage, davor Langzeitstatistik), angeschnittene Tage anteilig nach der Leistungskurve
