@@ -39,19 +39,8 @@
   </section>
 
   <section>
-    <h2>Fußbodenheizung – Rücklauf je Kreis</h2>
-    <div class="karte" style="padding:0;overflow:hidden"><iframe src="fbh_waermebild.html?v=202610030939" title="Wärmebild Fußbodenheizung" class="fbhbild" loading="lazy"></iframe></div>
-    <div class="karte fbh-fazit" id="fbh_fazit"></div>
-  </section>
-
-  <section>
-    <h2>Wärmequellen – wann lief was</h2>
-    <div class="karte">
-      <svg id="zeitleiste" viewBox="0 0 1000 190" class="zeitleiste" aria-label="Laufzeiten WP, BWWP, LLWP"></svg>
-      <svg id="zeitleiste_ueb" viewBox="0 0 1000 42" class="zeitleiste zl-ueb" aria-label="14 Tage – antippen oder ziehen"></svg>
-      <div class="zl-hinweis">Unten antippen/ziehen oder im Feld wischen = zurückblättern (14 Tage) <button id="zeitleiste_jetzt" class="zl-jetzt" hidden>↦ Jetzt</button></div>
-      <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP Verdichter</span><span class="l" style="--c:#dc2626">BWWP + Heizstab</span><span class="l" style="--c:#facc15">LLWP</span></div>
-    </div>
+    <h2>Klima</h2>
+    <div id="klima" class="raster drei"></div>
   </section>
 
   <section>
@@ -63,8 +52,13 @@
   </section>
 
   <section>
-    <h2>Klima</h2>
-    <div id="klima" class="raster drei"></div>
+    <h2>Wärmequellen – wann lief was</h2>
+    <div class="karte">
+      <svg id="zeitleiste" viewBox="0 0 1000 190" class="zeitleiste" aria-label="Laufzeiten WP, BWWP, LLWP"></svg>
+      <svg id="zeitleiste_ueb" viewBox="0 0 1000 42" class="zeitleiste zl-ueb" aria-label="14 Tage – antippen oder ziehen"></svg>
+      <div class="zl-hinweis">Unten antippen/ziehen oder im Feld wischen = zurückblättern (14 Tage) <button id="zeitleiste_jetzt" class="zl-jetzt" hidden>↦ Jetzt</button></div>
+      <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP Verdichter</span><span class="l" style="--c:#dc2626">BWWP + Heizstab</span><span class="l" style="--c:#facc15">LLWP</span></div>
+    </div>
   </section>
 
   <div class="zwei">
@@ -93,12 +87,8 @@
   </div>
 
   <section>
-    <h2>Woher kommt der Strom</h2>
-    <div class="karte">
-      <svg id="herkunft" viewBox="0 0 1000 162" class="zeitleiste" aria-label="Stromherkunft: oben Haus bezieht PV/Akku/Netz, unten Akku lädt/Einspeisung"></svg>
-      <div class="zl-hinweis">Oben: woher das Haus seinen Strom bezieht (Anteile) · unten: Akku lädt / Einspeisung</div>
-      <div class="prog-legende"><span class="l" style="--c:#facc15">PV</span><span class="l" style="--c:#3b82f6">Akku</span><span class="l" style="--c:#f97316">Netz</span><span class="l" style="--c:#93c5fd">unten: Akku lädt</span><span class="l" style="--c:#22c55e">unten: Einspeisung</span></div>
-    </div>
+    <h2>PV-Anlage 3D</h2>
+    <div class="karte" style="padding:0;overflow:hidden"><iframe src="pv3d.html?v=202610081000" title="PV-Anlage 3D" class="pv3d" loading="lazy"></iframe></div>
   </section>
 
   <section>
@@ -110,18 +100,22 @@
   </section>
 
   <section>
-    <h2>PV-Prognose</h2>
+    <h2>Woher kommt der Strom</h2>
     <div class="karte">
-      <div id="progtext"></div>
-      <svg id="progkurve" viewBox="0 0 1000 330" class="progkurve" aria-label="PV und Verbrauch: Ist und Prognose"></svg>
-      <div class="prog-legende"><span class="l pv">PV</span><span class="l pvp">PV Prognose</span><span class="l vb">Verbrauch</span><span class="l vbp">Verbrauch Prognose Victron</span><span class="l vbe">Verbrauch Prognose eigen</span><span class="l soc">Akku %</span><span class="l socp">Akku Prognose</span></div>
-      <div class="grau" style="font-size:12px;margin-top:4px">Im Diagramm ziehen oder die Tagesleiste antippen = blättern (−4 … +7 Tage) · gelbe Griffe am Rahmen ziehen = zoomen · Doppelklick/-tippen = vorgestern bis übermorgen · alte Prognosen blass</div>
+      <svg id="herkunft" viewBox="0 0 1000 162" class="zeitleiste" aria-label="Stromherkunft: oben Haus bezieht PV/Akku/Netz, unten Akku lädt/Einspeisung"></svg>
+      <div class="zl-hinweis">Oben: woher das Haus seinen Strom bezieht (Anteile) · unten: Akku lädt / Einspeisung</div>
+      <div class="prog-legende"><span class="l" style="--c:#facc15">PV</span><span class="l" style="--c:#3b82f6">Akku</span><span class="l" style="--c:#f97316">Netz</span><span class="l" style="--c:#93c5fd">unten: Akku lädt</span><span class="l" style="--c:#22c55e">unten: Einspeisung</span></div>
     </div>
   </section>
 
   <section>
-    <h2>PV-Anlage 3D</h2>
-    <div class="karte" style="padding:0;overflow:hidden"><iframe src="pv3d.html?v=202610081000" title="PV-Anlage 3D" class="pv3d" loading="lazy"></iframe></div>
+    <h2>PV · Verbrauch · Akku</h2>
+    <div class="karte">
+      <div id="progtext" hidden></div>
+      <svg id="progkurve" viewBox="0 0 1000 330" class="progkurve" aria-label="PV und Verbrauch: Ist und Prognose"></svg>
+      <div class="prog-legende"><span class="l pv">PV</span><span class="l pvp">PV Prognose</span><span class="l vb">Verbrauch</span><span class="l vbp">Verbrauch Prognose Victron</span><span class="l vbe">Verbrauch Prognose eigen</span><span class="l soc">Akku %</span><span class="l socp">Akku Prognose</span></div>
+      <div class="grau" style="font-size:12px;margin-top:4px">Im Diagramm ziehen oder die Tagesleiste antippen = blättern (−4 … +7 Tage) · gelbe Griffe am Rahmen ziehen = zoomen · Doppelklick/-tippen = vorgestern bis übermorgen · alte Prognosen blass</div>
+    </div>
   </section>
 
   <section>
@@ -140,12 +134,6 @@
   </section>
 
   <section>
-    <h2 class="gv-kopf">Großverbraucher <span class="gv-um" id="gv_um"><button data-m="echt" class="an">echt bezahlt</button><button data-m="ohne">ohne PV</button></span></h2>
-    <div class="karte gross-karte"><div class="scroll"><table class="tab gross" id="gross"></table></div>
-      <div class="fuss" id="gross_fuss"></div></div>
-  </section>
-
-  <section>
     <h2>Wasser</h2>
     <div class="karte" style="padding:0;margin-bottom:10px"><vgs-zaehler-card id="zaehler_wasser"></vgs-zaehler-card></div>
     <div id="wasser" class="raster drei-fest"></div>
@@ -153,6 +141,12 @@
       <svg id="wf" viewBox="0 0 1000 330" class="zeitleiste" aria-label="Wasser – jede Zapfung, 14 Tage"></svg>
       <div class="prog-legende"><span class="l" style="--c:#ef4444">warm</span><span class="l" style="--c:#3b82f6">kalt</span><span class="l" style="--c:#9ca3af">ohne Aufteilung</span><span class="l" style="--c:#e5e7eb">Liter seit 0:00</span></div>
       <div class="zl-hinweis">Im Feld ziehen oder unten tippen/ziehen = blättern, Griffe = zoomen, Doppeltippen = Standard</div></div>
+  </section>
+
+  <section>
+    <h2 class="gv-kopf">Großverbraucher <span class="gv-um" id="gv_um"><button data-m="echt" class="an">echt bezahlt</button><button data-m="ohne">ohne PV</button></span></h2>
+    <div class="karte gross-karte"><div class="scroll"><table class="tab gross" id="gross"></table></div>
+      <div class="fuss" id="gross_fuss"></div></div>
   </section>
 </main>
 
