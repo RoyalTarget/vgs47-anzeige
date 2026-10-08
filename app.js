@@ -674,17 +674,27 @@ function fwTage(von, bis) { const l = [], d = new Date(von), jetzt = Date.now();
 const WF_ART = [["Dusche", "Dusche", "#ef4444", 1, "a_dusche"], ["Badewanne?", "Badewanne", "#f97316", 1, "a_badewanne"], ["Abspülen / Becken?", "Abspülen", "#fb7185", 1, "a_abspuelen"],
   ["warm kurz", "warm kurz", "#fca5a5", 1, "a_warm_kurz"], ["WC?", "WC", "#60a5fa", 0, "a_wc"], ["kalt", "kalt sonst", "#2563eb", 0, "a_kalt"],
   ["Waschmaschine", "Waschmaschine", "#a78bfa", 0, "a_waschmaschine"], ["Spülmaschine", "Spülmaschine", "#2dd4bf", 0, "a_spuelmaschine"]];
+// 08.10.2026 (Nutzer): Heißwasser ab Speicher je Zapfung – gemeinsam für Torte, Tagesbalken, Tooltip.
+// heiß = warm_l aus dem Zapf-Protokoll, sonst Liter × (T_Nutzung − T_kalt) / (T_Speicher − T_kalt); T_Nutzung = Helfer (wwt), T = Median aus dem Protokoll
+function wfT() { const evs = (WF && WF.ev) || []; if (WF && WF.__T && WF.__T.ev === evs) return WF.__T;
+  const med = (a, d) => { a = a.filter((x) => typeof x === "number" && isFinite(x)).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : d; };
+  const wt = (WF && WF.wwt) || [38, 40, 42], Tw = med(evs.map((e) => e.p && e.p.t_ww), 50), Tk = med(evs.map((e) => e.p && e.p.t_kw), 15);
+  const T = { ev: evs, wt, Tw, Tk, fa: (a) => { const tn = Math.min(a === "Dusche" ? wt[0] : a === "Badewanne?" ? wt[1] : wt[2], Tw); return Tw - Tk > 5 ? Math.min(Math.max((tn - Tk) / (Tw - Tk), 0), 1) : 1; } };
+  if (WF) WF.__T = T; return T; }
+function wfHeiss(e) { return e.warm !== true ? 0 : e.p && e.p.warm_l > 0 ? Math.min(e.p.warm_l, e.l) : e.l * wfT().fa(e.art); }
+function wfTag(k) { const r = { heiss: 0, misch: 0, kalt: 0, n: 0 };
+  for (const e of (WF && WF.ev) || []) { if (e.warm == null || fwKey(e.t) !== k) continue; r.n++; if (e.warm) { const h = wfHeiss(e); r.heiss += h; r.misch += e.l - h; } else r.kalt += e.l; }
+  return r.n ? r : null; }
+function wfTagText(x, h) { const ges = x.ges || 0, r = Math.round;
+  return `<br><span style="color:#ef4444">●</span> heiß ${r(h.heiss)} l (${ges ? r(h.heiss / ges * 100) : 0} %) · <span style="color:#93c5fd">●</span> zugemischt ${r(h.misch)} l · <span style="color:#2563eb">●</span> kalt ${r(Math.max(ges - h.heiss - h.misch, 0))} l`; }
 function wfTorteRechne(von, bis) {
   // Einzel-Zapfungen, soweit vorhanden (genau); davor Tageswerte der Langzeitstatistik (ganze Tage), Rest = ohne Aufteilung
   // 08.10.2026 (Nutzer): innen echtes Heißwasser ab Speicher (wie Dashboard): heiß = warm_l aus dem Protokoll, sonst Liter × (T_Nutzung − T_kalt) / (T_Speicher − T_kalt)
   const ab = WF && WF.kum.length ? WF.kum[0][0] : bis, art = {}, ring = { heiss: 0, misch: 0, kalt: 0, unb: 0 }; let ohne = 0;
-  const evs = (WF && WF.ev) || [], wt = (WF && WF.wwt) || [38, 40, 42];
-  const med = (a, d) => { a = a.filter((x) => typeof x === "number" && isFinite(x)).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : d; };
-  const Tw = med(evs.map((e) => e.p && e.p.t_ww), 50), Tk = med(evs.map((e) => e.p && e.p.t_kw), 15);
-  const fa = (a) => { const tn = Math.min(a === "Dusche" ? wt[0] : a === "Badewanne?" ? wt[1] : wt[2], Tw); return Tw - Tk > 5 ? Math.min(Math.max((tn - Tk) / (Tw - Tk), 0), 1) : 1; };
+  const evs = (WF && WF.ev) || [], { wt, Tw, fa } = wfT();
   for (const e of evs) { if (e.t < Math.max(von, ab) || e.t >= bis) continue; const a = WF_ART.find((x) => x[0] === e.art);
     if (a) art[a[1]] = (art[a[1]] || 0) + e.l; else ohne += e.l;
-    if (e.warm === true) { const h = e.p && e.p.warm_l > 0 ? Math.min(e.p.warm_l, e.l) : e.l * fa(e.art); ring.heiss += h; ring.misch += e.l - h; }
+    if (e.warm === true) { const h = wfHeiss(e); ring.heiss += h; ring.misch += e.l - h; }
     else ring[e.warm === false ? "kalt" : "unb"] += e.l; }
   for (const [k, a, b, anteil] of fwTage(von, Math.min(ab, bis))) { const x = TL[k]; if (!x) continue;
     let s = 0; for (const q of WF_ART) { const v = (x[q[4]] || 0) * anteil; art[q[1]] = (art[q[1]] || 0) + v; if (q[3]) { const h = v * fa(q[0]); ring.heiss += h; ring.misch += v - h; } else ring.kalt += v; s += v; }
@@ -819,12 +829,14 @@ function zeigeWasserFenster(d, v) {
       let ic = IC.filter(([a]) => ar[a]).map(([a, i]) => i + (ar[a].n > 1 && !/maschine/.test(a) ? ar[a].n : "")).join(" ");
       if (!ar["Dusche"] && x.dusch) ic = "🚿" + (x.dusch > 1 ? x.dusch : "") + (ic ? " " + ic : "");
       return b >= 90 ? `${x.ges} l${ic ? " · " + ic : ""}` : `${x.ges} l`; },
-    leiste: (t) => { const x = WF.tage[fwKey(t)]; if (!x) return [];
+    leiste: (t) => { const x = WF.tage[fwKey(t)]; if (!x) return []; const h = wfTag(fwKey(t));
+      if (h) return [{ v: h.heiss, farbe: "#ef4444" }, { v: h.misch, farbe: "#93c5fd" }, { v: Math.max(x.ges - h.heiss - h.misch, 0), farbe: "#2563eb" }];
       return x.warm != null ? [{ v: Math.min(x.warm, x.ges), farbe: "#ef4444" }, { v: Math.max(x.ges - x.warm, 0), farbe: "#3b82f6" }] : [{ v: x.ges, farbe: "#6b7280" }]; },
     tip: (t, { x0, x1 }) => { const tol = (x1 - x0) * 0.012, e0 = WF.ende.find(([te]) => Math.abs(te - t) < tol);
       if (e0) { const k = fwKey(e0[0] - 1000), x = WF.tage[k] || {}, ges = x.ges || 0, heute = k === fwKey(Date.now());
         let s = `<b>${new Date(e0[0] - 1000).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${heute ? " (bis jetzt)" : ""}: ${ges} l</b>`;
-        if (x.warm != null) s += `<br><span style="color:#ef4444">●</span> warm ${x.warm} l (${ges ? Math.round(x.warm / ges * 100) : 0} %) · <span style="color:#3b82f6">●</span> kalt ${Math.max(ges - x.warm, 0)} l`;
+        const h = wfTag(k); if (h) s += wfTagText(x, h);
+        else if (x.warm != null) s += `<br><span style="color:#ef4444">●</span> warm ${x.warm} l (${ges ? Math.round(x.warm / ges * 100) : 0} %) · <span style="color:#3b82f6">●</span> kalt ${Math.max(ges - x.warm, 0)} l`;
         const ar = Object.entries(x.arten || {}).filter(([a]) => WF_IC[a]).sort((a, b) => b[1].l - a[1].l);
         if (ar.length) s += "<br>" + ar.map(([a, vv]) => `${WF_IC[a]} ${a.replace("?", "")} ${/maschine/.test(a) ? vv.n + (vv.n === 1 ? " Füllung" : " Füllungen") : vv.n + "×"} · ${vv.l} l`).join("<br>");
         return fwBox(s); }
@@ -832,6 +844,7 @@ function zeigeWasserFenster(d, v) {
       if (!b || Math.abs(b.t - t) > (x1 - x0) * 0.01) { const y = wertBei(WF.kum.filter((p) => p[1] != null), t, 36e5 * 6); return y == null ? "" : fwBox(`${F(t)}<br>seit 0:00: <b>${Math.round(y)} l</b>`); }
       const col = b.warm === true ? "#ef4444" : b.warm === false ? "#3b82f6" : "#9ca3af", art = b.warm === true ? "warm" : b.warm === false ? "kalt" : "warm/kalt unbekannt";
       return fwBox(`<b>${F(b.t)}</b> · ${b.p.dauer_min || "?"} min<br><span style="color:${col}">●</span> <b>${b.art || art}</b> · ${b.l} l ${b.art ? art : ""}${b.p.max_lh ? " · max " + b.p.max_lh + " l/h" : ""}`
+        + (b.warm === true ? `<br>davon ≈ ${Math.round(wfHeiss(b))} l heiß ab Speicher, ${Math.round(b.l - wfHeiss(b))} l kalt zugemischt` : "")
         + (b.nach ? '<br><span style="color:#9ca3af;font-size:11px">aus SYR-Verlauf nachträglich bestimmt</span>' : "")); } });
   fensterZeichnen("wf");
 }
