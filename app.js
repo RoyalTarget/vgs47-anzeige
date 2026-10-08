@@ -1464,9 +1464,6 @@ function zeigeTemperaturen(d) {
   }
   if (fp.length) svg += `<path d="${linie(fp.map((p) => [X(p[0]), Y(p[1])]))}" fill="none" stroke="#93c5fd" stroke-width="2.2" stroke-dasharray="7 5"/>`;
   if (ip.length) svg += `<path d="${linie(ip.map((p) => [X(p[0] + halb), Y(p[5])]))}" fill="none" stroke="#ef4444" stroke-width="2.5"/>`;
-  // OAT = eigener Außenfühler (30.09.2026, Vergleichswoche): dünne cyan Linie, nur Stunden mit Wert
-  const oatP = ip.filter((p) => typeof p[6] === "number").map((p) => [p[0] + halb, p[6]]);
-  if (oatP.length > 1) svg += `<path d="${linie(oatP.map((p) => [X(p[0]), Y(p[1])]))}" fill="none" stroke="#22d3ee" stroke-width="1.5"/>`;
   if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
   if (lo < 0) svg += `<line x1="${L}" x2="${R}" y1="${Y(0)}" y2="${Y(0)}" stroke="#d4d4d8" stroke-width="1.5"/>`;
   // aktueller Außenwert (OAT) als Punkt am Ende der Außen-Kurve
@@ -1478,7 +1475,6 @@ function zeigeTemperaturen(d) {
   kreuz($("tempkurve"), { L, R, T, B, x0, x1, reihen: [
     { n: "Außen", f: "#3b82f6", e: "°C", p: ip.map((p) => [p[0] + halb, p[4]]).concat(oat !== null ? [[jetzt, oat]] : []) },
     { n: "Innen", f: "#ef4444", e: "°C", p: ip.map((p) => [p[0] + halb, p[5]]) },
-    { n: "Außen OAT", f: "#22d3ee", e: "°C", p: ip.filter((p) => typeof p[6] === "number").map((p) => [p[0] + halb, p[6]]) },
     { n: "Außen Prognose", f: "#93c5fd", e: "°C", p: fp, gap: 90 * 6e4 }] });
 }
 
