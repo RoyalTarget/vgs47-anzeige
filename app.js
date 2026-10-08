@@ -935,6 +935,10 @@ const zlEnde = {};            // Fensterende je Leiste (ms), null = live
 let zlSeg = {};               // Kürzel → [[von, bis, läuft]]
 let zlLauf = [];              // [Kürzel, Start ms, Text] aus den Lauf-Protokollen (03.10.2026)
 const zlInfo = (c, a) => { const c2 = c === 'hz' ? 'bw' : c; const r = zlLauf.find((x) => x[0] === c2 && Math.abs(x[1] - a) <= 6 * 6e4); return r ? '\n' + r[2] : ''; };
+// Kurzwert im Balken (08.10.2026, Nutzer, wie Dashboard): WP „AZ x,x“, BWWP „x,x kWh“ aus dem Lauf-Protokoll
+const zlKurz = (c, a) => { if (c !== 'wp' && c !== 'bw') return ''; const r = zlLauf.find((x) => x[0] === c && Math.abs(x[1] - a) <= 6 * 6e4); if (!r) return '';
+  const m = c === 'wp' ? /AZ (-?[\d,.]+)/.exec(r[2]) : /^(-?[\d,.]+) kWh/.exec(r[2]); if (!m) return '';
+  const v = parseFloat(m[1].replace(',', '.')); return isFinite(v) ? (c === 'wp' ? 'AZ ' : '') + v.toFixed(1).replace('.', ',') + (c === 'wp' ? '' : ' kWh') : ''; };
 // Kurzfazit zum Wärmebild (03.10.2026): d.ft = Markdown-Text aus sensor.fbh_kurzfazit (**fett**, <small>, Absätze)
 function zeigeFazit(d) {
   const el = $("fbh_fazit"); if (!el) return; const t = d.ft || "";
@@ -1132,6 +1136,9 @@ function zeichneZL(id) {
         if (b <= x0 || a >= ende) continue;
         const aa = Math.max(a, x0), bb = Math.min(b, ende);
         svg += `<rect x="${X(aa)}" y="${y + 6}" width="${Math.max(X(bb) - X(aa), 1.5)}" height="${H - 12}" fill="${farben[k]}"><title>${name}${zus ? zus[k] : ""}: ${tg(a)} ${hm(a)}–${lauf ? "läuft" : hm(b)} (${dau(b - a)})${lauf ? '' : zlInfo(c, a)}</title></rect>`;
+        const kz = lauf ? '' : zlKurz(c, a), kb = kz.length * 6 + 10;
+        if (kz && X(bb) - X(aa) >= kb + 4) { const xm = (X(aa) + X(bb)) / 2;
+          svg += `<rect x="${xm - kb / 2}" y="${y + H / 2 - 7.5}" width="${kb}" height="15" rx="3" fill="#000" fill-opacity="0.85" pointer-events="none"/><text x="${xm}" y="${y + H / 2 + 4}" fill="#fff" font-size="11" font-weight="600" text-anchor="middle" pointer-events="none">${kz}</text>`; }
       }
     });
   });
