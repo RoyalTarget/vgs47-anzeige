@@ -1058,8 +1058,10 @@ let tipDown = null;
 document.addEventListener("pointerdown", (ev) => { tipDown = [ev.clientX, ev.clientY]; }, { passive: true, capture: true });
 document.addEventListener("pointerup", (ev) => { if (ev.pointerType === "mouse" || !tipDown) return;
   if (Math.hypot(ev.clientX - tipDown[0], ev.clientY - tipDown[1]) > 10) return;   // gezogen/gewischt → kein Tooltip
-  const k = kzZiel(ev); if (k) { kreuzZeig(k, ev, 6000); return; }
-  const e = tipZiel(ev); if (e) tipZeig(e.getAttribute("data-tip"), ev.clientX, ev.clientY, 6000); else tipWeg(); }, { passive: true, capture: true });
+  // 08.10.2026 (Nutzer): Tippen = Tooltip auf, nochmal tippen = zu (statt nach 6 s von selbst weg)
+  if (TIP.style.display === "block") { tipWeg(); return; }
+  const k = kzZiel(ev); if (k) { kreuzZeig(k, ev); return; }
+  const e = tipZiel(ev); if (e) tipZeig(e.getAttribute("data-tip"), ev.clientX, ev.clientY); else tipWeg(); }, { passive: true, capture: true });
 window.addEventListener("scroll", () => { if (TIP.style.display === "block") tipWeg(); }, { passive: true });
 
 // Fadenkreuz für Zeitkurven: cfg = {L, R, T, B, x0, x1, reihen: [{n, f, p: [[ms, Wert]], e, d, gap}]}
