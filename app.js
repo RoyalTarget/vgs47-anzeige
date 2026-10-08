@@ -676,16 +676,23 @@ const WF_ART = [["Dusche", "Dusche", "#ef4444", 1, "a_dusche"], ["Badewanne?", "
   ["Waschmaschine", "Waschmaschine", "#a78bfa", 0, "a_waschmaschine"], ["Spülmaschine", "Spülmaschine", "#2dd4bf", 0, "a_spuelmaschine"]];
 function wfTorteRechne(von, bis) {
   // Einzel-Zapfungen, soweit vorhanden (genau); davor Tageswerte der Langzeitstatistik (ganze Tage), Rest = ohne Aufteilung
-  const ab = WF && WF.kum.length ? WF.kum[0][0] : bis, art = {}, ring = { warm: 0, kalt: 0, unb: 0 }; let ohne = 0;
-  for (const e of (WF && WF.ev) || []) { if (e.t < Math.max(von, ab) || e.t >= bis) continue; const a = WF_ART.find((x) => x[0] === e.art);
-    if (a) art[a[1]] = (art[a[1]] || 0) + e.l; else ohne += e.l; ring[e.warm === true ? "warm" : e.warm === false ? "kalt" : "unb"] += e.l; }
+  // 08.10.2026 (Nutzer): innen echtes Heißwasser ab Speicher (wie Dashboard): heiß = warm_l aus dem Protokoll, sonst Liter × (T_Nutzung − T_kalt) / (T_Speicher − T_kalt)
+  const ab = WF && WF.kum.length ? WF.kum[0][0] : bis, art = {}, ring = { heiss: 0, misch: 0, kalt: 0, unb: 0 }; let ohne = 0;
+  const evs = (WF && WF.ev) || [], wt = (WF && WF.wwt) || [38, 40, 42];
+  const med = (a, d) => { a = a.filter((x) => typeof x === "number" && isFinite(x)).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : d; };
+  const Tw = med(evs.map((e) => e.p && e.p.t_ww), 50), Tk = med(evs.map((e) => e.p && e.p.t_kw), 15);
+  const fa = (a) => { const tn = Math.min(a === "Dusche" ? wt[0] : a === "Badewanne?" ? wt[1] : wt[2], Tw); return Tw - Tk > 5 ? Math.min(Math.max((tn - Tk) / (Tw - Tk), 0), 1) : 1; };
+  for (const e of evs) { if (e.t < Math.max(von, ab) || e.t >= bis) continue; const a = WF_ART.find((x) => x[0] === e.art);
+    if (a) art[a[1]] = (art[a[1]] || 0) + e.l; else ohne += e.l;
+    if (e.warm === true) { const h = e.p && e.p.warm_l > 0 ? Math.min(e.p.warm_l, e.l) : e.l * fa(e.art); ring.heiss += h; ring.misch += e.l - h; }
+    else ring[e.warm === false ? "kalt" : "unb"] += e.l; }
   for (const [k, a, b, anteil] of fwTage(von, Math.min(ab, bis))) { const x = TL[k]; if (!x) continue;
-    let s = 0; for (const q of WF_ART) { const v = (x[q[4]] || 0) * anteil; art[q[1]] = (art[q[1]] || 0) + v; ring[q[3] ? "warm" : "kalt"] += v; s += v; }
+    let s = 0; for (const q of WF_ART) { const v = (x[q[4]] || 0) * anteil; art[q[1]] = (art[q[1]] || 0) + v; if (q[3]) { const h = v * fa(q[0]); ring.heiss += h; ring.misch += v - h; } else ring.kalt += v; s += v; }
     const rest = Math.max((x.vol || 0) * anteil - s, 0); ohne += rest; ring.unb += rest; }
   const rd = (r) => r.map((x) => ({ ...x, v: Math.round(x.v) }));
-  return { ringe: [rd([{ n: "warm", v: ring.warm, f: "#ef4444" }, { n: "kalt", v: ring.kalt, f: "#3b82f6" }, { n: "ohne Aufteilung", v: ring.unb, f: "#6b7280" }]),
+  return { ringe: [rd([{ n: "heiß (Speicher)", v: ring.heiss, f: "#ef4444" }, { n: "kalt zugemischt", v: ring.misch, f: "#93c5fd" }, { n: "kalt direkt", v: ring.kalt, f: "#2563eb" }, { n: "ohne Aufteilung", v: ring.unb, f: "#6b7280" }]),
     rd(WF_ART.map((a) => ({ n: a[1], v: art[a[1]] || 0, f: a[2] })).sort((x, y) => y.v - x.v).concat([{ n: "ohne Aufteilung", v: ohne, f: "#6b7280" }]))],
-    hinweis: ohne >= 1 ? "grau = ohne Zuordnung (Warm-Erkennung ab 25.09.2026)" : "" };
+    hinweis: "heiß = ab Speicher (~" + Math.round(Tw) + " °C); zugemischt = Kaltwasser in Dusche/Wanne/Becken (Annahme " + wt.join("/") + " °C)" + (ohne >= 1 ? " · grau = ohne Zuordnung (Warm-Erkennung ab 25.09.2026)" : "") };
 }
 function wpTorteRechne(von, bis) {
   // je Tag: ganze Tage aus den Tageswerten (WPF.tage, davor Langzeitstatistik), angeschnittene Tage anteilig nach der Leistungskurve
@@ -767,7 +774,7 @@ function wasserFensterDaten(d, v) {
   for (const p of (v && v.zp) || d.zp || []) { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) continue;
     const dt = new Date(jahr, m[2] - 1, m[1], m[3], m[4]); if (dt.getTime() > jetzt + 864e5) dt.setFullYear(jahr - 1);
     const a0 = dt.getTime(), a1 = a0 + Math.max((p[1] || 1) - 1, 0) * 6e4, e = p[6] != null ? { warm: !!p[3], art: p[4] } : einordnen(a0, a1, p[2], p[1] || 1, !!p[3]);
-    ev.push({ t: a0 + (p[1] || 0) * 3e4, l: p[2], warm: e.warm, art: e.art, p: { start: p[0], dauer_min: p[1], max_lh: p[5] } }); }
+    ev.push({ t: a0 + (p[1] || 0) * 3e4, l: p[2], warm: e.warm, art: e.art, p: { start: p[0], dauer_min: p[1], max_lh: p[5], warm_l: p[7], t_ww: p[8], t_kw: p[9] } }); }
   const ab = ev.length ? Math.min(...ev.map((e) => e.t)) - 3e5 : Infinity;
   // Zählerverlauf → Rekonstruktion + Liter seit 0:00
   const pts = []; if (v && v.wv && v.wv.vs) { let [t, l] = v.wv.vs; pts.push([t * 1000, l]); for (const [dt, dl] of v.wv.vd || []) { t += dt; l += dl; pts.push([t * 1000, l]); } }
@@ -790,7 +797,7 @@ function wasserFensterDaten(d, v) {
     if (e.art) { const a = x.arten[e.art] = x.arten[e.art] || { n: 0, l: 0 }; a.n++; a.l += e.l; }
     if (e.warm !== null) x.ev_warm = (x.ev_warm || 0) + (e.warm ? e.l : 0); }
   for (const x of Object.values(tage)) if (x.warm == null && x.ev_warm != null) x.warm = Math.min(x.ev_warm, x.ges);
-  return { tage, ev, kum, ende };
+  return { tage, ev, kum, ende, wwt: (v && v.wwt) || [38, 40, 42] };
 }
 const WF_IC = { "Dusche": "🚿", "Badewanne?": "🛁", "Waschmaschine": "🧺", "Spülmaschine": "🍽️", "WC?": "🚽", "Abspülen / Becken?": "🚰" };
 function zeigeWasserFenster(d, v) {
@@ -798,7 +805,7 @@ function zeigeWasserFenster(d, v) {
   WF = wasserFensterDaten(d, v);
   const F = (t) => { const x = new Date(t); return x.toLocaleString("de-DE", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }); };
   FW.wf = Object.assign(FW.wf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
-    torte: { start: new Date(2026, 8, 25).getTime(), einheit: "l", dec: 0, ringnamen: ["warm / kalt", "wer hat es verbraucht"], rechne: wfTorteRechne },
+    torte: { start: new Date(2026, 8, 25).getTime(), einheit: "l", dec: 0, ringnamen: ["heiß / kalt", "wer hat es verbraucht"], rechne: wfTorteRechne },
     links: { e: "l", max: () => Math.max(20, ...WF.ev.map((e) => e.l)) }, rechts: { e: "l", max: () => Math.max(100, ...WF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, YR, x0, x1, schmal }) => { let g = ""; const bw = schmal ? 3 : 4;
       for (const e of WF.ev) { if (e.t < x0 - 36e5 || e.t > x1 + 36e5) continue; const col = e.warm === true ? "#ef4444" : e.warm === false ? "#3b82f6" : "#9ca3af";
