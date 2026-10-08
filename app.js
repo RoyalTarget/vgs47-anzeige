@@ -768,7 +768,7 @@ function wasserFensterDaten(d, v) {
     return t0 == null ? null : Math.max((mx ?? t0) - t0, 0); };
   const einordnen = (t0, t1, l, dauer, wBin) => { const b = t1 + 18e4, dw = wBin ? anstieg(t0, t1) : null, warm = wBin === null ? null : !!wBin && (dw === null || dw >= 0.5);
     const g = t0 >= ph.m.ab && an(ph.m, t0 - 6e4, b) ? "Waschmaschine" : t0 >= ph.s.ab && an(ph.s, t0, b) ? "Spülmaschine" : "";
-    const art = warm === null ? "" : g && !warm && l <= (g === "Spülmaschine" ? 12 : 25) ? g : warm && l >= 100 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
+    const art = warm === null ? "" : g && !warm && l <= (g === "Spülmaschine" ? 12 : 25) ? g : warm && l >= 100 && l / dauer >= 11.5 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
       : warm && dauer >= 3 ? "Abspülen / Becken?" : warm ? "warm kurz" : l >= 3 && l <= 12 && dauer <= 3 ? "WC?" : "kalt";
     return { warm, art }; };
   for (const p of (v && v.zp) || d.zp || []) { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) continue;
