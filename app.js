@@ -1298,8 +1298,11 @@ function zeigePrognose(d) {
   const LO = t0.getTime() - 4 * 864e5, HI = t0.getTime() + 8 * 864e5, FEN = 5 * 864e5;
   if (!window.__progWin) window.__progWin = { std: true, von: 0, breite: FEN };
   // Breite variabel (Griffe am Rahmen der Tagesleiste, 30.09.2026): 12 h … ganzer Bereich
-  const BR = window.__progWin.std ? FEN : Math.min(Math.max(window.__progWin.breite || FEN, 12 * 36e5), HI - LO);
-  let x0 = window.__progWin.std ? t0.getTime() - 2 * 864e5 : window.__progWin.von;
+  // 08.10.2026 (Nutzer, wie Dashboard): iPhone hochkant Standard heute + morgen, sonst 5 Tage
+  const HOCH = window.matchMedia("(max-width: 767px) and (orientation: portrait)");
+  if (!window.__progMq) { window.__progMq = true; HOCH.addEventListener("change", () => { if (window.__progWin && window.__progWin.std && window.__progD) zeigePrognose(window.__progD); }); }
+  const BR = window.__progWin.std ? (HOCH.matches ? 2 * 864e5 : FEN) : Math.min(Math.max(window.__progWin.breite || FEN, 12 * 36e5), HI - LO);
+  let x0 = window.__progWin.std ? t0.getTime() - (HOCH.matches ? 0 : 2 * 864e5) : window.__progWin.von;
   x0 = Math.min(Math.max(x0, LO), HI - BR); const x1 = x0 + BR; window.__progX = [x0, x1];
   const X = (t) => L + (t - x0) / (x1 - x0) * (R - L);
   const halb = 18e5, jetzt = Date.now(), h0 = Math.floor(jetzt / 36e5) * 36e5;
