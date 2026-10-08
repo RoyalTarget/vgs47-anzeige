@@ -1136,9 +1136,9 @@ function zeichneZL(id) {
         if (b <= x0 || a >= ende) continue;
         const aa = Math.max(a, x0), bb = Math.min(b, ende);
         svg += `<rect x="${X(aa)}" y="${y + 6}" width="${Math.max(X(bb) - X(aa), 1.5)}" height="${H - 12}" fill="${farben[k]}"><title>${name}${zus ? zus[k] : ""}: ${tg(a)} ${hm(a)}–${lauf ? "läuft" : hm(b)} (${dau(b - a)})${lauf ? '' : zlInfo(c, a)}</title></rect>`;
-        const kz = lauf ? '' : zlKurz(c, a), kb = kz.length * 6 + 10;
+        const kz = lauf ? '' : zlKurz(c, a), kb = kz.length * 5.3 + 8;
         if (kz && X(bb) - X(aa) >= kb + 4) { const xm = (X(aa) + X(bb)) / 2;
-          svg += `<rect x="${xm - kb / 2}" y="${y + H / 2 - 7.5}" width="${kb}" height="15" rx="3" fill="#000" fill-opacity="0.85" pointer-events="none"/><text x="${xm}" y="${y + H / 2 + 4}" fill="#fff" font-size="11" font-weight="600" text-anchor="middle" pointer-events="none">${kz}</text>`; }
+          svg += `<rect x="${xm - kb / 2}" y="${y + H / 2 - 6.5}" width="${kb}" height="13" rx="2.5" fill="#000" fill-opacity="0.85" pointer-events="none"/><text x="${xm}" y="${y + H / 2 + 3.5}" fill="#fff" font-size="9.5" font-weight="600" text-anchor="middle" pointer-events="none">${kz}</text>`; }
       }
     });
   });
