@@ -138,6 +138,7 @@ tr.teil.hz-an td { color: #facc15; }
 .gross tr.gruppe td { background: rgba(59,130,246,0.16); border-top: 3px solid rgba(96,165,250,0.7); font-weight: 600; }
 .gross tr.pvabzug td { background: rgba(34,197,94,0.16); border-top: 3px solid rgba(34,197,94,0.8); color: #86efac; font-weight: 600; }
 .gross tr.haus td { background: rgba(250,204,21,0.14); border-top: 3px solid rgba(250,204,21,0.8); font-weight: 600; }
+.gross tr.victron td { background: rgba(148,163,184,0.12); color: #cbd5e1; font-weight: 600; }   /* 09.10.2026 */
 .gross tr.teil td { color: #9ca3af; font-size: 0.92em; }
 .gross tr.teil.hz td:first-child { color: #facc15; }
 .gross tr.teil.hz.an td { color: #facc15; }
@@ -149,7 +150,7 @@ tr.teil.hz-an td { color: #facc15; }
   .gross th { position: sticky; top: 0; z-index: 3; background: var(--karte); box-shadow: 0 2px 0 rgba(255,255,255,0.2); }
   .gross td:first-child, .gross th:first-child { position: sticky; left: 0; z-index: 2; background: var(--karte); max-width: 130px; white-space: normal; box-shadow: 2px 0 0 rgba(255,255,255,0.15); }
   .gross th:first-child { z-index: 4; }
-  .gross tr.gruppe td:first-child { background: #1e2a3f; } .gross tr.pvabzug td:first-child { background: #1a3325; } .gross tr.haus td:first-child { background: #34301a; }
+  .gross tr.gruppe td:first-child { background: #1e2a3f; } .gross tr.pvabzug td:first-child { background: #1a3325; } .gross tr.haus td:first-child { background: #34301a; } .gross tr.victron td:first-child { background: #2a2e34; }
   .gross td .eur { font-size: 10px; }
 }
 .zeitleiste { width: 100%; display: block; }
