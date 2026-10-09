@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202610090830">
+<link rel="stylesheet" href="style.css?v=202610091411">
 </head>
 <body>
 <header>
@@ -14,6 +14,8 @@
 </header>
 
 <main>
+  <!-- 09.10.2026: Tagesbericht-Zeile (Blickfang, Daten d.tb), Antippen → Bild unten -->
+  <div id="tb_zeile" class="tbz" hidden></div>
   <section>
     <h2>Temperaturen</h2>
     <div class="karte">
@@ -153,12 +155,16 @@
       <div class="zl-hinweis">Im Feld ziehen oder unten tippen/ziehen = blättern, Griffe = zoomen, Doppeltippen = Standard</div></div>
   </section>
 
+  <section id="tb_sek" hidden>
+    <h2>Tagesbericht</h2>
+    <div class="karte" style="padding:0;overflow:hidden"><img id="tb_bild" alt="Tagesbericht" style="display:block;width:100%;max-width:600px;margin:0 auto" loading="lazy"></div>
+  </section>
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
 <script src="lib/vgs_schwellen.js?v=202610090837"></script>
 <script src="lib/vgs_wann.js?v=202610071920"></script>
 <script src="lib/vgs_zaehler.js?v=202610061700"></script>
-<script src="app.js?v=202610091012"></script>
+<script src="app.js?v=202610091411"></script>
 </body>
 </html>
