@@ -264,7 +264,7 @@ function sonnenstand(d = new Date(), lat = 48.115, lon = 11.525) {
 function sonneSetzen() {
   const s = sonnenstand(), el = Math.max(s.el, -5) * Math.PI / 180, az = s.az * Math.PI / 180, r = 40;
   sonne.position.set(r * Math.cos(el) * Math.sin(az), r * Math.sin(Math.max(el, 0.03)), -r * Math.cos(el) * Math.cos(az));
-  sonne.intensity = s.el > 0 ? 0.6 + 1.2 * Math.min(s.el / 30, 1) : 0.15;
+  sonne.intensity = (s.el > 0 ? 0.6 + 1.2 * Math.min(s.el / 30, 1) : 0.15) * HELL.licht;
   tagesfarben(s.el);
   return s;
 }
@@ -276,14 +276,16 @@ const STUFEN = [   // [Sonnenhöhe °, Hintergrund, Boden, Himmelslicht, Sonnenf
   [3, 0x4b3349, 0x1c261b, 0.42, 0xff9a55],     // Sonnenauf-/-untergang
   [12, 0x44566a, 0x26381f, 0.60, 0xffe2b8],    // Morgen / Abend
   [30, 0x50657c, 0x2c4224, 0.72, 0xfff4dd]];   // Tag
+// Etwas heller (09.10.2026, Nutzer: „einen Tick heller für alle Phasen“): Licht × 1,2 (+ Grundlicht), Himmel/Boden 8 % Richtung Weiß
+const HELL = { licht: 1.2, himmel: 0.08, farbe: 0.08 };
 function tagesfarben(el) {
   const k = STUFEN, n = k.length; let a = k[n - 1], b = k[n - 1], t = 0;
   for (let j = 1; j < n; j++) if (el < k[j][0]) { a = k[j - 1]; b = k[j]; t = Math.max(0, (el - a[0]) / (b[0] - a[0])); break; }
-  const mix = (c1, c2) => new THREE.Color(c1).lerp(new THREE.Color(c2), t);
+  const mix = (c1, c2) => new THREE.Color(c1).lerp(new THREE.Color(c2), t).lerp(new THREE.Color(0xffffff), HELL.farbe);
   const bg = mix(a[1], b[1]); scene.background = bg; document.body.style.background = '#' + bg.getHexString();
   boden.material.color.copy(mix(a[2], b[2]));
-  himmelLicht.intensity = a[3] + (b[3] - a[3]) * t;
-  sonne.color.copy(mix(a[4], b[4]));
+  himmelLicht.intensity = (a[3] + (b[3] - a[3]) * t) * HELL.licht + HELL.himmel;
+  sonne.color.copy(new THREE.Color(a[4]).lerp(new THREE.Color(b[4]), t));
 }
 
 // ---------- Daten ----------
