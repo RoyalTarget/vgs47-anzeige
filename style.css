@@ -229,5 +229,5 @@ vgs-schwellen-card { display: block; --primary-text-color: var(--text); --second
 /* Tagesbericht-Etiketten (09.10.2026) */
 .tbz .et{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:7px;background:#111827;border:1px solid rgba(255,255,255,.35);color:#d1d5db;white-space:nowrap}
 .tbz .et b{color:#fff;font-weight:700}.tbz .et i{font-style:normal;font-weight:700;font-size:12px}
-.tbz .et i.gut{color:#4ade80}.tbz .et i.schl{color:#fb923c}.tbz .et i.neu{color:#9ca3af}
+.tbz .et i.gut{color:#4ade80}.tbz .et i.schl{color:#fb923c}.tbz .et i.rot{color:#f87171}.tbz .et i.neu{color:#9ca3af}
 .tbz .et.gasl{border-color:rgba(74,222,128,.55)}.tbz .et.gasl b{color:#86efac}
