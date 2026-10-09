@@ -232,11 +232,12 @@ vgs-schwellen-card { display: block; --primary-text-color: var(--text); --second
 .tbz .et i.gut{color:#4ade80}.tbz .et i.schl{color:#fb923c}.tbz .et i.rot{color:#f87171}.tbz .et i.neu{color:#9ca3af}
 .tbz .et.gasl{border-color:rgba(74,222,128,.55)}.tbz .et.gasl b{color:#86efac}
 /* Tagesbericht-Zeile Handy (09.10.2026): Raster 3 Spalten, Etikett zweizeilig */
-.tbz{position:relative}.tbz .et.bf{border-color:rgba(245,158,11,.6)}.tbz .et.bf b{color:#fcd34d}
+.tbz{position:relative}.tbz .kz{display:none}.tbz .et.bf{border-color:rgba(245,158,11,.6)}.tbz .et.bf b{color:#fcd34d}
 @media (max-width: 600px) {
   .tbz{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   .tbz .tz{grid-column:1/-1;font-size:15px}.tbz .pf{position:absolute;right:10px;top:8px}
   .tbz .et{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"l p" "b b";gap:0 4px;padding:4px 7px;white-space:normal}
   .tbz .et .l{grid-area:l;font-size:11px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tbz .et i{grid-area:p;font-size:11px;white-space:nowrap}.tbz .et b{grid-area:b;font-size:15px;white-space:nowrap}
+  .tbz .lg{display:none}.tbz .kz{display:inline}
 }
