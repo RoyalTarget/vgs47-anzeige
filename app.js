@@ -969,6 +969,19 @@ function zeigeWpFenster(d, v) {
 window.addEventListener("resize", () => { for (const id of Object.keys(FW)) fensterZeichnen(id); });
 
 // ---------- „Wann starten?“ (29.09.2026, wie Dashboard) ----------
+// Tagesbericht (09.10.2026, Nutzer): Zeile oben aus d.tb (meldet die Druck-Ansicht um 9 Uhr), Bild von 9 Uhr unten (bericht/tagesbericht.png, lädt HA hoch)
+function zeigeTagesbericht(d) {
+  const tb = d && d.tb, zl = $("tb_zeile"), sek = $("tb_sek"), img = $("tb_bild");
+  if (!tb || !tb.d) { if (zl) zl.hidden = true; if (sek) sek.hidden = true; return; }
+  const z1 = (v, n) => (v == null ? "–" : zahl(v, n)), esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const chips = (tb.auff || []).length ? tb.auff.map(([t, gut]) => `<span class="${gut ? "gu" : "r"}">${gut ? "" : "⚠️ "}${esc(t)}</span>`).join("") : '<span class="n">✅ nichts Auffälliges</span>';
+  zl.innerHTML = `<b>📊 Gestern (${esc(tb.wt)}):</b><span>WP-AZ ${z1(tb.az, 1)} · PV ${z1(tb.pv, 1)} kWh · Netz ${z1(tb.netz, 1)} kWh${tb.gas != null ? ` · 💶 +${z1(tb.gas, 2)} €` : ""}</span>${chips}${tb.bf ? `<span class="bf">🔎 ${tb.bf} Befund${tb.bf > 1 ? "e" : ""}</span>` : ""}<span class="pf">›</span>`;
+  zl.hidden = false; sek.hidden = false;
+  if (!zl.__an) { zl.__an = true; zl.addEventListener("click", () => sek.scrollIntoView({ behavior: "smooth", block: "start" })); }
+  const src = "bericht/tagesbericht.png?v=" + encodeURIComponent(tb.d);
+  if (img.getAttribute("src") !== src) img.setAttribute("src", src);
+}
+
 function zeigeWann(d) {
   // 07.10.2026: Ampel-Karte (lib/vgs_wann.js, dieselbe Datei wie im Dashboard) – Modell aus d.ws / d.af / d.am
   const el = $("wann_karte"); if (!el) return;
@@ -1589,7 +1602,7 @@ async function holen() {
     tlSetzen(VERLAUF);
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
-    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d);
+    zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d); zeigeTagesbericht(d);
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
     try { zeigeWpFenster(d, VERLAUF); } catch (e) { console.warn("wpf", e); }
     try { zeigeSchwellen(d, VERLAUF); } catch (e) { console.warn("schwellen", e); }
