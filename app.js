@@ -976,7 +976,7 @@ function zeigeTagesbericht(d) {
   const z1 = (v, n) => (v == null ? "–" : zahl(v, n)), esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   // Etiketten wie im Dashboard (09.10.2026): Pfeil + % farbig nach gut/schlecht, keine Warnschilder
   const pf = (p, bew) => p == null ? "" : `<i class="${bew > 0 ? "gut" : bew < -1 ? "rot" : bew < 0 ? "schl" : "neu"}">${p > 0 ? "▲" : "▼"} ${Math.abs(p)} %</i>`;
-  const KURZ = { Entfeuchter: "Entf.", Waschmaschine: "Wäsche", "Spülmaschine": "Spüli", Grundlast: "Grundl." };
+  const KURZ = { Entfeuchter: "Entf.", Waschmaschine: "Wäsche", "Spülmaschine": "Spüli", Grundlast: "Grundl.", Trockner: "Trockn." };
   const chips = (tb.etk || []).map(([t, w, p, bew]) => `<span class="et"><span class="l"><span class="lg">${esc(t)}</span><span class="kz">${esc(KURZ[t] || t)}</span></span> <b>${esc(w)}</b>${pf(p, bew)}</span>`).join("")
     + (tb.gas != null ? `<span class="et gasl"><span class="l">💶 Gas</span> <b>+${z1(tb.gas, 2)} €</b></span>` : "");
   zl.innerHTML = `<b class="tz">Gestern ${esc(tb.wt)}</b>${chips}${tb.bf ? `<span class="et bf"><span class="l">🔎 offen</span> <b>${tb.bf} Befund${tb.bf > 1 ? "e" : ""}</b></span>` : ""}<span class="pf">›</span>`;
