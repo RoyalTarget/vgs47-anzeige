@@ -280,16 +280,24 @@ function zeigeTabellen(s, k, lp, gh) {
       + (x ? zeile("", "Rest (ungemessen)", rp, rh, rm, ra, reh, rem, rea) : "");
   }
   // Bilanz (01.10.2026): Haus gesamt (Wert ohne PV) − davon aus PV/Akku = aus dem Netz bezogen (echte Kosten)
-  const g = (a, b) => (a === null || b === null ? null : Math.max(a - b, 0)), neg = (v) => (v === null ? null : -v);
-  const gh2 = g(hh, nh), gm2 = g(hm, nm), ga2 = g(ha, na);
+  // 09.10.2026: + Victron-Anlage aus dem Netz (Netzbezug über dem Hausverbrauch, haus_herkunft.yaml, ab 01.10.) → Bilanz geht auf;
+  // PV/Akku = Haus + Victron − Netz, nie negativ (Rundungsrest EM540 0,1 kWh trägt die Victron-Zeile) – wie im Dashboard
+  const neg = (v) => (v === null ? null : -v);
+  const vp = hp === null ? null : Math.max(np - hp, 0);
+  const vh0 = kv("sensor.netz_an_victron_heute") ?? 0, vm0 = kv("sensor.netz_an_victron_monat") ?? 0, va0 = avg(vm0, 0, "2026-10-01T00:00") ?? 0;
+  const gg = (h, v, n) => (h === null || n === null ? null : Math.max(h + v - n, 0));
+  const gh2 = gg(hh, vh0, nh), gm2 = gg(hm, vm0, nm), ga2 = gg(ha, va0, na);
+  const vv = (h, n, g2, v) => (g2 === null ? v : n - h + g2);
   html += zeile("haus", "Haus gesamt verbraucht<span class=\"eur\">€ = Wert, wenn alles aus dem Netz käme</span>", hp, hh, hm, ha)
-    + zeile("pvabzug", "− davon aus PV/Akku<span class=\"eur\">gratis = gespart</span>", hp === null ? null : Math.max(hp - np, 0),
+    + zeile("victron", "+ Victron-Anlage aus dem Netz<span class=\"eur\">Eigenverbrauch Wechselrichter, Akku nachladen</span>", vp,
+      vv(hh, nh, gh2, vh0), vv(hm, nm, gm2, vm0), vv(ha, na, ga2, va0))
+    + zeile("pvabzug", "− davon aus PV/Akku<span class=\"eur\">gratis = gespart</span>", hp === null ? null : Math.max(hp + (vp ?? 0) - np, 0),
       neg(gh2), neg(gm2), neg(ga2))
     + zeile("netz", "= aus dem Netz bezogen<span class=\"eur\">das wird bezahlt</span>", np, nh, nm, na);
   $("gross").innerHTML = html;
   $("gross_fuss").innerHTML = (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
       : `kWh · € = ohne PV: kWh × ${zahl(preis * 100, 2)} ct je Gerät, als käme alles aus dem Netz`)
-    + ` · Bilanz unten: Haus gesamt − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
+    + ` · Bilanz unten: Haus gesamt + Victron-Anlage (Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
   const um = $("gv_um");
   if (um && !um.__an) { um.__an = true;
     um.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (!b) return;
