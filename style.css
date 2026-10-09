@@ -219,3 +219,10 @@ tr.teil.hz-an td { color: #facc15; }
 .schwellen-karte { padding: 0; overflow: hidden; }
 vgs-schwellen-card { display: block; --primary-text-color: var(--text); --secondary-text-color: var(--leise);
   --divider-color: var(--rand); --card-background-color: var(--karte); }
+
+/* Tagesbericht-Zeile oben (09.10.2026) */
+.tbz{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;cursor:pointer;font-size:14px;line-height:1.5;margin:0 0 12px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.tbz .n{color:#9ca3af}.tbz .pf{margin-left:auto;color:#9ca3af;font-size:18px}
+.tbz span.r{padding:1px 8px;border-radius:10px;background:rgba(239,68,68,.15);color:#fca5a5}
+.tbz span.gu{padding:1px 8px;border-radius:10px;background:rgba(34,197,94,.15);color:#86efac}
+.tbz span.bf{padding:1px 8px;border-radius:10px;background:rgba(245,158,11,.18);color:#fcd34d}
