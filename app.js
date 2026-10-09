@@ -974,8 +974,11 @@ function zeigeTagesbericht(d) {
   const tb = d && d.tb, zl = $("tb_zeile"), sek = $("tb_sek"), img = $("tb_bild");
   if (!tb || !tb.d) { if (zl) zl.hidden = true; if (sek) sek.hidden = true; return; }
   const z1 = (v, n) => (v == null ? "–" : zahl(v, n)), esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const chips = (tb.auff || []).length ? tb.auff.map(([t, gut]) => `<span class="${gut ? "gu" : "r"}">${gut ? "" : "⚠️ "}${esc(t)}</span>`).join("") : '<span class="n">✅ nichts Auffälliges</span>';
-  zl.innerHTML = `<b>📊 Gestern (${esc(tb.wt)}):</b><span>WP-AZ ${z1(tb.az, 1)} · PV ${z1(tb.pv, 1)} kWh · Netz ${z1(tb.netz, 1)} kWh${tb.gas != null ? ` · 💶 +${z1(tb.gas, 2)} €` : ""}</span>${chips}${tb.bf ? `<span class="bf">🔎 ${tb.bf} Befund${tb.bf > 1 ? "e" : ""}</span>` : ""}<span class="pf">›</span>`;
+  // Etiketten wie im Dashboard (09.10.2026): Pfeil + % farbig nach gut/schlecht, keine Warnschilder
+  const pf = (p, bew) => p == null ? "" : `<i class="${bew > 0 ? "gut" : bew < 0 ? "schl" : "neu"}">${p > 0 ? "▲" : "▼"} ${Math.abs(p)} %</i>`;
+  const chips = (tb.etk || []).map(([t, w, p, bew]) => `<span class="et">${esc(t)} <b>${esc(w)}</b>${pf(p, bew)}</span>`).join("")
+    + (tb.gas != null ? `<span class="et gasl">💶 <b>+${z1(tb.gas, 2)} €</b></span>` : "");
+  zl.innerHTML = `<b class="tz">📊 Gestern ${esc(tb.wt)}</b>${chips}${tb.bf ? `<span class="bf">🔎 ${tb.bf} Befund${tb.bf > 1 ? "e" : ""}</span>` : ""}<span class="pf">›</span>`;
   zl.hidden = false; sek.hidden = false;
   if (!zl.__an) { zl.__an = true; zl.addEventListener("click", () => sek.scrollIntoView({ behavior: "smooth", block: "start" })); }
   const src = "bericht/tagesbericht.png?v=" + encodeURIComponent(tb.d);
