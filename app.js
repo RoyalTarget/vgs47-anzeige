@@ -696,8 +696,8 @@ function wfTag(k) { const r = { heiss: 0, misch: 0, kalt: 0, n: 0 };
 function wfTagText(x, h) { const ges = x.ges || 0, r = Math.round;
   return `<br><span style="color:#ef4444">●</span> heiß ${r(h.heiss)} l (${ges ? r(h.heiss / ges * 100) : 0} %) · <span style="color:#93c5fd">●</span> zugemischt ${r(h.misch)} l · <span style="color:#2563eb">●</span> kalt ${r(Math.max(ges - h.heiss - h.misch, 0))} l`; }
 // 08.10.2026 (Nutzer): am SYR vorbei – Garten (Gießplan, garten.yaml) + Küche kalt (Annahme) je Tag, verlauf.json „ga“ (t = abgeschlossene Tage, g/k = heute live)
-function wfGK(k) { const ga = WF && WF.ga; if (!ga) return null; if (k === fwKey(Date.now())) return { g: ga.g || 0, k: ga.k || 0 };
-  const x = (ga.t || {})[k]; return x ? { g: x[0] || 0, k: x[1] || 0 } : null; }
+function wfGK(k) { const ga = WF && WF.ga; if (!ga) return null; if (k === fwKey(Date.now())) return { g: ga.g || 0, k: ga.k || 0, s: ga.s || 0 };   // 09.10.2026: + Spülmaschine (geschätzt, am SYR vorbei)
+  const x = (ga.t || {})[k], sp = (ga.st || {})[k] || 0; return x ? { g: x[0] || 0, k: x[1] || 0, s: sp } : sp ? { g: 0, k: 0, s: sp } : null; }
 function wfTorteRechne(von, bis) {
   // Einzel-Zapfungen, soweit vorhanden (genau); davor Tageswerte der Langzeitstatistik (ganze Tage), Rest = ohne Aufteilung
   // 08.10.2026 (Nutzer): innen echtes Heißwasser ab Speicher (wie Dashboard): heiß = warm_l aus dem Protokoll, sonst Liter × (T_Nutzung − T_kalt) / (T_Speicher − T_kalt)
@@ -711,13 +711,13 @@ function wfTorteRechne(von, bis) {
     let s = 0; for (const q of WF_ART) { const v = (x[q[4]] || 0) * anteil; art[q[1]] = (art[q[1]] || 0) + v; if (q[3]) { const h = v * fa(q[0]); ring.heiss += h; ring.misch += v - h; } else ring.kalt += v; s += v; }
     const rest = Math.max((x.vol || 0) * anteil - s, 0); ohne += rest; ring.unb += rest; }
   for (const [k, , , anteil] of fwTage(von, bis)) { const x = wfGK(k); if (!x) continue;   // Garten + Küche kalt → kalt direkt
-    art["Garten"] = (art["Garten"] || 0) + x.g * anteil; art["Küche kalt (Annahme)"] = (art["Küche kalt (Annahme)"] || 0) + x.k * anteil; ring.kalt += (x.g + x.k) * anteil; }
+    art["Garten"] = (art["Garten"] || 0) + x.g * anteil; art["Küche kalt (Annahme)"] = (art["Küche kalt (Annahme)"] || 0) + x.k * anteil; art["Spülmaschine (geschätzt)"] = (art["Spülmaschine (geschätzt)"] || 0) + (x.s || 0) * anteil; ring.kalt += (x.g + x.k + (x.s || 0)) * anteil; }
   const gp = (WF && WF.ga && WF.ga.p) || [5.4, 10.5, 20], dz = (x) => String(x).replace(".", ",");
   const rd = (r) => r.map((x) => ({ ...x, v: Math.round(x.v) }));
   return { ringe: [rd([{ n: "heiß (Speicher)", v: ring.heiss, f: "#ef4444" }, { n: "kalt zugemischt", v: ring.misch, f: "#93c5fd" }, { n: "kalt direkt", v: ring.kalt, f: "#2563eb" }, { n: "ohne Aufteilung", v: ring.unb, f: "#6b7280" }]),
-    rd(WF_ART.map((a) => ({ n: a[1], v: art[a[1]] || 0, f: a[2] })).concat([{ n: "Garten", v: art["Garten"] || 0, f: "#22c55e" }, { n: "Küche kalt (Annahme)", v: art["Küche kalt (Annahme)"] || 0, f: "#0ea5e9" }]).sort((x, y) => y.v - x.v).concat([{ n: "ohne Aufteilung", v: ohne, f: "#6b7280" }]))],
+    rd(WF_ART.map((a) => ({ n: a[1], v: art[a[1]] || 0, f: a[2] })).concat([{ n: "Garten", v: art["Garten"] || 0, f: "#22c55e" }, { n: "Küche kalt (Annahme)", v: art["Küche kalt (Annahme)"] || 0, f: "#0ea5e9" }, { n: "Spülmaschine (geschätzt)", v: art["Spülmaschine (geschätzt)"] || 0, f: "#a78bfa" }]).sort((x, y) => y.v - x.v).concat([{ n: "ohne Aufteilung", v: ohne, f: "#6b7280" }]))],
     hinweis: "heiß = ab Speicher (~" + Math.round(Tw) + " °C); zugemischt = Kaltwasser in Dusche/Wanne/Becken (Annahme " + wt.join("/") + " °C)" + (ohne >= 1 ? " · grau = ohne Zuordnung (Warm-Erkennung ab 25.09.2026)" : "")
-      + " · Garten = Eve-Laufzeit × l/min, vor 08.10. Gießplan (vorne " + dz(gp[0]) + " / hinten " + dz(gp[1]) + " l/min), Küche kalt = Annahme " + dz(gp[2]) + " l/Tag – beide am SYR vorbei" };
+      + " · Garten = Eve-Laufzeit × l/min, vor 08.10. Gießplan (vorne " + dz(gp[0]) + " / hinten " + dz(gp[1]) + " l/min), Küche kalt = Annahme " + dz(gp[2]) + " l/Tag, Spülmaschine = " + dz(gp[3] ?? 9) + " l je Spülgang (Miele am Küchen-Kaltwasser) – alle am SYR vorbei" };
 }
 function wpTorteRechne(von, bis) {
   // je Tag: ganze Tage aus den Tageswerten (WPF.tage, davor Langzeitstatistik), angeschnittene Tage anteilig nach der Leistungskurve
@@ -787,13 +787,13 @@ function wasserFensterDaten(d, v) {
   for (const c in offen) if (offen[c] != null) ph[c].an.push([offen[c], jetzt]);
   const an = (p, a, b) => p.an.some(([x, y]) => x < b && y > a);
   // Warm-Regel (03.10.2026, wie zapfungen.yaml): warm nur mit Anstieg T.Warmwasser ≥ 0,5 K; Maschine läuft, nicht warm,
-  // ≤ 25 l Waschmaschine / ≤ 12 l Spülmaschine → Maschine (3 min Toleranz); gilt auch für ältere Protokolleinträge ohne dww
+  // ≤ 25 l Waschmaschine → Maschine (3 min Toleranz; Spülmaschine seit 09.10.2026 nicht mehr – hängt am Küchen-Kaltwasser, am SYR vorbei); gilt auch für ältere Protokolleinträge ohne dww
   const T = []; if (v && v.wv && v.wv.ts) { let [t, x] = v.wv.ts; T.push([t * 1000, x / 10]); for (const [dt, dx] of v.wv.tw || []) { t += dt; x += dx; T.push([t * 1000, x / 10]); } }
   const anstieg = (a, b) => { let t0 = null, mx = null; for (const [t, x] of T) { if (t <= a) t0 = x; else if (t <= b + 12e4) mx = Math.max(mx ?? x, x); else break; }
     return t0 == null ? null : Math.max((mx ?? t0) - t0, 0); };
   const einordnen = (t0, t1, l, dauer, wBin) => { const b = t1 + 18e4, dw = wBin ? anstieg(t0, t1) : null, warm = wBin === null ? null : !!wBin && (dw === null || dw >= 0.5);
-    const g = t0 >= ph.m.ab && an(ph.m, t0 - 6e4, b) ? "Waschmaschine" : t0 >= ph.s.ab && an(ph.s, t0, b) ? "Spülmaschine" : "";
-    const art = warm === null ? "" : g && !warm && l <= (g === "Spülmaschine" ? 12 : 25) ? g : warm && l >= 100 && l / dauer >= 11 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
+    const g = t0 >= ph.m.ab && an(ph.m, t0 - 6e4, b) ? "Waschmaschine" : "";
+    const art = warm === null ? "" : g && !warm && l <= 25 ? g : warm && l >= 100 && l / dauer >= 11 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
       : warm && dauer >= 3 ? "Abspülen / Becken?" : warm ? "warm kurz" : l >= 3 && l <= 12 && dauer <= 3 ? "WC?" : "kalt";
     return { warm, art }; };
   for (const p of (v && v.zp) || d.zp || []) { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) continue;
@@ -866,7 +866,7 @@ function zeigeWasserFenster(d, v) {
       const ges = x.ges + Math.round(x.gl || 0);   // inkl. Garten (08.10.2026)
       return b >= 90 ? `${ges} l${ic ? " · " + ic : ""}` : `${ges} l`; },
     leiste: (t) => { const x = WF.tage[fwKey(t)]; if (!x) return []; const h = wfTag(fwKey(t));
-      const gk = wfGK(fwKey(t)) || { g: 0, k: 0 }, z = [{ v: gk.k, farbe: "#0ea5e9" }, { v: gk.g, farbe: "#22c55e" }];   // Küche kalt, Garten (08.10.2026)
+      const gk = wfGK(fwKey(t)) || { g: 0, k: 0 }, z = [{ v: gk.k, farbe: "#0ea5e9" }, { v: gk.s || 0, farbe: "#a78bfa" }, { v: gk.g, farbe: "#22c55e" }];   // Küche kalt, Garten (08.10.2026)
       if (h) return [{ v: h.heiss, farbe: "#ef4444" }, { v: h.misch, farbe: "#93c5fd" }, { v: Math.max(x.ges - h.heiss - h.misch, 0), farbe: "#2563eb" }].concat(z);
       return (x.warm != null ? [{ v: Math.min(x.warm, x.ges), farbe: "#ef4444" }, { v: Math.max(x.ges - x.warm, 0), farbe: "#3b82f6" }] : [{ v: x.ges, farbe: "#6b7280" }]).concat(z); },
     tip: (t, { x0, x1 }) => { const tol = (x1 - x0) * 0.012, e0 = WF.ende.find(([te]) => Math.abs(te - t) < tol);
@@ -877,7 +877,7 @@ function zeigeWasserFenster(d, v) {
         else if (x.warm != null) s += `<br><span style="color:#ef4444">●</span> warm ${x.warm} l (${ges ? Math.round(x.warm / ges * 100) : 0} %) · <span style="color:#3b82f6">●</span> kalt ${Math.max(ges - x.warm, 0)} l`;
         const ar = Object.entries(x.arten || {}).filter(([a]) => WF_IC[a]).sort((a, b) => b[1].l - a[1].l);
         if (ar.length) s += "<br>" + ar.map(([a, vv]) => `${WF_IC[a]} ${a.replace("?", "")} ${/maschine/.test(a) ? vv.n + (vv.n === 1 ? " Füllung" : " Füllungen") : vv.n + "×"} · ${vv.l} l`).join("<br>");
-        const gk = wfGK(k); if (gk && (gk.g >= 1 || gk.k >= 1)) s += `<br><span style="color:#22c55e">●</span> 🌱 Garten ${Math.round(gk.g)} l · <span style="color:#0ea5e9">●</span> Küche kalt ≈ ${Math.round(gk.k)} l<br>mit Küche kalt ≈ <b>${Math.round(ges + gk.g + gk.k)} l</b>`;
+        const gk = wfGK(k); if (gk && (gk.g >= 1 || gk.k >= 1 || gk.s >= 1)) s += `<br><span style="color:#22c55e">●</span> 🌱 Garten ${Math.round(gk.g)} l · <span style="color:#0ea5e9">●</span> Küche kalt ≈ ${Math.round(gk.k)} l${gk.s ? ` · <span style="color:#a78bfa">●</span> Spülmaschine ≈ ${Math.round(gk.s)} l` : ""}<br>mit Küche kalt ≈ <b>${Math.round(ges + gk.g + gk.k + (gk.s || 0))} l</b>`;
         return fwBox(s); }
       let gb = null; for (const e of WF.gev) if (!gb || Math.abs(e.t - t) < Math.abs(gb.t - t)) gb = e;   // Garten (08.10.2026)
       let b = null; for (const e of WF.ev) if (!b || Math.abs(e.t - t) < Math.abs(b.t - t)) b = e;
