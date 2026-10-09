@@ -978,7 +978,7 @@ function zeigeTagesbericht(d) {
   const pf = (p, bew) => p == null ? "" : `<i class="${bew > 0 ? "gut" : bew < 0 ? "schl" : "neu"}">${p > 0 ? "▲" : "▼"} ${Math.abs(p)} %</i>`;
   const chips = (tb.etk || []).map(([t, w, p, bew]) => `<span class="et">${esc(t)} <b>${esc(w)}</b>${pf(p, bew)}</span>`).join("")
     + (tb.gas != null ? `<span class="et gasl">💶 <b>+${z1(tb.gas, 2)} €</b></span>` : "");
-  zl.innerHTML = `<b class="tz">📊 Gestern ${esc(tb.wt)}</b>${chips}${tb.bf ? `<span class="bf">🔎 ${tb.bf} Befund${tb.bf > 1 ? "e" : ""}</span>` : ""}<span class="pf">›</span>`;
+  zl.innerHTML = `<b class="tz">Gestern ${esc(tb.wt)}</b>${chips}${tb.bf ? `<span class="bf">🔎 ${tb.bf} Befund${tb.bf > 1 ? "e" : ""}</span>` : ""}<span class="pf">›</span>`;
   zl.hidden = false; sek.hidden = false;
   if (!zl.__an) { zl.__an = true; zl.addEventListener("click", () => sek.scrollIntoView({ behavior: "smooth", block: "start" })); }
   const src = "bericht/tagesbericht.png?v=" + encodeURIComponent(tb.d);
