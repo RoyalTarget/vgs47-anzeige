@@ -791,9 +791,11 @@ function wasserFensterDaten(d, v) {
   const T = []; if (v && v.wv && v.wv.ts) { let [t, x] = v.wv.ts; T.push([t * 1000, x / 10]); for (const [dt, dx] of v.wv.tw || []) { t += dt; x += dx; T.push([t * 1000, x / 10]); } }
   const anstieg = (a, b) => { let t0 = null, mx = null; for (const [t, x] of T) { if (t <= a) t0 = x; else if (t <= b + 12e4) mx = Math.max(mx ?? x, x); else break; }
     return t0 == null ? null : Math.max((mx ?? t0) - t0, 0); };
-  const einordnen = (t0, t1, l, dauer, wBin) => { const b = t1 + 18e4, dw = wBin ? anstieg(t0, t1) : null, warm = wBin === null ? null : !!wBin && (dw === null || dw >= 0.5);
+  const einordnen = (t0, t1, l, dauer, wBin) => { const b = t1 + 18e4, dw = wBin ? anstieg(t0, t1) : null, wRoh = wBin === null ? null : !!wBin && (dw === null || dw >= 0.5),
+      // Nacht-WC (11.10.2026, wie zapfungen.yaml): 0–6 Uhr, warm erkannt, ≤ 12 l, ≤ 10 min = Spülung + Händewaschen → WC (kalt)
+      nwc = wRoh === true && new Date(t0).getHours() < 6 && l <= 12 && dauer <= 10, warm = nwc ? false : wRoh;
     const g = t0 >= ph.m.ab && an(ph.m, t0 - 6e4, b) ? "Waschmaschine" : "";
-    const art = warm === null ? "" : g && !warm && l <= 25 ? g : warm && l >= 100 && l / dauer >= 11 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
+    const art = warm === null ? "" : nwc ? "WC?" : g && !warm && l <= 25 ? g : warm && l >= 100 && l / dauer >= 11 ? "Badewanne?" : warm && l >= 30 && dauer >= 3 ? "Dusche"
       : warm && dauer >= 3 ? "Abspülen / Becken?" : warm ? "warm kurz" : l >= 3 && l <= 12 && dauer <= 3 ? "WC?" : "kalt";
     return { warm, art }; };
   for (const p of (v && v.zp) || d.zp || []) { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) continue;
