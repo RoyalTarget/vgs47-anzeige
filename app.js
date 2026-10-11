@@ -123,7 +123,8 @@ function zeigeFluss(s) {
   const geraete = [["Wärmepumpe", "sensor.wp_leistung_elektrisch_gesamt"], ["BWWP", "sensor.keller_bwwp_shelly_leistung"],
     ["Klima ≈", "sensor.klima_leistung_geschatzt"], ["Entfeuchter", "sensor.keller_entfeuchter_power"],
     ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung"], ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung"],
-    ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"]]
+    ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"],
+    ["Kochen ≈", "sensor.kochen_leistung"]]
     .map(([n, e]) => [n, num(s, e)]).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
   $("verbraucher").innerHTML = geraete.map(([n, v]) =>
     `<span class="chip${(v ?? 0) < 10 ? " aus" : ""}">${n} ${watt(v)}</span>`).join("");
