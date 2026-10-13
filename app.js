@@ -1615,9 +1615,21 @@ async function holen() {
     try { zeigeSchwellen(d, VERLAUF); } catch (e) { console.warn("schwellen", e); }
     try { zeigeZaehler(s); } catch (e) { console.warn("zaehler", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
-    $("stand").textContent = "Stand " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
-      + (alt > 5 ? " · Daten veraltet" : "");
+    // 13.10.2026 (Nutzer): hängt die Lieferung aus dem Haus, deutlich sagen seit wann (Datum + Dauer) – vorher nur „Stand 22:29 · Daten veraltet“
+    const uhr = t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    const wann = (t.toDateString() === new Date().toDateString() ? "" : t.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) + " ") + uhr;
+    $("stand").textContent = "Stand " + wann + (alt > 5 ? " · Daten veraltet" : "");
     $("stand").classList.toggle("alt", alt > 5);
+    const hw = $("alt_hinweis");
+    if (hw) {
+      hw.hidden = !(alt > 15);
+      if (alt > 15) {
+        const tg = Math.floor(alt / 1440), st = Math.floor((alt % 1440) / 60), mi = Math.round(alt % 60);
+        const dauer = tg ? tg + (tg === 1 ? " Tag " : " Tagen ") + st + " h" : st ? st + " h " + mi + " min" : mi + " min";
+        hw.textContent = "⚠️ Die Anzeige hängt: Das Haus liefert seit " + wann + " Uhr keine neuen Daten (seit " + dauer
+          + "). Alle Werte auf dieser Seite sind so alt – nicht der aktuelle Zustand der Anlage.";
+      }
+    }
   } catch (e) {
     $("stand").textContent = "Keine Verbindung – neuer Versuch läuft";
     $("stand").classList.add("alt");
