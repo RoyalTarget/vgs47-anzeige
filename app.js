@@ -124,7 +124,7 @@ function zeigeFluss(s) {
     ["Klima ≈", "sensor.klima_leistung_geschatzt"], ["Entfeuchter", "sensor.keller_entfeuchter_power"],
     ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung"], ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung"],
     ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"],
-    ["Kochen/Backen ≈", "sensor.kochen_leistung"], ["Licht ≈", "sensor.licht_ungemessen"],   // Licht ≈ 15.10.2026
+    ["Kochen/Backen ≈", "sensor.kochen_leistung"], ["Licht ≈", "sensor.licht_leistung"],   // Licht ≈ 15.10.2026: gemessene Lichter + ungemessene geschätzt
     // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
     ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"],
     ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"]]
@@ -240,7 +240,9 @@ function zeigeTabellen(s, k, lp, gh) {
     ["🔌 Sonstiges", [["Entfeuchter", "sensor.keller_entfeuchter_power", "sensor.entfeuchter_energie_heute", "sensor.entfeuchter_energie_monat", "2026-09-24T02:30"],
       ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.nerdaxe_energie_heute", "sensor.nerdaxe_energie_monat", "2026-09-24T02:30"],
       ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "2026-09-24T02:30"],
-      ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"]]]];
+      ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"],
+      // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
+      ["💡 Licht ≈", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
   // „echt bezahlt“ / „ohne PV“ (01.10.2026, wie im Dashboard): € je Gerät = kWh × Preis × Netzanteil des Geräts (Payload gh aus
   // sensor.geraete_herkunft: {h|m: {Leistungs-Entität: [kWh, davon Netz]}}); Ø/Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses
@@ -278,7 +280,7 @@ function zeigeTabellen(s, k, lp, gh) {
   const ra = ha === null ? null : Math.max(ha - sa, 0), rh = hh === null ? null : Math.max(hh - sh, 0);
   const rm = ra === null ? null : ra * (jetztMs - Math.max(ms.getTime(), new Date(haStart).getTime())) / 864e5;
   // 14.10.2026: Kochen/Backen ≈ steckt im Rest (ungemessen) → live abziehen (kWh-Spalten: Rest = Haus − Geräte)
-  const rp0 = num(s, "sensor.rest_ungemessen"), rp = rp0 === null ? null : Math.max(rp0 - (num(s, "sensor.kochen_leistung") ?? 0), 0), [rah, ram, raa] = anteile("sensor.rest_ungemessen");
+  const rp0 = num(s, "sensor.rest_ungemessen"), rp = rp0 === null ? null : Math.max(rp0 - (num(s, "sensor.kochen_leistung") ?? 0) - (num(s, "sensor.licht_ungemessen") ?? 0), 0), [rah, ram, raa] = anteile("sensor.rest_ungemessen");
   const reh = (rh ?? 0) * preis * rah, rem = (rm ?? 0) * preis * ram, rea = (ra ?? 0) * preis * raa;
   for (const [gn, gp, gh, gm, ga, zeilen, geh, gem, gea] of gruppen) {
     const x = gn.includes("Sonstiges");
