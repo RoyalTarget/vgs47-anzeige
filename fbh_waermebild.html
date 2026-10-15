@@ -147,6 +147,7 @@ function hydro(h, K) {
   for (const k of K) { const l = [], ab = k.ist_ab ? new Date(k.ist_ab).getTime() : 0;   // ist_ab: Röhrchen neu eingestellt → nur Nächte danach
     for (const t of T) { if (ab && new Date(t.start).getTime() < ab) continue; for (const r of (t.kr || [])) if (r[0] === k.k && !r[4]) l.push(r[2]); }
     l.sort((x, y) => x - y); const n = l.length; nMax = Math.max(nMax, n); sp[k.e] = n ? (l[(n - 1) >> 1] + l[n >> 1]) / 2 : null; }
+  const vlN = T.length ? T.reduce((s, t) => s + (+t.vl || 0), 0) / T.length : null;
   const au = T.length ? T.reduce((s, t) => s + (+t.au || 0), 0) / T.length : (parseFloat(h?.states['sensor.cmi_t_aussen']?.state) || 10);
   const raum = {}, liste = [];
   for (const [name, last, soll, fu] of RAEUME) {
@@ -159,7 +160,7 @@ function hydro(h, K) {
     const r = { name, w, ok, bed, p, farbe, neu, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
   const L = T[T.length - 1], zu = L ? (L.kr || []).filter((r) => r[4]).map((r) => r[0]) : [];
-  return { sp, au, raum, liste, nNacht: nMax, zu, letzte: L };
+  return { sp, au, vlN, raum, liste, nNacht: nMax, zu, letzte: L };
 }
 function karteAnpassen(gesamt) {   // HA-Section: Kachelhöhe = Inhalt (Zeile 56 px + 8 px Abstand)
   try { const fr = window.frameElement; if (!fr) return; let e = fr;
@@ -175,7 +176,7 @@ function fussZeile(h, hy, schmal) {
   let s = mf?.state === 'on' ? `🟢 <b>Messnacht läuft</b> seit ${lauf.start ? new Date(lauf.start).toTimeString().slice(0, 5) : '–'} · ${lauf.n || 0} min (zählt ab 60 min)`
     : `⚪ gerade keine Messung – ${mf?.attributes?.grund || '?'}`;
   if (hy) { s += ` · Kreis in der letzten Nacht zugegangen: ${hy.zu.length ? '<b>🚪 ' + hy.zu.join(', ') + '</b>' : '–'}`;
-    if (hy.letzte) { const d = new Date(hy.letzte.start); s += ` · Spreizung = Median ${hy.nNacht} Messnächte (letzte ${d.getDate()}.${d.getMonth() + 1}.)`; }
+    if (hy.letzte) { const d = new Date(hy.letzte.start); s += ` · Spreizung Nacht = Median ${hy.nNacht} Messnächte (VL Ø ${zahl(hy.vlN)} °C, letzte ${d.getDate()}.${d.getMonth() + 1}.) – nicht VL jetzt − RL jetzt`; }
     s += schmal ? '<br>Kreis antippen = Raum-Bilanz auf/zu · Punkt = Versorgung des Raums: ' : '<br>Leiste = Versorgung des Raums: ';
     s += `<span style="color:${F_OR}">orange</span> &lt; 70 % · <span style="color:${F_GR}">grün</span> passt · <span style="color:${F_BL}">blau</span> &gt; 140 % (Wasser verschenkt, drosseln lohnt) · gibt ab = Röhrchen × Spreizung, Bedarf = Heizlast 2012 bei Ø ${zahl(hy.au)} °C außen`; }
   const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
@@ -186,7 +187,7 @@ function zeichne() {
   const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'], inHA = !!hassEcht();
   const hy = inHA ? hydro(h, K) : null;
   // rechte Spalten (Desktop A): RL jetzt · Spreizung · Röhrchen · Leiste · %
-  const C = schmal ? null : breit ? { rl: 64, sp: 64, ro: 104, bar: 150, p: 46 } : { rl: 60, sp: 60, ro: 100, bar: 0, p: 46 };
+  const C = schmal ? null : breit ? { rl: 76, sp: 92, ro: 104, bar: 150, p: 46 } : { rl: 70, sp: 86, ro: 100, bar: 0, p: 46 };
   const RW = schmal ? (hy ? 58 : 44) : (hy ? C.rl + C.sp + C.ro + C.bar + C.p + 14 : 78);
   const ZH = schmal ? 17 : 19, SH = hy && !schmal ? 15 : 0;
   // Zeilenplan
@@ -215,7 +216,7 @@ function zeichne() {
   let cx = null;
   if (!schmal && hy) { cx = { rl: X1 + 8 + C.rl - 4, sp: X1 + 8 + C.rl + C.sp - 4, ro: X1 + 8 + C.rl + C.sp + C.ro - 4, bar: X1 + 8 + C.rl + C.sp + C.ro + 8, p: W - 4 };
     g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.textAlign = 'right';
-    g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung', cx.sp, ACHSE / 2); g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2);
+    g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung Nacht', cx.sp, ACHSE / 2); g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2);
     g.textAlign = 'left'; g.fillText(breit ? 'Versorgung Raum' : '', cx.bar, ACHSE / 2); if (!breit) { g.textAlign = 'right'; g.fillText('Raum', cx.p, ACHSE / 2); } }
   else if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2); }
   const iv = daten ? Math.max(0, Math.floor((von - daten.t0) / BIN)) : 0, ib = daten ? Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN)) : 0;
@@ -225,7 +226,11 @@ function zeichne() {
     g.fillStyle = '#9ca3af'; g.fillRect(x + w / 2 - 0.5, yy - 2, 1, hh + 4); };
   for (const z of plan) {
     if (z.typ === 'g') { g.textAlign = 'left'; g.fillStyle = '#93c5fd'; g.font = '600 11px system-ui, sans-serif'; g.fillText(z.G, 4, z.y + 7);
-      const n = z.ks.filter((k) => h?.states[k.e]).length; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText(`${n}/${z.ks.length}`, 26, z.y + 7); continue; }
+      const n = z.ks.filter((k) => h?.states[k.e]).length; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText(`${n}/${z.ks.length}`, 26, z.y + 7);
+      if (cx && hy && z.G === plan.find((q) => q.typ === 'g').G) { const vl = parseFloat(h?.states[VL]?.state); g.textAlign = 'right'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#f87171';
+        g.fillText('VL ' + (isNaN(vl) ? '–' : zahl(vl) + ' °C'), cx.rl, z.y + 7);
+        if (hy.vlN !== null) g.fillText('VL Ø ' + zahl(hy.vlN) + ' °C', cx.sp, z.y + 7); }
+      continue; }
     if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; g.fillText(r.neu ? `Σ ${r.name} · Röhrchen neu eingestellt – Spreizung erst nach der nächsten Messnacht` : `Σ ${r.name} · gibt ab ≈ ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'} · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W`, 8, z.y + SH / 2);
       g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
     if (z.typ === 'p') { const r = z.r, x0 = 6, x1 = W - 6; g.fillStyle = '#26262b'; g.beginPath(); g.roundRect(x0, z.y + 2, x1 - x0, z.h - 6, 8); g.fill();
