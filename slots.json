@@ -160,7 +160,7 @@
   "anchor": "middle",
   "color": "#3b82f6",
   "prefix": "RL ",
-  "entity": "sensor.cmi_hk_ruecklauf",
+  "entity": "sensor.hk_ruecklauf",
   "unit": "°C",
   "dec": 1
  },
