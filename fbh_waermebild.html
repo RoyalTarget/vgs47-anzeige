@@ -186,7 +186,7 @@ function zeichne() {
   const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'], inHA = !!hassEcht();
   const hy = inHA ? hydro(h, K) : null;
   // rechte Spalten (Desktop A): RL jetzt · Spreizung · Röhrchen · Leiste · %
-  const C = schmal ? null : breit ? { rl: 64, sp: 64, ro: 78, bar: 150, p: 46 } : { rl: 60, sp: 60, ro: 74, bar: 0, p: 46 };
+  const C = schmal ? null : breit ? { rl: 64, sp: 64, ro: 104, bar: 150, p: 46 } : { rl: 60, sp: 60, ro: 100, bar: 0, p: 46 };
   const RW = schmal ? (hy ? 58 : 44) : (hy ? C.rl + C.sp + C.ro + C.bar + C.p + 14 : 78);
   const ZH = schmal ? 17 : 19, SH = hy && !schmal ? 15 : 0;
   // Zeilenplan
@@ -215,7 +215,7 @@ function zeichne() {
   let cx = null;
   if (!schmal && hy) { cx = { rl: X1 + 8 + C.rl - 4, sp: X1 + 8 + C.rl + C.sp - 4, ro: X1 + 8 + C.rl + C.sp + C.ro - 4, bar: X1 + 8 + C.rl + C.sp + C.ro + 8, p: W - 4 };
     g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.textAlign = 'right';
-    g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung', cx.sp, ACHSE / 2); g.fillText('Röhrchen', cx.ro, ACHSE / 2);
+    g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung', cx.sp, ACHSE / 2); g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2);
     g.textAlign = 'left'; g.fillText(breit ? 'Versorgung Raum' : '', cx.bar, ACHSE / 2); if (!breit) { g.textAlign = 'right'; g.fillText('Raum', cx.p, ACHSE / 2); } }
   else if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2); }
   const iv = daten ? Math.max(0, Math.floor((von - daten.t0) / BIN)) : 0, ib = daten ? Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN)) : 0;
@@ -259,8 +259,11 @@ function zeichne() {
     const s = hy.sp[z.k.e]; g.textAlign = 'right';
     g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt) + ' °C', cx.rl, ym);
     g.fillStyle = '#d1d5db'; g.font = '11px system-ui, sans-serif'; g.fillText(s === null ? (z.k.ist_ab ? 'neu' : '–') : zahl(s) + ' K', cx.sp, ym);
-    const sollT = z.k.soll ? ' / ' + zahl(z.k.soll) : ''; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.fillText(sollT, cx.ro, ym);
-    const sw = g.measureText(sollT).width; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText(typeof z.k.ist === 'number' ? zahl(z.k.ist) : '–', cx.ro - sw, ym);
+    // Röhrchen: Ist rechtsbündig vor dem „/“, Soll linksbündig dahinter → Kommas untereinander (15.10.2026, Nutzer)
+    const xs = cx.ro - 30; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.textAlign = 'right';
+    g.fillText(typeof z.k.ist === 'number' ? zahl(z.k.ist) : '–', xs - 8, ym);
+    if (z.k.soll) { g.textAlign = 'left'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.fillText('/ ' + zahl(z.k.soll), xs - 4, ym); }
+    g.textAlign = 'right';
     if (raum && raum.erster === z.k.e) { if (C.bar) balken(cx.bar, ym - 3, C.bar - 8, 6, raum.p, raum.farbe);
       g.textAlign = 'right'; g.fillStyle = raum.farbe; g.font = '600 11px system-ui, sans-serif'; g.fillText(raum.neu ? 'neu' : raum.p === null ? '–' : Math.round(raum.p) + ' %', cx.p, ym); }
   }
