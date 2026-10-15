@@ -124,7 +124,10 @@ function zeigeFluss(s) {
     ["Klima ≈", "sensor.klima_leistung_geschatzt"], ["Entfeuchter", "sensor.keller_entfeuchter_power"],
     ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung"], ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung"],
     ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"],
-    ["Kochen/Backen ≈", "sensor.kochen_leistung"]]
+    ["Kochen/Backen ≈", "sensor.kochen_leistung"],
+    // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
+    ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"],
+    ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"]]
     .map(([n, e]) => [n, num(s, e)]).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
   $("verbraucher").innerHTML = geraete.map(([n, v]) =>
     `<span class="chip${(v ?? 0) < 10 ? " aus" : ""}">${n} ${watt(v)}</span>`).join("");
@@ -232,7 +235,8 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung", "sensor.waschmaschine_energie_heute", "sensor.waschmaschine_energie_monat", "2026-09-24T02:30"],
       ["Trockner", "sensor.keller_miele_trockner_leistung", "sensor.trockner_energie_heute", "sensor.trockner_energie_monat", "2026-09-24T02:30"],
       ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
-      ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"]]],
+      ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"],
+      ["Kochen/Backen ≈", "sensor.kochen_leistung", "sensor.kochen_energie_heute", "sensor.kochen_energie_monat", "2026-10-15T10:12"]]],
     ["🔌 Sonstiges", [["Entfeuchter", "sensor.keller_entfeuchter_power", "sensor.entfeuchter_energie_heute", "sensor.entfeuchter_energie_monat", "2026-09-24T02:30"],
       ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.nerdaxe_energie_heute", "sensor.nerdaxe_energie_monat", "2026-09-24T02:30"],
       ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "2026-09-24T02:30"],
@@ -273,7 +277,8 @@ function zeigeTabellen(s, k, lp, gh) {
   }
   const ra = ha === null ? null : Math.max(ha - sa, 0), rh = hh === null ? null : Math.max(hh - sh, 0);
   const rm = ra === null ? null : ra * (jetztMs - Math.max(ms.getTime(), new Date(haStart).getTime())) / 864e5;
-  const rp = num(s, "sensor.rest_ungemessen"), [rah, ram, raa] = anteile("sensor.rest_ungemessen");
+  // 14.10.2026: Kochen/Backen ≈ steckt im Rest (ungemessen) → live abziehen (kWh-Spalten: Rest = Haus − Geräte)
+  const rp0 = num(s, "sensor.rest_ungemessen"), rp = rp0 === null ? null : Math.max(rp0 - (num(s, "sensor.kochen_leistung") ?? 0), 0), [rah, ram, raa] = anteile("sensor.rest_ungemessen");
   const reh = (rh ?? 0) * preis * rah, rem = (rm ?? 0) * preis * ram, rea = (ra ?? 0) * preis * raa;
   for (const [gn, gp, gh, gm, ga, zeilen, geh, gem, gea] of gruppen) {
     const x = gn.includes("Sonstiges");
@@ -627,7 +632,7 @@ const TL_K = ["a_dusche", "a_badewanne", "a_abspuelen", "a_warm_kurz", "a_wc", "
   "cmi_wp", "keller_bwwp_shelly_energie", "klima_betrieb_heute", "wp_strom_gratis_heute", "bwwp_strom_gratis_heute",
   "haus", "netz", "einsp", "akku_ent", "akku_lad", "g_waschmaschine", "g_trockner", "g_spulmaschine", "g_kuhlschrank", "g_kuhlschrank_garage",
   "g_entfeuchter", "g_nerdaxe", "g_iceriver", "g_tv_sony",
-  "h_pv", "h_akku", "h_netz", "ak_pv", "ak_netz"];   // 04.10.2026: haus_herkunft.yaml (Haus aus PV/Akku/Netz, Akku aus PV/Netz), ab 24.09.
+  "h_pv", "h_akku", "h_netz", "ak_pv", "ak_netz", "g_kochen"];   // 14.10.2026: g_kochen = Kochen/Backen ≈ (Schätzung)   // 04.10.2026: haus_herkunft.yaml (Haus aus PV/Akku/Netz, Akku aus PV/Netz), ab 24.09.
 function tlSetzen(v) { TL = {}; for (const r of (v && v.tl) || []) { if (!Array.isArray(r)) continue; const x = TL[r[0]] = {}; TL_K.forEach((k, i) => { if (r[i + 1] != null) x[k] = r[i + 1]; }); } }
 const fwBogen = (cx, cy, r0, r1, a0, a1) => { if (a1 - a0 >= 2 * Math.PI - 1e-6) a1 = a0 + 2 * Math.PI - 1e-4;
   const p = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)], g = a1 - a0 > Math.PI ? 1 : 0;
@@ -759,7 +764,8 @@ const GER_TORTE = { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec:
   rechne: (von, bis) => {
     const G = [["Waschmaschine", "g_waschmaschine", "Wäsche", "#06b6d4"], ["Trockner", "g_trockner", "Wäsche", "#a855f7"], ["Spülmaschine", "g_spulmaschine", "Küche & Kühlen", "#22c55e"],
       ["Kühlschrank", "g_kuhlschrank", "Küche & Kühlen", "#86efac"], ["Kühlschrank Garage", "g_kuhlschrank_garage", "Küche & Kühlen", "#4ade80"], ["Entfeuchter", "g_entfeuchter", "Entfeuchter", "#f59e0b"],
-      ["Nerdaxe", "g_nerdaxe", "Miner", "#f472b6"], ["Iceriver", "g_iceriver", "Miner", "#db2777"], ["TV", "g_tv_sony", "TV", "#94a3b8"]];
+      ["Nerdaxe", "g_nerdaxe", "Miner", "#f472b6"], ["Iceriver", "g_iceriver", "Miner", "#db2777"], ["TV", "g_tv_sony", "TV", "#94a3b8"],
+      ["Kochen/Backen ≈", "g_kochen", "Küche & Kühlen", "#ef4444"]];
     const FG = { "Wäsche": "#06b6d4", "Küche & Kühlen": "#22c55e", "Entfeuchter": "#f59e0b", "Miner": "#ec4899", "TV": "#94a3b8" }, je = {}, gr = {};
     for (const [k, , , an] of fwTage(von, bis)) { const x = TL[k]; if (!x) continue; for (const g of G) { const v = (x[g[1]] || 0) * an; je[g[0]] = (je[g[0]] || 0) + v; gr[g[2]] = (gr[g[2]] || 0) + v; } }
     return { ringe: [Object.entries(gr).map(([n, v]) => ({ n, v: rd1(v), f: FG[n] })).sort((a, b) => b.v - a.v),
@@ -1011,7 +1017,7 @@ function zeigeWann(d) {
 // „Jetzt“ springt zurück. Dämmerung + Sonnenkurve (sonnenhoehe), Mitternacht Linie + Datum mittig, Tooltips per <title>.
 const ZL = {
   zeitleiste: [["WP", ["wp"], ["#3b82f6"]], ["BWWP", ["bw", "hz"], ["#f87171", "#dc2626"], ["", " Heizstab"]], ["LLWP", ["ll"], ["#facc15"]]],
-  zeitleiste2: [["Waschmaschine", ["wa"], ["#06b6d4"]], ["Trockner", ["tr"], ["#a855f7"]], ["Spülmaschine", ["sp"], ["#22c55e"]], ["Entfeuchter", ["en"], ["#f59e0b"]]],
+  zeitleiste2: [["Waschmaschine", ["wa"], ["#06b6d4"]], ["Trockner", ["tr"], ["#a855f7"]], ["Spülmaschine", ["sp"], ["#22c55e"]], ["Entfeuchter", ["en"], ["#f59e0b"]], ["Kochen/Backen ≈", ["ko"], ["#ef4444"]]],
 };
 const zlEnde = {};            // Fensterende je Leiste (ms), null = live
 let zlSeg = {};               // Kürzel → [[von, bis, läuft]]
