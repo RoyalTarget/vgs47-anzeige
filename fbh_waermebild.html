@@ -9,7 +9,13 @@
      Durchfluss/langes Rohr, rot = wärmer = zu viel Durchfluss), grau = Heizkreispumpe aus. Modus „Temperatur“: 20–35 °C.
      Daten live aus dem Elternfenster (HA-iframe, gleiche Herkunft): history/history_during_period, 14 Tage.
      Bedienung wie die übrigen Leisten: im Feld ziehen = blättern, Leiste unten: Rahmen ziehen = verschieben, gelbe Griffe =
-     zoomen, daneben tippen = springen, Doppelklick/-tippen = Standard (48 h bis jetzt). -->
+     zoomen, daneben tippen = springen, Doppelklick/-tippen = Standard (48 h bis jetzt).
+     15.10.2026 (Nutzer, Skizze 14.10.): Wärmebild + Hydraulik in einer Kachel. Desktop (≥ 560 px) = Variante A: rechts je Kreis
+     RL jetzt, Spreizung (Median Messnächte), Röhrchen Ist/Soll, je Raum Versorgungs-Leiste + Summenzeile „gibt ab · Bedarf“.
+     iPhone = Variante B: Wärmebild wie bisher + Punkt = Versorgung des Raums, Kreisname/Punkt antippen = Raum-Bilanz auf/zu.
+     Rechnung wie die Markdown-Karte „Hydraulik – Soll und Ist je Raum“ (gibt ab = Röhrchen × Spreizung × 69,78 W je l/min·K,
+     Bedarf = JOCO-Heizlast −16 °C linear auf Ø außen der Messnächte). Fußzeile: Messfenster + „Kreis in der Nacht zugegangen“
+     (ersetzt die Tabelle „⚖️ Abgleich – Messnächte“). Die Kachel passt ihre Höhe selbst an (Zeilen der HA-Section). -->
 <style>
   :root { --bg: #1c1c1c; --fg: #e5e7eb; --grau: #9ca3af; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 12px system-ui, -apple-system, sans-serif; overflow: hidden; }
@@ -21,6 +27,8 @@
   canvas { display: block; }
   #feld { touch-action: pan-y; cursor: grab; }
   #leiste { touch-action: none; cursor: pointer; }
+  #fuss { padding: 2px 10px 6px; color: var(--grau); font-size: 11px; line-height: 1.5; }
+  #fuss b { color: var(--fg); font-weight: 600; }
   #tip { position: fixed; display: none; pointer-events: none; background: rgba(24,24,27,.97); border: 1px solid #52525b; border-radius: 8px;
          padding: 6px 9px; line-height: 1.45; z-index: 5; white-space: nowrap; }
 </style>
@@ -32,6 +40,7 @@
   <button id="m_temp" title="Rücklauftemperatur 20–35 °C">Temperatur</button></div>
 <canvas id="feld"></canvas>
 <canvas id="leiste"></canvas>
+<div id="fuss"></div>
 <div id="tip"></div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -118,61 +127,154 @@ let raf = null; const plan = () => { if (!raf) raf = requestAnimationFrame(() =>
 function leinwand(c, w, h) { const dpr = window.devicePixelRatio || 1; c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
   c.style.width = w + 'px'; c.style.height = h + 'px'; const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); return g; }
 
+// ---------- Hydraulik (15.10.2026) ----------
+// Räume: [Name, Heizlast W bei −16 °C (JOCO 2012, DIN EN 12831), Raum-Soll °C, Fühler der Kreise] – wie Markdown „Hydraulik“
+const RAEUME = [
+  ['Bad DG', 568, 24, ['sensor.rl_bad_fussboden', 'sensor.rl_bad_wand']],
+  ['Gästezimmer', 984, 20, ['sensor.rl_dg_3']],
+  ['Lesezimmer', 760, 20, ['sensor.rl_dg_4']],
+  ['Yoga', 633, 20, ['sensor.rl_yoga']],
+  ['Bad OG', 464, 24, ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand']],
+  ['Flur OG', null, 18, ['sensor.rl_og_flur']],
+  ['Emils Zimmer', 1068, 20, ['sensor.rl_og_5', 'sensor.rl_og_6']],
+  ['Wohnen + WiGa', 3439, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5']],
+  ['WC', 154, 20, ['sensor.rl_wc']],
+  ['Flur EG', 783, 18, ['sensor.rl_flur']]];
+const F_OR = '#f97316', F_GR = '#22c55e', F_BL = '#60a5fa', F_NA = '#6b7280';
+let offen = null;   // iPhone: aufgeklappter Raum (Name)
+function hydro(h, K) {
+  const T = h?.states['sensor.fbh_abgleich']?.attributes?.tage || [], sp = {}; let nMax = 0;
+  for (const k of K) { const l = []; for (const t of T) for (const r of (t.kr || [])) if (r[0] === k.k && !r[4]) l.push(r[2]);
+    l.sort((x, y) => x - y); const n = l.length; nMax = Math.max(nMax, n); sp[k.e] = n ? (l[(n - 1) >> 1] + l[n >> 1]) / 2 : null; }
+  const au = T.length ? T.reduce((s, t) => s + (+t.au || 0), 0) / T.length : (parseFloat(h?.states['sensor.cmi_t_aussen']?.state) || 10);
+  const raum = {}, liste = [];
+  for (const [name, last, soll, fu] of RAEUME) {
+    let w = 0, ok = true; const ks = [];
+    for (const k of K.filter((q) => fu.includes(q.e))) { const e = k.e; ks.push(k);
+      const ww = typeof k.ist === 'number' && typeof sp[e] === 'number' ? k.ist * sp[e] * 69.78 : null; if (ww === null) ok = false; else w += ww; }
+    const bed = typeof last === 'number' ? last * (soll - au) / (soll + 16) : null, p = bed && bed > 0 ? w / bed * 100 : null;
+    const farbe = p === null ? F_NA : p < 70 ? F_OR : p > 140 ? F_BL : F_GR;
+    const r = { name, w, ok, bed, p, farbe, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
+    liste.push(r); for (const k of ks) raum[k.e] = r; }
+  const L = T[T.length - 1], zu = L ? (L.kr || []).filter((r) => r[4]).map((r) => r[0]) : [];
+  return { sp, au, raum, liste, nNacht: nMax, zu, letzte: L };
+}
+function karteAnpassen(gesamt) {   // HA-Section: Kachelhöhe = Inhalt (Zeile 56 px + 8 px Abstand)
+  try { const fr = window.frameElement; if (!fr) return; let e = fr;
+    for (let i = 0; i < 12 && e; i++) { if (e.classList && e.classList.contains('card') && e.style.getPropertyValue('--row-size')) break; e = e.parentElement || e.getRootNode()?.host; }
+    if (!e || !e.classList?.contains('card')) return; const n = Math.max(4, Math.ceil((gesamt + 12) / 64));
+    const setz = () => { const m = e.__fbhN; if (!m) return; if (String(e.style.getPropertyValue('--row-size')).trim() !== String(m)) e.style.setProperty('--row-size', String(m));
+      if (e.style.gridRowStart !== `span ${m}`) e.style.gridRow = `span ${m}`; };
+    e.__fbhN = n; setz();
+    // HA setzt --row-size beim Neuzeichnen der Karte zurück → Stil-Attribut beobachten und wieder setzen
+    if (!e.__fbhMo) { e.__fbhMo = new (window.parent.MutationObserver || MutationObserver)(() => setz()); e.__fbhMo.observe(e, { attributes: true, attributeFilter: ['style'] }); } } catch (err) {} }
+function fussZeile(h, hy, schmal) {
+  const mf = h?.states['binary_sensor.fbh_messfenster'], lauf = h?.states['sensor.fbh_abgleich']?.attributes?.lauf || {};
+  let s = mf?.state === 'on' ? `🟢 <b>Messnacht läuft</b> seit ${lauf.start ? new Date(lauf.start).toTimeString().slice(0, 5) : '–'} · ${lauf.n || 0} min (zählt ab 60 min)`
+    : `⚪ gerade keine Messung – ${mf?.attributes?.grund || '?'}`;
+  if (hy) { s += ` · Kreis in der letzten Nacht zugegangen: ${hy.zu.length ? '<b>🚪 ' + hy.zu.join(', ') + '</b>' : '–'}`;
+    if (hy.letzte) { const d = new Date(hy.letzte.start); s += ` · Spreizung = Median ${hy.nNacht} Messnächte (letzte ${d.getDate()}.${d.getMonth() + 1}.)`; }
+    s += schmal ? '<br>Kreis antippen = Raum-Bilanz auf/zu · Punkt = Versorgung des Raums: ' : '<br>Leiste = Versorgung des Raums: ';
+    s += `<span style="color:${F_OR}">orange</span> &lt; 70 % · <span style="color:${F_GR}">grün</span> passt · <span style="color:${F_BL}">blau</span> &gt; 140 % (Wasser verschenkt, drosseln lohnt) · gibt ab = Röhrchen × Spreizung, Bedarf = Heizlast 2012 bei Ø ${zahl(hy.au)} °C außen`; }
+  const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
+
 function zeichne() {
-  const W = document.body.clientWidth, HT = window.innerHeight, schmal = W < 560;
-  const KOPF = 26, ACHSE = 18, LEISTE = 40, LEG = 18, LW = schmal ? 58 : 64, RW = schmal ? 44 : 78;
-  const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'];
-  const zeilenHoehe = Math.max(8, Math.min(22, (HT - KOPF - ACHSE - LEISTE - LEG - 6 - gruppen.length * 13) / Math.max(K.length, 1)));
-  const FH = ACHSE + gruppen.length * 13 + K.length * zeilenHoehe + LEG + 4;
+  const W = document.body.clientWidth, schmal = W < 560, breit = W >= 880;
+  const KOPF = 26, ACHSE = 18, LEG = 18, LW = schmal ? 58 : 64;
+  const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'], inHA = !!hassEcht();
+  const hy = inHA ? hydro(h, K) : null;
+  // rechte Spalten (Desktop A): RL jetzt · Spreizung · Röhrchen · Leiste · %
+  const C = schmal ? null : breit ? { rl: 64, sp: 64, ro: 78, bar: 150, p: 46 } : { rl: 60, sp: 60, ro: 74, bar: 0, p: 46 };
+  const RW = schmal ? (hy ? 58 : 44) : (hy ? C.rl + C.sp + C.ro + C.bar + C.p + 14 : 78);
+  const ZH = schmal ? 17 : 19, SH = hy && !schmal ? 15 : 0;
+  // Zeilenplan
+  const zl = []; let y = ACHSE;
+  const plan = [];
+  for (const G of gruppen) { const ks = K.filter((k) => k.g === G); if (!ks.length) continue;
+    plan.push({ typ: 'g', G, ks, h: 14 });
+    for (const k of ks) { plan.push({ typ: 'k', k, h: ZH }); const r = hy?.raum[k.e];
+      if (r && r.letzter === k.e) { if (SH) plan.push({ typ: 's', r, h: SH + 4 }); if (schmal && offen === r.name) plan.push({ typ: 'p', r, h: 60 + r.ks.length * 15 }); } }
+    plan.push({ typ: 'gap', h: 4 }); }
+  for (const z of plan) { z.y = y; y += z.h; }
+  const FH = y + LEG + 4;
   const g = leinwand($('feld'), W, FH); g.clearRect(0, 0, W, FH);
   const X0 = LW, X1 = W - RW, [von, bis] = daten ? fenster() : [Date.now() - H48, Date.now()], X = (t) => X0 + (t - von) / (bis - von) * (X1 - X0);
   $('titel').textContent = modus === 'abw' ? (schmal ? 'Abweichung vom Mittel' : 'Rücklauf je Kreis – Abweichung vom Mittel aller Kreise (blau = kälter, rot = wärmer)')
     : (schmal ? 'Rücklauf 20–35 °C' : 'Rücklauf je Kreis – Temperatur 20–35 °C');
-  // Zeitachse oben: Mitternacht mit Datum, Stunden
+  // Zeitachse oben
   g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle'; g.fillStyle = '#9ca3af';
-  const spanne = bis - von, schritt = spanne > 6 * 864e5 ? 24 : spanne > 3 * 864e5 ? 12 : spanne > 864e5 * 1.2 ? (schmal ? 12 : 6) : spanne > 12 * 36e5 ? 3 : 1;
+  const spanne = bis - von, schritt = spanne > 6 * 864e5 ? 24 : spanne > 3 * 864e5 ? 12 : spanne > 864e5 * 1.2 ? (schmal || !breit ? 12 : 6) : spanne > 12 * 36e5 ? 3 : 1;
   const tag = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
   for (let t = new Date(von).setMinutes(0, 0, 0); t <= bis; t += 36e5) { const d = new Date(t); if (t < von || d.getHours() % schritt) continue;
     const x = X(t), mn = d.getHours() === 0; g.textAlign = 'center';
     g.fillStyle = mn ? '#e5e7eb' : '#9ca3af'; g.font = (mn ? '600 ' : '') + '11px system-ui, sans-serif';
     g.fillText(mn ? `${tag[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.` : `${String(d.getHours()).padStart(2, '0')}:00`, Math.min(Math.max(x, X0 + 24), X1 - 24), ACHSE / 2); }
-  // Zeilen
-  const zl = []; let y = ACHSE; g.textAlign = 'left';
-  for (const G of gruppen) { const ks = K.filter((k) => k.g === G); if (!ks.length) continue;
-    g.fillStyle = '#e5e7eb'; g.font = '600 11px system-ui, sans-serif'; g.fillText(G, 4, y + 7);
-    const n = ks.filter((k) => h?.states[k.e]).length; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText(`${n}/${ks.length}`, 26, y + 7);
-    y += 13; for (const k of ks) { zl.push({ k, y, h: zeilenHoehe }); y += zeilenHoehe; } }
+  // Spaltenköpfe rechts
+  let cx = null;
+  if (!schmal && hy) { cx = { rl: X1 + 8 + C.rl - 4, sp: X1 + 8 + C.rl + C.sp - 4, ro: X1 + 8 + C.rl + C.sp + C.ro - 4, bar: X1 + 8 + C.rl + C.sp + C.ro + 8, p: W - 4 };
+    g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.textAlign = 'right';
+    g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung', cx.sp, ACHSE / 2); g.fillText('Röhrchen', cx.ro, ACHSE / 2);
+    g.textAlign = 'left'; g.fillText(breit ? 'Versorgung Raum' : '', cx.bar, ACHSE / 2); if (!breit) { g.textAlign = 'right'; g.fillText('Raum', cx.p, ACHSE / 2); } }
+  else if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2); }
   const iv = daten ? Math.max(0, Math.floor((von - daten.t0) / BIN)) : 0, ib = daten ? Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN)) : 0;
-  const zeitAus = (i) => daten.t0 + i * BIN;
-  for (const z of zl) { const r = daten?.reihen[z.k.e], hy = z.h - 1;
-    g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${Math.min(11, z.h + 1)}px system-ui, sans-serif`; g.textAlign = 'left';
+  const zeitAus = (i) => daten.t0 + i * BIN, z1 = (v, d = 1) => zahl(v, d);
+  const balken = (x, yy, w, hh, p, farbe) => { g.fillStyle = '#3f3f46'; g.beginPath(); g.roundRect(x, yy, w, hh, hh / 2); g.fill();
+    if (p !== null) { g.fillStyle = farbe; g.beginPath(); g.roundRect(x, yy, Math.max(hh, w * Math.min(p, 200) / 200), hh, hh / 2); g.fill(); }
+    g.fillStyle = '#9ca3af'; g.fillRect(x + w / 2 - 0.5, yy - 2, 1, hh + 4); };
+  for (const z of plan) {
+    if (z.typ === 'g') { g.textAlign = 'left'; g.fillStyle = '#93c5fd'; g.font = '600 11px system-ui, sans-serif'; g.fillText(z.G, 4, z.y + 7);
+      const n = z.ks.filter((k) => h?.states[k.e]).length; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText(`${n}/${z.ks.length}`, 26, z.y + 7); continue; }
+    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; g.fillText(`Σ ${r.name} · gibt ab ≈ ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'} · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W`, 8, z.y + SH / 2);
+      g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
+    if (z.typ === 'p') { const r = z.r, x0 = 6, x1 = W - 6; g.fillStyle = '#26262b'; g.beginPath(); g.roundRect(x0, z.y + 2, x1 - x0, z.h - 6, 8); g.fill();
+      g.textAlign = 'left'; g.font = '600 12px system-ui, sans-serif'; g.fillStyle = '#e5e7eb'; const t1 = `${r.name} – versorgt zu `; g.fillText(t1, x0 + 10, z.y + 14);
+      g.fillStyle = r.farbe; g.fillText(r.p === null ? '–' : Math.round(r.p) + ' %', x0 + 10 + g.measureText(t1).width, z.y + 14);
+      balken(x0 + 10, z.y + 24, x1 - x0 - 20, 6, r.p, r.farbe);
+      g.font = '11px system-ui, sans-serif'; let yy = z.y + 41;
+      for (const k of r.ks) { const s = hy.sp[k.e], rl = parseFloat(h?.states[k.e]?.state); g.fillStyle = '#d1d5db'; g.textAlign = 'left'; g.fillText(k.k, x0 + 10, yy);
+        g.fillStyle = '#9ca3af'; g.textAlign = 'right';
+        g.fillText(`Röhrchen ${typeof k.ist === 'number' ? z1(k.ist) : '–'}${k.soll ? ' / ' + z1(k.soll) : ''} · Spr. ${s === null ? '–' : z1(s) + ' K'} · RL ${isNaN(rl) ? '–' : z1(rl)}`, x1 - 10, yy); yy += 15; }
+      g.textAlign = 'left'; g.fillStyle = '#9ca3af';
+      const tip = r.p === null ? 'keine Heizlast hinterlegt' : r.p > 140 ? 'viel Wasser, kaum abgekühlt → drosseln lohnt' : r.p < 70 ? 'wenig Wärme → nur handeln, wenn der Raum zu kühl ist' : 'passt (70–140 %)';
+      g.fillText(`gibt ab ≈ ${Math.round(r.w)} W · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W · ${tip}`, x0 + 10, yy, x1 - x0 - 20); continue; }
+    if (z.typ !== 'k') continue;
+    zl.push(z); const r = daten?.reihen[z.k.e], hy1 = z.h - 2, raum = hy?.raum[z.k.e];
+    g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${schmal ? '' : (raum && raum.erster === z.k.e ? '600 ' : '')}11px system-ui, sans-serif`; g.textAlign = 'left';
     g.fillText(z.k.k, 8, z.y + z.h / 2);
-    if (!r) { g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, hy); if (z.h >= 10) { g.fillStyle = '#52525b'; g.textAlign = 'center';
-      g.fillText('noch kein Fühler', (X0 + X1) / 2, z.y + z.h / 2); } continue; }
+    if (!r) { g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, hy1); g.fillStyle = '#52525b'; g.textAlign = 'center'; g.fillText(daten ? 'noch kein Fühler' : '…', (X0 + X1) / 2, z.y + z.h / 2); }
     let sa = 0, sn = 0;
-    for (let i = iv; i < ib; i++) { const v = r[i]; if (v === null) continue; const an = (daten.pu[i] ?? 0) >= 0.5, rl = daten.ref[i];
+    if (r) for (let i = iv; i < ib; i++) { const v = r[i]; if (v === null) continue; const an = (daten.pu[i] ?? 0) >= 0.5, rl = daten.ref[i];
       const xa = X(zeitAus(i)), xb = X(zeitAus(i + 1)); if (xb < X0 || xa > X1) continue;
       let col; if (modus === 'abw') { if (!an || rl === null) col = '#2a2a2e'; else { col = farbe(v - rl); sa += v - rl; sn++; } }
       else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
-      g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy); g.globalAlpha = 1; }
-    // rechts: aktueller Wert + Ø Abweichung im Fenster (nur Pumpe an)
-    const s = h?.states[z.k.e]?.state, akt = parseFloat(s); g.textAlign = 'right';
-    g.fillStyle = '#f59e0b'; g.font = `600 ${Math.min(11, z.h + 1)}px system-ui, sans-serif`;
-    g.fillText(isNaN(akt) ? '–' : zahl(akt) + (schmal ? '' : ' °C'), schmal ? W - 4 : X1 + 44, z.y + z.h / 2);
-    if (!schmal && sn) { const m = sa / sn; g.fillStyle = Math.abs(m) < 0.4 ? '#9ca3af' : m < 0 ? '#60a5fa' : '#f87171'; g.font = `${Math.min(10, z.h)}px system-ui, sans-serif`;
-      g.fillText((m > 0 ? '+' : '') + zahl(m), W - 4, z.y + z.h / 2); } }
-  // Mitternachtslinien + Jetzt
+      g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1; }
+    const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
+    if (schmal) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt), W - (hy ? 18 : 4), ym);
+      if (hy && raum) { g.fillStyle = raum.farbe; g.beginPath(); g.arc(W - 8, ym, 4, 0, 7); g.fill(); if (offen === raum.name) { g.strokeStyle = '#e5e7eb'; g.lineWidth = 1.2; g.stroke(); } } continue; }
+    if (!hy) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt) + ' °C', X1 + 44, ym);
+      if (sn) { const m = sa / sn; g.fillStyle = Math.abs(m) < 0.4 ? '#9ca3af' : m < 0 ? '#60a5fa' : '#f87171'; g.font = '10px system-ui, sans-serif'; g.fillText((m > 0 ? '+' : '') + zahl(m), W - 4, ym); } continue; }
+    // Desktop A: Spalten
+    const s = hy.sp[z.k.e]; g.textAlign = 'right';
+    g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt) + ' °C', cx.rl, ym);
+    g.fillStyle = '#d1d5db'; g.font = '11px system-ui, sans-serif'; g.fillText(s === null ? '–' : zahl(s) + ' K', cx.sp, ym);
+    const sollT = z.k.soll ? ' / ' + zahl(z.k.soll) : ''; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.fillText(sollT, cx.ro, ym);
+    const sw = g.measureText(sollT).width; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText(typeof z.k.ist === 'number' ? zahl(z.k.ist) : '–', cx.ro - sw, ym);
+    if (raum && raum.erster === z.k.e) { if (C.bar) balken(cx.bar, ym - 3, C.bar - 8, 6, raum.p, raum.farbe);
+      g.textAlign = 'right'; g.fillStyle = raum.farbe; g.font = '600 11px system-ui, sans-serif'; g.fillText(raum.p === null ? '–' : Math.round(raum.p) + ' %', cx.p, ym); }
+  }
+  // Mitternachtslinien
   g.strokeStyle = 'rgba(229,231,235,.55)'; g.lineWidth = 1;
-  for (let t = new Date(von).setHours(24, 0, 0, 0); t < bis; t += 864e5) { const x = Math.round(X(t)) + 0.5; g.beginPath(); g.moveTo(x, ACHSE); g.lineTo(x, y); g.stroke(); }
+  for (let t = new Date(von).setHours(24, 0, 0, 0); t < bis; t += 864e5) { const x = Math.round(X(t)) + 0.5;
+    for (const z of plan) if (z.typ === 'k') { g.beginPath(); g.moveTo(x, z.y); g.lineTo(x, z.y + z.h); g.stroke(); } }
   // Legende: Text – Farbbalken – Text
   const ly = y + 4; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
   const tl = modus === 'abw' ? '−3 K kälter' : '20 °C', tr = modus === 'abw' ? '+3 K wärmer · grau = Pumpe aus' : '35 °C · blass = Pumpe aus';
   g.fillText(tl, X0, ly + 7); const lx = X0 + g.measureText(tl).width + 6, lb = Math.max(60, Math.min(180, X1 - lx - g.measureText(tr).width - 12));
   for (let i = 0; i < lb; i++) { const v = modus === 'abw' ? -3 + 6 * i / lb : 20 + 15 * i / lb; g.fillStyle = farbe(v); g.fillRect(lx + i, ly + 3, 1.2, 8); }
   g.fillStyle = '#9ca3af'; g.fillText(tr, lx + lb + 6, ly + 7);
-  if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2 + 0); }
-  geo = { X0, X1, von, bis, zl, ACHSE, yEnde: y };
+  geo = { X0, X1, von, bis, zl, plan, ACHSE, yEnde: y, schmal };
   zeichneLeiste(W);
+  if (inHA) { fussZeile(h, hy, schmal); karteAnpassen(KOPF + FH + 40 + $('fuss').offsetHeight + 4); }
 }
 
 function zeichneLeiste(W) {
@@ -207,6 +309,8 @@ function doppel(e, fn) { let t0 = 0, x0 = 0, xd = 0;
 const feld = $('feld'), tip = $('tip'); let dr = null;
 function zeigeTip(ev) { if (!geo || !daten) return; const r = feld.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
   const z = geo.zl.find((q) => y >= q.y && y < q.y + q.h); if (!z || x < geo.X0 || x > geo.X1) { tip.style.display = 'none'; return; }
+  if (ev.type === 'pointerup' && tip.style.display === 'block' && tip.__z === z.k.e) { tip.style.display = 'none'; tip.__z = null; return; }   // Touch-Regel: nochmal tippen = zu
+  tip.__z = z.k.e;
   const t = geo.von + (x - geo.X0) / (geo.X1 - geo.X0) * (geo.bis - geo.von), i = Math.floor((t - daten.t0) / BIN), rr = daten.reihen[z.k.e];
   const d = new Date(daten.t0 + i * BIN), an = (daten.pu[i] ?? 0) >= 0.5, v = rr ? rr[i] : null, vl = daten.vl[i], rl = daten.rl[i], mw = daten.ref[i];
   const zeit = `${['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -223,7 +327,12 @@ feld.addEventListener('pointerdown', (ev) => { const [von, bis] = fenster(); dr 
 feld.addEventListener('pointermove', (ev) => { if (!dr) { if (ev.pointerType === 'mouse') zeigeTip(ev); return; }
   const dx = ev.clientX - dr.x; if (Math.abs(dx) > 5) dr.moved = true; if (!dr.moved) return; tip.style.display = 'none';
   const k = (dr.bis - dr.von) / (geo.X1 - geo.X0); setze(dr.von - dx * k, dr.bis - dx * k); });
-const ende = (ev) => { if (dr && !dr.moved && ev && ev.type === 'pointerup') zeigeTip(ev); dr = null; };
+// iPhone: Kreisname/Punkt antippen = Raum-Bilanz auf/zu (Touch-Regel), Wärmebild antippen = Tooltip
+function raumTipp(ev) { if (!geo || !geo.schmal) return false; const r = feld.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+  if (x >= geo.X0 && x <= geo.X1) return false; const z = (geo.plan || []).find((q) => (q.typ === 'k' || q.typ === 'p') && y >= q.y && y < q.y + q.h);
+  if (!z) return false; const h = hass(), K = daten ? daten.K : kreise(h), hy = hydro(h, K), raum = z.typ === 'p' ? z.r : hy.raum[z.k.e]; if (!raum) return false;
+  offen = offen === raum.name ? null : raum.name; tip.style.display = 'none'; zeichne(); return true; }
+const ende = (ev) => { if (dr && !dr.moved && ev && ev.type === 'pointerup') { if (!raumTipp(ev)) zeigeTip(ev); } dr = null; };
 feld.addEventListener('pointerup', ende); feld.addEventListener('pointercancel', () => { dr = null; });
 feld.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') tip.style.display = 'none'; });
 doppel(feld, standard);
@@ -254,6 +363,7 @@ setInterval(() => { if (!document.hidden) lade(); }, 5 * 6e4);   // alle 5 min n
 setInterval(() => { if (!document.hidden && !dr && !gm) zeichne(); }, 3e4);   // aktuelle Werte rechts
 document.addEventListener('visibilitychange', () => { if (!document.hidden && daten && Date.now() - daten.geladen > 2 * 6e4) lade(); });
 window.__fbh = { get daten() { return daten; }, get win() { return win; }, standard };
+window.__fbhGeo = (k = 'Bad O') => { const z = geo?.plan?.find((q) => q.typ === 'k' && q.k.k === k); return z ? { y: z.y, h: z.h } : null; };   // Test
 </script>
 </body>
 </html>
