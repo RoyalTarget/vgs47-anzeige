@@ -144,7 +144,8 @@ const F_OR = '#f97316', F_GR = '#22c55e', F_BL = '#60a5fa', F_NA = '#6b7280';
 let offen = null;   // iPhone: aufgeklappter Raum (Name)
 function hydro(h, K) {
   const T = h?.states['sensor.fbh_abgleich']?.attributes?.tage || [], sp = {}; let nMax = 0;
-  for (const k of K) { const l = []; for (const t of T) for (const r of (t.kr || [])) if (r[0] === k.k && !r[4]) l.push(r[2]);
+  for (const k of K) { const l = [], ab = k.ist_ab ? new Date(k.ist_ab).getTime() : 0;   // ist_ab: Röhrchen neu eingestellt → nur Nächte danach
+    for (const t of T) { if (ab && new Date(t.start).getTime() < ab) continue; for (const r of (t.kr || [])) if (r[0] === k.k && !r[4]) l.push(r[2]); }
     l.sort((x, y) => x - y); const n = l.length; nMax = Math.max(nMax, n); sp[k.e] = n ? (l[(n - 1) >> 1] + l[n >> 1]) / 2 : null; }
   const au = T.length ? T.reduce((s, t) => s + (+t.au || 0), 0) / T.length : (parseFloat(h?.states['sensor.cmi_t_aussen']?.state) || 10);
   const raum = {}, liste = [];
@@ -152,9 +153,10 @@ function hydro(h, K) {
     let w = 0, ok = true; const ks = [];
     for (const k of K.filter((q) => fu.includes(q.e))) { const e = k.e; ks.push(k);
       const ww = typeof k.ist === 'number' && typeof sp[e] === 'number' ? k.ist * sp[e] * 69.78 : null; if (ww === null) ok = false; else w += ww; }
-    const bed = typeof last === 'number' ? last * (soll - au) / (soll + 16) : null, p = bed && bed > 0 ? w / bed * 100 : null;
+    const neu = ks.some((k) => k.ist_ab && sp[k.e] === null);
+    const bed = typeof last === 'number' ? last * (soll - au) / (soll + 16) : null, p = !neu && bed && bed > 0 ? w / bed * 100 : null;
     const farbe = p === null ? F_NA : p < 70 ? F_OR : p > 140 ? F_BL : F_GR;
-    const r = { name, w, ok, bed, p, farbe, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
+    const r = { name, w, ok, bed, p, farbe, neu, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
   const L = T[T.length - 1], zu = L ? (L.kr || []).filter((r) => r[4]).map((r) => r[0]) : [];
   return { sp, au, raum, liste, nNacht: nMax, zu, letzte: L };
@@ -224,7 +226,7 @@ function zeichne() {
   for (const z of plan) {
     if (z.typ === 'g') { g.textAlign = 'left'; g.fillStyle = '#93c5fd'; g.font = '600 11px system-ui, sans-serif'; g.fillText(z.G, 4, z.y + 7);
       const n = z.ks.filter((k) => h?.states[k.e]).length; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText(`${n}/${z.ks.length}`, 26, z.y + 7); continue; }
-    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; g.fillText(`Σ ${r.name} · gibt ab ≈ ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'} · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W`, 8, z.y + SH / 2);
+    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; g.fillText(r.neu ? `Σ ${r.name} · Röhrchen neu eingestellt – Spreizung erst nach der nächsten Messnacht` : `Σ ${r.name} · gibt ab ≈ ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'} · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W`, 8, z.y + SH / 2);
       g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
     if (z.typ === 'p') { const r = z.r, x0 = 6, x1 = W - 6; g.fillStyle = '#26262b'; g.beginPath(); g.roundRect(x0, z.y + 2, x1 - x0, z.h - 6, 8); g.fill();
       g.textAlign = 'left'; g.font = '600 12px system-ui, sans-serif'; g.fillStyle = '#e5e7eb'; const t1 = `${r.name} – versorgt zu `; g.fillText(t1, x0 + 10, z.y + 14);
@@ -235,7 +237,7 @@ function zeichne() {
         g.fillStyle = '#9ca3af'; g.textAlign = 'right';
         g.fillText(`Röhrchen ${typeof k.ist === 'number' ? z1(k.ist) : '–'}${k.soll ? ' / ' + z1(k.soll) : ''} · Spr. ${s === null ? '–' : z1(s) + ' K'} · RL ${isNaN(rl) ? '–' : z1(rl)}`, x1 - 10, yy); yy += 15; }
       g.textAlign = 'left'; g.fillStyle = '#9ca3af';
-      const tip = r.p === null ? 'keine Heizlast hinterlegt' : r.p > 140 ? 'viel Wasser, kaum abgekühlt → drosseln lohnt' : r.p < 70 ? 'wenig Wärme → nur handeln, wenn der Raum zu kühl ist' : 'passt (70–140 %)';
+      const tip = r.neu ? 'Röhrchen neu eingestellt – Messnacht abwarten' : r.p === null ? 'keine Heizlast hinterlegt' : r.p > 140 ? 'viel Wasser, kaum abgekühlt → drosseln lohnt' : r.p < 70 ? 'wenig Wärme → nur handeln, wenn der Raum zu kühl ist' : 'passt (70–140 %)';
       g.fillText(`gibt ab ≈ ${Math.round(r.w)} W · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W · ${tip}`, x0 + 10, yy, x1 - x0 - 20); continue; }
     if (z.typ !== 'k') continue;
     zl.push(z); const r = daten?.reihen[z.k.e], hy1 = z.h - 2, raum = hy?.raum[z.k.e];
@@ -256,11 +258,11 @@ function zeichne() {
     // Desktop A: Spalten
     const s = hy.sp[z.k.e]; g.textAlign = 'right';
     g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt) + ' °C', cx.rl, ym);
-    g.fillStyle = '#d1d5db'; g.font = '11px system-ui, sans-serif'; g.fillText(s === null ? '–' : zahl(s) + ' K', cx.sp, ym);
+    g.fillStyle = '#d1d5db'; g.font = '11px system-ui, sans-serif'; g.fillText(s === null ? (z.k.ist_ab ? 'neu' : '–') : zahl(s) + ' K', cx.sp, ym);
     const sollT = z.k.soll ? ' / ' + zahl(z.k.soll) : ''; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.fillText(sollT, cx.ro, ym);
     const sw = g.measureText(sollT).width; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText(typeof z.k.ist === 'number' ? zahl(z.k.ist) : '–', cx.ro - sw, ym);
     if (raum && raum.erster === z.k.e) { if (C.bar) balken(cx.bar, ym - 3, C.bar - 8, 6, raum.p, raum.farbe);
-      g.textAlign = 'right'; g.fillStyle = raum.farbe; g.font = '600 11px system-ui, sans-serif'; g.fillText(raum.p === null ? '–' : Math.round(raum.p) + ' %', cx.p, ym); }
+      g.textAlign = 'right'; g.fillStyle = raum.farbe; g.font = '600 11px system-ui, sans-serif'; g.fillText(raum.neu ? 'neu' : raum.p === null ? '–' : Math.round(raum.p) + ' %', cx.p, ym); }
   }
   // Mitternachtslinien
   g.strokeStyle = 'rgba(229,231,235,.55)'; g.lineWidth = 1;
