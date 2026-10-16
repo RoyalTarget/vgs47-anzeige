@@ -1606,6 +1606,32 @@ function zeigeSchwellen(d, v) {
   el.hass = { states: st, callWS };
 }
 
+// 16.10.2026 (Nutzer): Küchen-Ansicht (iPad-Startseite im Dashboard) ganz oben – gleiche Karte (lib/vgs_kueche.js, Attribut ohne-tuer),
+// hass-Ersatz aus kueche.json (HA schickt jede Minute: s = [Zustand, Attribute], k = Tageswerte 34 Tage, tk = Temperatur-Stundenmittel 37 h).
+// callWS beantwortet nur recorder/statistics_during_period: change = Summe der Tageswerte im Zeitraum, mean = Stundenwerte.
+let KUECHE = null;
+function zeigeKueche() {
+  const el = $("kueche"); if (!el || !KUECHE || !customElements.get("vgs-kueche-card")) return;
+  const st = {};
+  for (const [e, x] of Object.entries(KUECHE.s || {})) st[e] = { state: String(x[0]), attributes: x[1] || {}, last_changed: "" };
+  const tag = (d) => { const z = new Date(d); return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, "0")}-${String(z.getDate()).padStart(2, "0")}`; };
+  const callWS = async (m) => {
+    if (m.type !== "recorder/statistics_during_period") throw new Error("Anzeigeseite: nicht unterstützt");
+    const r = {}, ids = (m.statistic_ids || []).map((i) => i.replace(/^sensor\./, ""));
+    if ((m.types || []).includes("mean")) {
+      for (const [i, t, v] of KUECHE.tk || []) if (ids.includes(i)) (r["sensor." + i] = r["sensor." + i] || []).push({ start: t * 1000, mean: v });
+      return r;
+    }
+    const von = tag(m.start_time), bis = m.end_time ? tag(m.end_time) : "9999";
+    for (const [i, d, v] of KUECHE.k || []) if (ids.includes(i) && d >= von && d < bis) (r["sensor." + i] = r["sensor." + i] || [{ change: 0 }])[0].change += v;
+    return r;
+  };
+  const neu = !el.hass;
+  el.hass = { states: st, config: { latitude: 48.14, longitude: 11.58 }, callWS };
+  if (!neu && el._kT !== KUECHE.t) { el._kT = KUECHE.t; el._statZeit = 0; try { el._ladeStat(); el._ladeTemp(); } catch (e) {} }
+  el._kT = KUECHE.t;
+}
+
 // ---------- Laden ----------
 let VERLAUF = null, VERLAUF_T = 0;
 async function holen() {
@@ -1615,6 +1641,7 @@ async function holen() {
     if (!VERLAUF || Date.now() - VERLAUF_T > 12e4) try {   // Verlaufsdaten der Fenster-Grafiken (03.10.2026), HA schickt alle 5 min
       VERLAUF = await (await fetch(DATEN.replace("data.json", "verlauf.json") + "?t=" + Date.now(), { cache: "no-store" })).json(); VERLAUF_T = Date.now(); } catch (e) {}
     tlSetzen(VERLAUF);
+    try { KUECHE = await (await fetch(DATEN.replace("data.json", "kueche.json") + "?t=" + Date.now(), { cache: "no-store" })).json(); zeigeKueche(); } catch (e) { console.warn("kueche", e); }
     const s = d.s || {}, a = d.a || {};
     zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d); zeigeTagesbericht(d);
