@@ -79,7 +79,8 @@ const LINIEN = {
   batt_haus: "M200,218 C200,162 260,157 308,157",
   netz_batt: "M92,157 C140,157 200,162 200,218",
 };
-const FARBE = { pv: "#ff9800", netz: "#488fc2", export: "#a280db", batt: "#4db6ac", entladen: "#f06292", haus: "#5bc0de" };
+// 16.10.2026 (Nutzer): Farben wie „Woher kommt der Strom“ (HK_F): Sonne gelb · Netz orange · Einspeisung grün · Akku lädt hellblau / entlädt blau
+const FARBE = { pv: "#facc15", netz: "#f97316", export: "#22c55e", batt: "#93c5fd", entladen: "#3b82f6", haus: "#5bc0de" };
 
 function zeigeFluss(s) {
   const pv = Math.max(num(s, "sensor.pv_gesamt") ?? 0, 0);
