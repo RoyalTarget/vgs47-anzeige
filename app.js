@@ -128,7 +128,7 @@ function zeigeFluss(s) {
     ["Kochen/Backen ≈", "sensor.kochen_leistung"], ["Licht ≈", "sensor.licht_leistung"],   // Licht ≈ 15.10.2026: gemessene Lichter + ungemessene geschätzt
     // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
     ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"],
-    ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"]]
+    ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"], ["Bitaxe", "sensor.bitaxe_leistung"]]
     .map(([n, e]) => [n, num(s, e)]).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
   $("verbraucher").innerHTML = geraete.map(([n, v]) =>
     `<span class="chip${(v ?? 0) < 10 ? " aus" : ""}">${n} ${watt(v)}</span>`).join("");
@@ -241,6 +241,8 @@ function zeigeTabellen(s, k, lp, gh) {
     ["🔌 Sonstiges", [["Entfeuchter", "sensor.keller_entfeuchter_power", "sensor.entfeuchter_energie_heute", "sensor.entfeuchter_energie_monat", "2026-09-24T02:30"],
       ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.nerdaxe_energie_heute", "sensor.nerdaxe_energie_monat", "2026-09-24T02:30"],
       ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "2026-09-24T02:30"],
+      // 18.10.2026: Bitaxe ohne Mess-Plug, Leistung aus AxeOS (bitaxe.yaml); Startzeit = HA-Neustart
+      ["Bitaxe", "sensor.bitaxe_leistung", "sensor.bitaxe_energie_heute", "sensor.bitaxe_energie_monat", "2026-10-18T20:19"],
       ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
       ["💡 Licht ≈", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
