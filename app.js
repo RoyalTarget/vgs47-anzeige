@@ -1030,6 +1030,10 @@ const zlInfo = (c, a) => { const c2 = c === 'hz' ? 'bw' : c; const r = zlLauf.fi
 const zlKurz = (c, a) => { if (c !== 'wp' && c !== 'bw') return ''; const r = zlLauf.find((x) => x[0] === c && Math.abs(x[1] - a) <= 6 * 6e4); if (!r) return '';
   const m = c === 'wp' ? /AZ (-?[\d,.]+)/.exec(r[2]) : /^(-?[\d,.]+) kWh/.exec(r[2]); if (!m) return '';
   const v = parseFloat(m[1].replace(',', '.')); return isFinite(v) ? (c === 'wp' ? 'AZ ' : '') + v.toFixed(1).replace('.', ',') + (c === 'wp' ? '' : ' kWh') : ''; };
+// LLWP (18.10.2026, Nutzer): kein Lauf-Protokoll → kWh wie im Dashboard aus der Leistung (15-min-Mittel WPF.kw.ll, anteilig je Überlappung)
+const zlLlwp = (a, b, lauf) => { const pts = (WPF && WPF.kw && WPF.kw.ll) || []; if (!pts.length) return '';
+  let e = 0; for (const [t, p] of pts) { const ov = Math.min(t + 9e5, b) - Math.max(t, a); if (ov > 0) e += p * ov / 36e5; }
+  return e > 0.05 ? (lauf ? 'bisher ≈ ' : '≈ ') + e.toFixed(1).replace('.', ',') + ' kWh' : ''; };
 // Kurzfazit zum Wärmebild (03.10.2026): d.ft = Markdown-Text aus sensor.fbh_kurzfazit (**fett**, <small>, Absätze)
 function zeigeFazit(d) {
   const el = $("fbh_fazit"); if (!el) return; const t = d.ft || "";
@@ -1229,7 +1233,7 @@ function zeichneZL(id) {
         if (b <= x0 || a >= ende) continue;
         const aa = Math.max(a, x0), bb = Math.min(b, ende);
         // Tooltip (08.10.2026, Nutzer): Kennzahl (WP AZ, BWWP kWh) fett weiß auf schwarz in der Kopfzeile statt im Balken
-        const kz = lauf ? '' : zlKurz(c, a);
+        const kz = c === 'll' ? zlLlwp(a, b, lauf) : lauf ? '' : zlKurz(c, a);
         let info = lauf ? '' : zlInfo(c, a).replace(/^\n/, '');
         if (kz && c === 'wp') info = info.replace(/ · AZ -?[\d,.]+/, ''); else if (kz && c === 'bw') info = info.replace(/^-?[\d,.]+ kWh( · )?/, '');
         const tipH = `<b>${escH(name + (zus ? zus[k] : ""))}</b> ${tg(a)} ${hm(a)}–${lauf ? "läuft" : hm(b)} (${dau(b - a)})`
@@ -1647,7 +1651,7 @@ async function holen() {
     zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d); zeigeTagesbericht(d);
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
-    try { zeigeWpFenster(d, VERLAUF); } catch (e) { console.warn("wpf", e); }
+    try { zeigeWpFenster(d, VERLAUF); for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id); } catch (e) { console.warn("wpf", e); }   // Zeitleiste neu: LLWP-kWh brauchen WPF (18.10.2026)
     try { zeigeSchwellen(d, VERLAUF); } catch (e) { console.warn("schwellen", e); }
     try { zeigeZaehler(s); } catch (e) { console.warn("zaehler", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
