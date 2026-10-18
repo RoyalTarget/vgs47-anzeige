@@ -934,7 +934,7 @@ function zeigeWpFenster(d, v) {
   const FARBE = { wp: "#3b82f6", bw: "#f87171", ll: "#facc15" };
   FW.wpf = Object.assign(FW.wpf || {}, { zurueck: 13, vor: 0, std: [-4, 1], stdSchmal: [-1, 1], hoehe: 330,
     torte: { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec: 1, ringnamen: ["woher", "je Gerät"], rechne: wpTorteRechne },
-    links: { e: "kW", dec: 1, max: () => Math.max(2.5, ...["wp", "bw", "ll"].flatMap((n) => WPF.kw[n].map((p) => p[1]))) },
+    links: { e: "kW", dec: 1, max: () => 3.5 },   // 18.10.2026 (Nutzer): fest 3,5 kW – sonst skaliert eine WP-Heizstabspitze (~11 kW) aus den 14 Tagen alles klein
     rechts: { e: "kWh", max: () => Math.max(4, ...WPF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, x0, x1 }) => { let g = "";
       for (const n of ["ll", "wp", "bw"]) { const p = WPF.kw[n].filter(([t]) => t >= x0 - 18e5 && t <= x1 + 9e5); if (!p.length) continue;
