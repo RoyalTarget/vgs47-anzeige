@@ -129,7 +129,7 @@ function zeigeFluss(s) {
     // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
     ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"],
     ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"], ["Bitaxe", "sensor.bitaxe_leistung"]]
-    .map(([n, e]) => [n, num(s, e)]).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
+    .map(([n, e]) => [n, num(s, e) ?? (e === "sensor.kochen_anzeige" ? num(s, "sensor.kochen_leistung") : undefined)]).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));   // Rückfall bis kochen_anzeige existiert
   $("verbraucher").innerHTML = geraete.map(([n, v]) =>
     `<span class="chip${(v ?? 0) < 10 ? " aus" : ""}">${n} ${watt(v)}</span>`).join("");
 }
