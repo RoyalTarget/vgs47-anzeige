@@ -306,7 +306,10 @@ function zeigeTabellen(s, k, lp, gh) {
       neg(gh2), neg(gm2), neg(ga2))
     + zeile("netz", "= aus dem Netz bezogen<span class=\"eur\">das wird bezahlt</span>", np, nh, nm, na);
   $("gross").innerHTML = html;
-  $("gross_fuss").innerHTML = (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
+  // Grundlast (19.10.2026, Nutzer): Info-Zeile grau unter der Tabelle (immer an, nicht abschaltbar; steckt schon in den Zeilen oben)
+  const glw = num(s, "sensor.grundlast"), glk = glw === null ? null : Math.round(glw * 8.76 / 10) * 10;
+  const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ≈ ${zahl(glw, 0)} W</b> · ≈ ${zahl(glk, 0)} kWh/Jahr ≈ ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben – nicht addieren</small></div>`;
+  $("gross_fuss").innerHTML = glHtml + (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
       : `kWh · € = ohne PV: kWh × ${zahl(preis * 100, 2)} ct je Gerät, als käme alles aus dem Netz`)
     + ` · Bilanz unten: Haus gesamt + Victron-Anlage (Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
   const um = $("gv_um");
