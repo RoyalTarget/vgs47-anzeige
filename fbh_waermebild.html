@@ -129,19 +129,21 @@ function leinwand(c, w, h) { const dpr = window.devicePixelRatio || 1; c.width =
 
 // ---------- Hydraulik (15.10.2026) ----------
 // Räume: [Name, Heizlast W bei −16 °C (JOCO 2012, DIN EN 12831), Raum-Soll °C, Fühler der Kreise] – wie Markdown „Hydraulik“
+// [Name, Norm-Heizlast W bei −16 °C, Norm-Raumtemp. (JOCO 2012, DIN EN 12831), RL-Fühler, Wunschtemp. (Nutzer 19.10.2026)]
+// Quelle: Verlegeplan/JOCO_Auslegung_2012.md. Bedarf = Heizlast / (Norm + 16) × (Wunsch − Ø außen); Raum-Farbe gegen Wunsch.
 const RAEUME = [
-  ['Bad DG', 568, 24, ['sensor.rl_bad_fussboden', 'sensor.rl_bad_wand']],
-  ['Gästezimmer', 984, 20, ['sensor.rl_dg_3']],
-  ['Lesezimmer', 760, 20, ['sensor.rl_dg_4']],
-  ['Yoga', 633, 20, ['sensor.rl_yoga']],
-  ['Bad OG', 464, 24, ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand']],
-  ['Flur OG', null, 18, ['sensor.rl_og_flur']],
-  ['Emils Zimmer', 1068, 20, ['sensor.rl_og_5', 'sensor.rl_og_6']],
-  ['Wohnen + WiGa', 3439, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5']],
-  ['WC', 154, 20, ['sensor.rl_wc']],
-  ['Flur EG', 783, 18, ['sensor.rl_flur']]];
+  ['Bad DG', 568, 24, ['sensor.rl_bad_fussboden', 'sensor.rl_bad_wand'], 24],
+  ['Gästezimmer', 984, 20, ['sensor.rl_dg_3'], 20],
+  ['Lesezimmer', 760, 20, ['sensor.rl_dg_4'], 20],
+  ['Yoga', 633, 20, ['sensor.rl_yoga'], 20],
+  ['Bad OG', 464, 24, ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand'], 24],
+  ['Flur OG', null, 18, ['sensor.rl_og_flur'], 20],
+  ['Emils Zimmer', 1068, 20, ['sensor.rl_og_5', 'sensor.rl_og_6'], 22],
+  ['Wohnen + WiGa', 3439, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22],
+  ['WC', 154, 20, ['sensor.rl_wc'], 20],
+  ['Flur EG', 783, 18, ['sensor.rl_flur'], 20]];
 // Raumtemperatur je Raum (19.10.2026, Nutzer): H&T nach Standort (input_select.ht_x_standort, wandert mit), feste Fühler je Raum.
-// Daikin nur ganze Grad + Innengerät oben an der Wand → „≈“. Farbe gegen Auslegungs-Soll (RAEUME): grün ≥ Soll − 0,5, sonst orange.
+// Daikin nur ganze Grad + Innengerät oben an der Wand → „≈“. Farbe gegen Wunschtemp. (RAEUME): grün ≥ Soll − 0,5, sonst orange.
 const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'Wohnen + WiGa', 'WZ-Mitte': 'Wohnen + WiGa', 'Yoga': 'Yoga', 'OG-Flur': 'Flur OG',
   'WC EG': 'WC', 'Flur EG': 'Flur EG', 'Emils Zimmer': 'Emils Zimmer', 'Lesezimmer': 'Lesezimmer', 'Gästezimmer': 'Gästezimmer' };
 const RAUM_T = { 'Wohnen + WiGa': [['sensor.cmi_t_raum', 'WZ'], ['sensor.wintergarten_climatecontrol_raumtemperatur', 'WiGa Daikin', 1]],
@@ -165,12 +167,12 @@ function hydro(h, K) {
   const vlN = T.length ? T.reduce((s, t) => s + (+t.vl || 0), 0) / T.length : null;
   const au = T.length ? T.reduce((s, t) => s + (+t.au || 0), 0) / T.length : (parseFloat(h?.states['sensor.cmi_t_aussen']?.state) || 10);
   const raum = {}, liste = [];
-  for (const [name, last, soll, fu] of RAEUME) {
+  for (const [name, last, norm, fu, soll] of RAEUME) {
     let w = 0, ok = true; const ks = [];
     for (const k of K.filter((q) => fu.includes(q.e))) { const e = k.e; ks.push(k);
       const ww = typeof k.ist === 'number' && typeof sp[e] === 'number' ? k.ist * sp[e] * 69.78 : null; if (ww === null) ok = false; else w += ww; }
     const neu = ks.some((k) => k.ist_ab && sp[k.e] === null);
-    const bed = typeof last === 'number' ? last * (soll - au) / (soll + 16) : null, p = !neu && bed && bed > 0 ? w / bed * 100 : null;
+    const bed = typeof last === 'number' ? last * (soll - au) / (norm + 16) : null, p = !neu && bed && bed > 0 ? w / bed * 100 : null;
     const farbe = p === null ? F_NA : p < 70 ? F_OR : p > 140 ? F_BL : F_GR;
     const r = { name, soll, w, ok, bed, p, farbe, neu, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
@@ -193,7 +195,7 @@ function fussZeile(h, hy, schmal) {
   if (hy) { s += ` · Kreis in der letzten Nacht zugegangen: ${hy.zu.length ? '<b>🚪 ' + hy.zu.join(', ') + '</b>' : '–'}`;
     if (hy.letzte) { const d = new Date(hy.letzte.start); s += ` · Spreizung Nacht = Median ${hy.nNacht} Messnächte (VL Ø ${zahl(hy.vlN)} °C, letzte ${d.getDate()}.${d.getMonth() + 1}.) – nicht VL jetzt − RL jetzt`; }
     s += schmal ? '<br>Kreis antippen = Raum-Bilanz auf/zu · Punkt = Versorgung des Raums: ' : '<br>Leiste = Versorgung des Raums: ';
-    s += `<span style="color:${F_OR}">orange</span> &lt; 70 % · <span style="color:${F_GR}">grün</span> passt · <span style="color:${F_BL}">blau</span> &gt; 140 % (Wasser verschenkt, drosseln lohnt) · gibt ab = Röhrchen × Spreizung, Bedarf = Heizlast 2012 bei Ø ${zahl(hy.au)} °C außen`; }
+    s += `<span style="color:${F_OR}">orange</span> &lt; 70 % · <span style="color:${F_GR}">grün</span> passt · <span style="color:${F_BL}">blau</span> &gt; 140 % (Wasser verschenkt, drosseln lohnt) · gibt ab = Röhrchen × Spreizung, Bedarf = Heizlast 2012 auf Wunschtemp. (Soll) und Ø ${zahl(hy.au)} °C außen umgerechnet`; }
   const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
 
 function zeichne() {
