@@ -245,14 +245,20 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Bitaxe", "sensor.bitaxe_leistung", "sensor.bitaxe_energie_heute", "sensor.bitaxe_energie_monat", "2026-10-18T20:19"],
       ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
+      // 19.10.2026 (Nutzer): Victron-Anlage (Netzbezug über dem Hausverbrauch) als normale Zeile – läuft immer wie Router/Pi; Haus gesamt enthält sie
+      ["Victron-Anlage", "victron", "sensor.netz_an_victron_heute", "sensor.netz_an_victron_monat", "2026-10-01T00:00"],
       ["💡 Licht ≈", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
   // „echt bezahlt“ / „ohne PV“ (01.10.2026, wie im Dashboard): € je Gerät = kWh × Preis × Netzanteil des Geräts (Payload gh aus
   // sensor.geraete_herkunft: {h|m: {Leistungs-Entität: [kWh, davon Netz]}}); Ø/Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses
   const echt = gvModus() === "echt", GH = (gh && gh.h) || {}, GM = (gh && gh.m) || {};
-  const hp = num(s, "sensor.hausverbrauch"), hh = kv("sensor.hausverbrauch_heute"), hm = kv("sensor.hausverbrauch_monat");
-  const haStart = "2026-09-22T15:00", ha = avg(hm, lp["sensor.hausverbrauch_monat"] || 0, haStart);
+  const hp0 = num(s, "sensor.hausverbrauch"), hh0 = kv("sensor.hausverbrauch_heute"), hm0 = kv("sensor.hausverbrauch_monat");
+  const haStart = "2026-09-22T15:00", ha0 = avg(hm0, lp["sensor.hausverbrauch_monat"] || 0, haStart);
   const np = Math.max(num(s, "sensor.em_540_netzmessgeraet_leistung") ?? 0, 0);
+  // 19.10.2026: Haus gesamt = Victron-Lasten + Victron-Anlage (Zeile in Sonstiges) → Rest = Haus − Geräte bleibt wie vorher
+  const vp = hp0 === null ? null : Math.max(np - hp0, 0), vh = kv("sensor.netz_an_victron_heute") ?? 0, vm = kv("sensor.netz_an_victron_monat") ?? 0, va = avg(vm, 0, "2026-10-01T00:00") ?? 0;
+  const plus = (a, b) => (a === null ? null : a + b);
+  const hp = plus(hp0, vp ?? 0), hh = plus(hh0, vh), hm = plus(hm0, vm), ha = plus(ha0, va);
   const nh = Math.max((num(s, "sensor.em_540_netzmessgeraet_verbrauch") ?? 0) - (num(s, "input_number.em540_bezug_mitternacht") ?? 0), 0);
   const nm = kv("sensor.netzbezug_monat"), na = avg(nm, lp["sensor.netzbezug_monat"] || 0, haStart);
   const fh = hh > 0.05 ? Math.min(nh / hh, 1) : 0.5, fm = hm > 0.05 && nm !== null ? Math.min(nm / hm, 1) : 0.5, fa = ha > 0.05 && na !== null ? Math.min(na / ha, 1) : 0.5;
@@ -273,7 +279,7 @@ function zeigeTabellen(s, k, lp, gh) {
       if (m === "verdichter") { const b = kv("sensor.bwwp_energie_monat"), z = kv("sensor.bwwp_heizstab_energie_monat");
         mv = b === null || z === null ? null : Math.max(b - z, 0); l = (lp["sensor.bwwp_energie_monat"] || 0) - (lp["sensor.bwwp_heizstab_energie_monat"] || 0);
       } else { mv = kv(m); l = lp[m] || 0; }
-      const pv = num(s, p), hv = kv(h), av = avg(mv, l, st), [ah, am, aa] = anteile(p);
+      const pv = p === "victron" ? vp : num(s, p), hv = kv(h), av = avg(mv, l, st), [ah, am, aa] = p === "victron" ? [1, 1, 1] : anteile(p);
       const eh = (hv ?? 0) * preis * ah, em = (mv ?? 0) * preis * am, ea = (av ?? 0) * preis * aa;
       if (!cls) { gp += pv ?? 0; gh += hv ?? 0; gm += mv ?? 0; ga += av ?? 0; geh += eh; gem += em; gea += ea; }
       zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : ""), n, pv, hv, mv, av, eh, em, ea);
@@ -290,28 +296,20 @@ function zeigeTabellen(s, k, lp, gh) {
     html += zeile("gruppe", gn, gp + (x ? rp ?? 0 : 0), gh + (x ? rh ?? 0 : 0), gm + (x ? rm ?? 0 : 0), ga + (x ? ra ?? 0 : 0), geh + (x ? reh : 0), gem + (x ? rem : 0), gea + (x ? rea : 0)) + zeilen
       + (x ? zeile("", "Rest (ungemessen)", rp, rh, rm, ra, reh, rem, rea) : "");
   }
-  // Bilanz (01.10.2026): Haus gesamt (Wert ohne PV) − davon aus PV/Akku = aus dem Netz bezogen (echte Kosten)
-  // 09.10.2026: + Victron-Anlage aus dem Netz (Netzbezug über dem Hausverbrauch, haus_herkunft.yaml, ab 01.10.) → Bilanz geht auf;
-  // PV/Akku = Haus + Victron − Netz, nie negativ (Rundungsrest EM540 0,1 kWh trägt die Victron-Zeile) – wie im Dashboard
+  // Bilanz (01.10.2026; 19.10.2026 Victron-Anlage steht unter Sonstiges, Haus gesamt enthält sie): Haus gesamt − PV/Akku = aus dem Netz
   const neg = (v) => (v === null ? null : -v);
-  const vp = hp === null ? null : Math.max(np - hp, 0);
-  const vh0 = kv("sensor.netz_an_victron_heute") ?? 0, vm0 = kv("sensor.netz_an_victron_monat") ?? 0, va0 = avg(vm0, 0, "2026-10-01T00:00") ?? 0;
-  const gg = (h, v, n) => (h === null || n === null ? null : Math.max(h + v - n, 0));
-  const gh2 = gg(hh, vh0, nh), gm2 = gg(hm, vm0, nm), ga2 = gg(ha, va0, na);
-  const vv = (h, n, g2, v) => (g2 === null ? v : n - h + g2);
-  html += zeile("haus", "Haus gesamt verbraucht<span class=\"eur\">€ = Wert, wenn alles aus dem Netz käme</span>", hp, hh, hm, ha)
-    + zeile("victron", "+ Victron-Anlage aus dem Netz<span class=\"eur\">Eigenverbrauch Wechselrichter, Akku nachladen</span>", vp,
-      vv(hh, nh, gh2, vh0), vv(hm, nm, gm2, vm0), vv(ha, na, ga2, va0))
-    + zeile("pvabzug", "− davon aus PV/Akku<span class=\"eur\">gratis = gespart</span>", hp === null ? null : Math.max(hp + (vp ?? 0) - np, 0),
-      neg(gh2), neg(gm2), neg(ga2))
+  const gg = (h, n) => (h === null || n === null ? null : Math.max(h - n, 0));
+  html += zeile("haus", "Haus gesamt verbraucht<span class=\"eur\">inkl. Victron-Anlage · € = Wert, wenn alles aus dem Netz käme</span>", hp, hh, hm, ha)
+    + zeile("pvabzug", "− davon aus PV/Akku<span class=\"eur\">gratis = gespart</span>", hp === null ? null : Math.max(hp - np, 0),
+      neg(gg(hh, nh)), neg(gg(hm, nm)), neg(gg(ha, na)))
     + zeile("netz", "= aus dem Netz bezogen<span class=\"eur\">das wird bezahlt</span>", np, nh, nm, na);
   $("gross").innerHTML = html;
   // Grundlast (19.10.2026, Nutzer): Info-Zeile grau unter der Tabelle (immer an, nicht abschaltbar; steckt schon in den Zeilen oben)
   const glw = num(s, "sensor.grundlast"), glk = glw === null ? null : Math.round(glw * 8.76 / 10) * 10;
-  const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ≈ ${zahl(glw, 0)} W</b> · ≈ ${zahl(glk, 0)} kWh/Jahr ≈ ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben – nicht addieren</small></div>`;
+  const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ≈ ${zahl(glw, 0)} W</b> · ≈ ${zahl(glk, 0)} kWh/Jahr ≈ ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Victron-Anlage, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben – nicht addieren</small></div>`;
   $("gross_fuss").innerHTML = glHtml + (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
       : `kWh · € = ohne PV: kWh × ${zahl(preis * 100, 2)} ct je Gerät, als käme alles aus dem Netz`)
-    + ` · Bilanz unten: Haus gesamt + Victron-Anlage (Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
+    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Zeile unter Sonstiges; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
   const um = $("gv_um");
   if (um && !um.__an) { um.__an = true;
     um.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (!b) return;
