@@ -253,7 +253,7 @@ function zeigeTabellen(s, k, lp, gh) {
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
       ["💡 Licht ≈", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
-  const GL_ZEILEN = ["Kühlschrank", "Kühlschrank Garage", "Victron-Anlage", "Heizungstechnik ≈", "TV Sony", "Router & Netzwerk", "Smart Home"];
+  const GL_ZEILEN = ["Kühlschrank", "Kühlschrank Garage", "Victron-Anlage", "Heizungstechnik ≈", "Router & Netzwerk", "Smart Home"];
   // „echt bezahlt“ / „ohne PV“ (01.10.2026, wie im Dashboard): € je Gerät = kWh × Preis × Netzanteil des Geräts (Payload gh aus
   // sensor.geraete_herkunft: {h|m: {Leistungs-Entität: [kWh, davon Netz]}}); Ø/Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses
   const echt = gvModus() === "echt", GH = (gh && gh.h) || {}, GM = (gh && gh.m) || {};
