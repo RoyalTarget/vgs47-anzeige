@@ -125,7 +125,7 @@ function zeigeFluss(s) {
     ["Klima ≈", "sensor.klima_leistung_geschatzt"], ["Entfeuchter", "sensor.keller_entfeuchter_power"],
     ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung"], ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung"],
     ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"],
-    ["Kochen/Backen ≈", "sensor.kochen_leistung"], ["Licht ≈", "sensor.licht_leistung"],   // Licht ≈ 15.10.2026: gemessene Lichter + ungemessene geschätzt
+    ["Kochen/Backen ≈", "sensor.kochen_anzeige"], ["Licht ≈", "sensor.licht_leistung"],   // Licht ≈ 15.10.2026: gemessene Lichter + ungemessene geschätzt
     // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
     ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"],
     ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"], ["Bitaxe", "sensor.bitaxe_leistung"]]
