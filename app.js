@@ -238,17 +238,22 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
       ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"],
       ["Kochen/Backen ≈", "sensor.kochen_leistung", "sensor.kochen_energie_heute", "sensor.kochen_energie_monat", "2026-10-15T10:12"]]],
+    // 19.10.2026 (Nutzer): Block Haustechnik = Victron-Anlage (Netzbezug über dem Hausverbrauch, Haus gesamt enthält sie) + Heizungstechnik ≈
+    ["⚙️ Haustechnik", [["Victron-Anlage", "victron", "sensor.netz_an_victron_heute", "sensor.netz_an_victron_monat", "2026-10-01T00:00"],
+      ["Heizungstechnik ≈", "sensor.heizungstechnik_leistung", "sensor.heizungstechnik_energie_heute", "sensor.heizungstechnik_energie_monat", "2026-10-01T00:00"]]],
     ["🔌 Sonstiges", [["Entfeuchter", "sensor.keller_entfeuchter_power", "sensor.entfeuchter_energie_heute", "sensor.entfeuchter_energie_monat", "2026-09-24T02:30"],
       ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.nerdaxe_energie_heute", "sensor.nerdaxe_energie_monat", "2026-09-24T02:30"],
       ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "2026-09-24T02:30"],
       // 18.10.2026: Bitaxe ohne Mess-Plug, Leistung aus AxeOS (bitaxe.yaml); Startzeit = HA-Neustart
       ["Bitaxe", "sensor.bitaxe_leistung", "sensor.bitaxe_energie_heute", "sensor.bitaxe_energie_monat", "2026-10-18T20:19"],
       ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"],
+      // 19.10.2026 (Nutzer): Router & Netzwerk (Router, Repeater, Pi, Switch, Daikin-Hub) + Smart Home geschätzt, Monat ab 01.10. nachgetragen
+      ["Router & Netzwerk", "sensor.router_pi_leistung", "sensor.router_pi_energie_heute", "sensor.router_pi_energie_monat", "2026-10-01T00:00"],
+      ["Smart Home", "sensor.smart_home_leistung", "sensor.smart_home_energie_heute", "sensor.smart_home_energie_monat", "2026-10-01T00:00"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
-      // 19.10.2026 (Nutzer): Victron-Anlage (Netzbezug über dem Hausverbrauch) als normale Zeile – läuft immer wie Router/Pi; Haus gesamt enthält sie
-      ["Victron-Anlage", "victron", "sensor.netz_an_victron_heute", "sensor.netz_an_victron_monat", "2026-10-01T00:00"],
       ["💡 Licht ≈", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
+  const GL_ZEILEN = ["Kühlschrank", "Kühlschrank Garage", "Victron-Anlage", "Heizungstechnik ≈", "TV Sony", "Router & Netzwerk", "Smart Home"];
   // „echt bezahlt“ / „ohne PV“ (01.10.2026, wie im Dashboard): € je Gerät = kWh × Preis × Netzanteil des Geräts (Payload gh aus
   // sensor.geraete_herkunft: {h|m: {Leistungs-Entität: [kWh, davon Netz]}}); Ø/Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses
   const echt = gvModus() === "echt", GH = (gh && gh.h) || {}, GM = (gh && gh.m) || {};
@@ -282,7 +287,8 @@ function zeigeTabellen(s, k, lp, gh) {
       const pv = p === "victron" ? vp : p === "sensor.cmi_wp_leistung_elektrisch" ? num(s, "sensor.wp_leistung_elektrisch_gesamt") : num(s, p), hv = kv(h), av = avg(mv, l, st), [ah, am, aa] = p === "victron" ? [1, 1, 1] : anteile(p);
       const eh = (hv ?? 0) * preis * ah, em = (mv ?? 0) * preis * am, ea = (av ?? 0) * preis * aa;
       if (!cls) { gp += pv ?? 0; gh += hv ?? 0; gm += mv ?? 0; ga += av ?? 0; geh += eh; gem += em; gea += ea; }
-      zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : ""), n, pv, hv, mv, av, eh, em, ea);
+      // 19.10.2026 (Nutzer): Grundlast-Anteile grau hinterlegt (wie Dashboard)
+      zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : "") + (GL_ZEILEN.includes(n) ? " gl" : ""), n, pv, hv, mv, av, eh, em, ea);
     }
     gruppen.push([gn, gp, gh, gm, ga, zeilen, geh, gem, gea]); sp += gp; sh += gh; sa += ga;
   }
@@ -294,7 +300,7 @@ function zeigeTabellen(s, k, lp, gh) {
   for (const [gn, gp, gh, gm, ga, zeilen, geh, gem, gea] of gruppen) {
     const x = gn.includes("Sonstiges");
     html += zeile("gruppe", gn, gp + (x ? rp ?? 0 : 0), gh + (x ? rh ?? 0 : 0), gm + (x ? rm ?? 0 : 0), ga + (x ? ra ?? 0 : 0), geh + (x ? reh : 0), gem + (x ? rem : 0), gea + (x ? rea : 0)) + zeilen
-      + (x ? zeile("", "Rest (ungemessen)", rp, rh, rm, ra, reh, rem, rea) : "");
+      + (x ? zeile("gl", "Rest (ungemessen)", rp, rh, rm, ra, reh, rem, rea) : "");
   }
   // Bilanz (01.10.2026; 19.10.2026 Victron-Anlage steht unter Sonstiges, Haus gesamt enthält sie): Haus gesamt − PV/Akku = aus dem Netz
   const neg = (v) => (v === null ? null : -v);
@@ -306,10 +312,10 @@ function zeigeTabellen(s, k, lp, gh) {
   $("gross").innerHTML = html;
   // Grundlast (19.10.2026, Nutzer): Info-Zeile grau unter der Tabelle (immer an, nicht abschaltbar; steckt schon in den Zeilen oben)
   const glw = num(s, "sensor.grundlast"), glk = glw === null ? null : Math.round(glw * 8.76 / 10) * 10;
-  const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ≈ ${zahl(glw, 0)} W</b> · ≈ ${zahl(glk, 0)} kWh/Jahr ≈ ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Victron-Anlage, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben – nicht addieren</small></div>`;
+  const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ≈ ${zahl(glw, 0)} W</b> · ≈ ${zahl(glk, 0)} kWh/Jahr ≈ ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Victron-Anlage, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben (grau hinterlegt) – nicht addieren</small></div>`;
   $("gross_fuss").innerHTML = glHtml + (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
       : `kWh · € = ohne PV: kWh × ${zahl(preis * 100, 2)} ct je Gerät, als käme alles aus dem Netz`)
-    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Zeile unter Sonstiges; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
+    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Block Haustechnik; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
   const um = $("gv_um");
   if (um && !um.__an) { um.__an = true;
     um.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (!b) return;
