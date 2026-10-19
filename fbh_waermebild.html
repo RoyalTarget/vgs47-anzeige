@@ -140,6 +140,21 @@ const RAEUME = [
   ['Wohnen + WiGa', 3439, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5']],
   ['WC', 154, 20, ['sensor.rl_wc']],
   ['Flur EG', 783, 18, ['sensor.rl_flur']]];
+// Raumtemperatur je Raum (19.10.2026, Nutzer): H&T nach Standort (input_select.ht_x_standort, wandert mit), feste Fühler je Raum.
+// Daikin nur ganze Grad + Innengerät oben an der Wand → „≈“. Farbe gegen Auslegungs-Soll (RAEUME): grün ≥ Soll − 0,5, sonst orange.
+const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'Wohnen + WiGa', 'WZ-Mitte': 'Wohnen + WiGa', 'Yoga': 'Yoga', 'OG-Flur': 'Flur OG',
+  'WC EG': 'WC', 'Flur EG': 'Flur EG', 'Emils Zimmer': 'Emils Zimmer', 'Lesezimmer': 'Lesezimmer', 'Gästezimmer': 'Gästezimmer' };
+const RAUM_T = { 'Wohnen + WiGa': [['sensor.cmi_t_raum', 'WZ'], ['sensor.wintergarten_climatecontrol_raumtemperatur', 'WiGa Daikin', 1]],
+  'Emils Zimmer': [['sensor.emil_climatecontrol_raumtemperatur', 'Daikin', 1]] };
+function raumTemps(h, name) { const l = [];
+  for (const x of ['a', 'b', 'c']) { const o = h?.states['input_select.ht_' + x + '_standort']?.state; if (HT_ORT[o] !== name) continue;
+    const v = parseFloat(h?.states['sensor.ht_' + x + '_temperatur']?.state); if (!isNaN(v)) l.push({ k: 'H&T ' + x.toUpperCase() + (o !== name ? ' ' + o : ''), v }); }
+  for (const [e, k, g] of (RAUM_T[name] || [])) { const v = parseFloat(h?.states[e]?.state); if (!isNaN(v)) l.push({ k, v, g }); }
+  return l; }
+function raumSegs(h, r) { const l = raumTemps(h, r.name); if (!l.length) return []; const segs = [];
+  l.forEach((t, i) => { segs.push([(i ? ' · ' : '') + t.k + ' ', '#9ca3af'], [(t.g ? '≈ ' + Math.round(t.v) : zahl(t.v)) + ' °C', t.v >= r.soll - 0.5 ? F_GR : F_OR]); });
+  segs.push([' / Soll ' + r.soll + ' °C', '#6b7280']); return segs; }
+function segsMalen(g, segs, x, y) { g.textAlign = 'left'; for (const [t, f] of segs) { g.fillStyle = f; g.fillText(t, x, y); x += g.measureText(t).width; } return x; }
 const F_OR = '#f97316', F_GR = '#22c55e', F_BL = '#60a5fa', F_NA = '#6b7280';
 let offen = null;   // iPhone: aufgeklappter Raum (Name)
 function hydro(h, K) {
@@ -157,7 +172,7 @@ function hydro(h, K) {
     const neu = ks.some((k) => k.ist_ab && sp[k.e] === null);
     const bed = typeof last === 'number' ? last * (soll - au) / (soll + 16) : null, p = !neu && bed && bed > 0 ? w / bed * 100 : null;
     const farbe = p === null ? F_NA : p < 70 ? F_OR : p > 140 ? F_BL : F_GR;
-    const r = { name, w, ok, bed, p, farbe, neu, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
+    const r = { name, soll, w, ok, bed, p, farbe, neu, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
   const L = T[T.length - 1], zu = L ? (L.kr || []).filter((r) => r[4]).map((r) => r[0]) : [];
   return { sp, au, vlN, raum, liste, nNacht: nMax, zu, letzte: L };
@@ -196,7 +211,7 @@ function zeichne() {
   for (const G of gruppen) { const ks = K.filter((k) => k.g === G); if (!ks.length) continue;
     plan.push({ typ: 'g', G, ks, h: 14 });
     for (const k of ks) { plan.push({ typ: 'k', k, h: ZH }); const r = hy?.raum[k.e];
-      if (r && r.letzter === k.e) { if (SH) plan.push({ typ: 's', r, h: SH + 4 }); if (schmal && offen === r.name) plan.push({ typ: 'p', r, h: 60 + r.ks.length * 15 }); } }
+      if (r && r.letzter === k.e) { if (SH) plan.push({ typ: 's', r, h: SH + 4 }); if (schmal && offen === r.name) plan.push({ typ: 'p', r, h: 60 + r.ks.length * 15 + (raumTemps(h, r.name).length ? 15 : 0) }); } }
     plan.push({ typ: 'gap', h: 4 }); }
   for (const z of plan) { z.y = y; y += z.h; }
   const FH = y + LEG + 4;
@@ -231,7 +246,8 @@ function zeichne() {
         g.fillText('VL ' + (isNaN(vl) ? '–' : zahl(vl) + ' °C'), cx.rl, z.y + 7);
         if (hy.vlN !== null) g.fillText('VL Ø ' + zahl(hy.vlN) + ' °C', cx.sp, z.y + 7); }
       continue; }
-    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; g.fillText(r.neu ? `Σ ${r.name} · Röhrchen neu eingestellt – Spreizung erst nach der nächsten Messnacht` : `Σ ${r.name} · gibt ab ≈ ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'} · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W`, 8, z.y + SH / 2);
+    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; const st = r.neu ? `Σ ${r.name} · Röhrchen neu eingestellt – Spreizung erst nach der nächsten Messnacht` : `Σ ${r.name} · gibt ab ≈ ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'} · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W`; g.fillText(st, 8, z.y + SH / 2);
+      const sg = raumSegs(h, r); if (sg.length) segsMalen(g, [[' · Raum ', '#9ca3af'], ...sg], 8 + g.measureText(st).width, z.y + SH / 2);
       g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
     if (z.typ === 'p') { const r = z.r, x0 = 6, x1 = W - 6; g.fillStyle = '#26262b'; g.beginPath(); g.roundRect(x0, z.y + 2, x1 - x0, z.h - 6, 8); g.fill();
       g.textAlign = 'left'; g.font = '600 12px system-ui, sans-serif'; g.fillStyle = '#e5e7eb'; const t1 = `${r.name} – versorgt zu `; g.fillText(t1, x0 + 10, z.y + 14);
@@ -241,6 +257,7 @@ function zeichne() {
       for (const k of r.ks) { const s = hy.sp[k.e], rl = parseFloat(h?.states[k.e]?.state); g.fillStyle = '#d1d5db'; g.textAlign = 'left'; g.fillText(k.k, x0 + 10, yy);
         g.fillStyle = '#9ca3af'; g.textAlign = 'right';
         g.fillText(`Röhrchen ${typeof k.ist === 'number' ? z1(k.ist) : '–'}${k.soll ? ' / ' + z1(k.soll) : ''} · Spr. ${s === null ? '–' : z1(s) + ' K'} · RL ${isNaN(rl) ? '–' : z1(rl)}`, x1 - 10, yy); yy += 15; }
+      { const sg = raumSegs(h, r); if (sg.length) { segsMalen(g, [['Raum ', '#d1d5db'], ...sg], x0 + 10, yy); yy += 15; } }
       g.textAlign = 'left'; g.fillStyle = '#9ca3af';
       const tip = r.neu ? 'Röhrchen neu eingestellt – Messnacht abwarten' : r.p === null ? 'keine Heizlast hinterlegt' : r.p > 140 ? 'viel Wasser, kaum abgekühlt → drosseln lohnt' : r.p < 70 ? 'wenig Wärme → nur handeln, wenn der Raum zu kühl ist' : 'passt (70–140 %)';
       g.fillText(`gibt ab ≈ ${Math.round(r.w)} W · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W · ${tip}`, x0 + 10, yy, x1 - x0 - 20); continue; }
