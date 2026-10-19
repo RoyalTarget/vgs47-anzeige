@@ -225,7 +225,7 @@ function zeigeTabellen(s, k, lp, gh) {
     return tage + Math.max(pt, 0) < 0.5 ? null : (m + (l || 0)) / (tage + Math.max(pt, 0));
   };
   const G = [
-    ["🔥 Heizen", [["Wärmepumpe", "sensor.cmi_wp_leistung_elektrisch", "sensor.cmi_wp_energie_heute", "sensor.wp_energie_monat", "2026-09-22T17:14"],
+    ["🔥 Heizen", [["Wärmepumpe", "sensor.cmi_wp_leistung_elektrisch", "sensor.wp_strom_heute", "sensor.wp_strom_monat", "2026-09-22T17:14"],
       ["Klima Wintergarten ≈", "sensor.klima_wintergarten_leistung_geschatzt", "sensor.klima_wintergarten_heute", "sensor.klima_wintergarten_monat", null],
       ["Klima Emil ≈", "sensor.klima_emil_leistung_geschatzt", "sensor.klima_emil_heute", "sensor.klima_emil_monat", null],
       ["Klima Dachspitz ≈", "sensor.klima_dachspitz_leistung_geschatzt", "sensor.klima_dachspitz_heute", "sensor.klima_dachspitz_monat", null]]],
@@ -279,7 +279,7 @@ function zeigeTabellen(s, k, lp, gh) {
       if (m === "verdichter") { const b = kv("sensor.bwwp_energie_monat"), z = kv("sensor.bwwp_heizstab_energie_monat");
         mv = b === null || z === null ? null : Math.max(b - z, 0); l = (lp["sensor.bwwp_energie_monat"] || 0) - (lp["sensor.bwwp_heizstab_energie_monat"] || 0);
       } else { mv = kv(m); l = lp[m] || 0; }
-      const pv = p === "victron" ? vp : num(s, p), hv = kv(h), av = avg(mv, l, st), [ah, am, aa] = p === "victron" ? [1, 1, 1] : anteile(p);
+      const pv = p === "victron" ? vp : p === "sensor.cmi_wp_leistung_elektrisch" ? num(s, "sensor.wp_leistung_elektrisch_gesamt") : num(s, p), hv = kv(h), av = avg(mv, l, st), [ah, am, aa] = p === "victron" ? [1, 1, 1] : anteile(p);
       const eh = (hv ?? 0) * preis * ah, em = (mv ?? 0) * preis * am, ea = (av ?? 0) * preis * aa;
       if (!cls) { gp += pv ?? 0; gh += hv ?? 0; gm += mv ?? 0; ga += av ?? 0; geh += eh; gem += em; gea += ea; }
       zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : ""), n, pv, hv, mv, av, eh, em, ea);
@@ -342,7 +342,8 @@ const f1 = (v) => zahl(v, 1);
 function tagesListe(s, k, h) {
   const heute = new Date(), key = heute.getFullYear() + "-" + String(heute.getMonth() + 1).padStart(2, "0") + "-" + String(heute.getDate()).padStart(2, "0");
   const l = (h || []).filter((t) => t.d !== key);
-  l.push({ d: key, wp: k["sensor.cmi_wp_energie_heute"] ?? 0, wpg: num(s, "sensor.wp_strom_gratis_heute") ?? 0,
+  l.push({ d: key, wp: k["sensor.wp_strom_heute"] ?? k["sensor.cmi_wp_energie_heute"] ?? 0,   // 19.10.2026: inkl. Ersatz
+    wpg: num(s, "sensor.wp_strom_gratis_heute") ?? 0,
     bw: k["sensor.keller_bwwp_shelly_bwwp_energie_heute"] ?? 0, bwg: num(s, "sensor.bwwp_strom_gratis_heute") ?? 0 });
   return l.map((t) => { const wpg = Math.min(t.wpg, t.wp), bwg = Math.min(t.bwg, t.bw);
     return { d: t.d, teile: [wpg, t.wp - wpg, bwg, t.bw - bwg], gratis: wpg + bwg, summe: t.wp + t.bw }; });
