@@ -103,6 +103,7 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 .tab tr.summe td { font-weight: 600; border-bottom: none; }
 .tab .klein { color: var(--leise); font-size: 11px; }
 .fuss { color: var(--leise); font-size: 12px; margin-top: 8px; }
+.grundlast { background: rgba(127,127,127,0.12); border-left: 3px solid #6b7280; border-radius: 4px; padding: 6px 10px; margin-bottom: 8px; font-size: 13px; }   /* 19.10.2026 */
 
 /* Wärmepumpen – Strom pro Tag (26.09.2026) */
 .tage { width: 100%; display: block; }
