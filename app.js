@@ -237,13 +237,14 @@ function zeigeTabellen(s, k, lp, gh) {
     ["🏠 Haushaltsgeräte", [["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung", "sensor.spulmaschine_energie_heute", "sensor.spulmaschine_energie_monat", "2026-09-22T17:37"],
       ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung", "sensor.waschmaschine_energie_heute", "sensor.waschmaschine_energie_monat", "2026-09-24T02:30"],
       ["Trockner", "sensor.keller_miele_trockner_leistung", "sensor.trockner_energie_heute", "sensor.trockner_energie_monat", "2026-09-24T02:30"],
-      ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
-      ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"],
+      // 20.10.2026 (Nutzer): Reihenfolge Großgeräte → Kochen → Küchen-Kleingeräte → Kühlschränke (wie Dashboard)
+      ["Kochen/Backen ≈", "sensor.kochen_leistung", "sensor.kochen_energie_heute", "sensor.kochen_energie_monat", "2026-10-15T10:12"],
       // 20.10.2026: Wasserkocher mit eigenem Shelly (vorher in Kochen/Backen ≈ erkannt)
       ["Wasserkocher", "sensor.kueche_wasserkocher_leistung", "sensor.wasserkocher_energie_heute", "sensor.wasserkocher_energie_monat", "2026-10-20T11:08"],
       ["Airfryer", "sensor.kueche_airfryer_leistung", "sensor.airfryer_energie_heute", "sensor.airfryer_energie_monat", "2026-10-20T12:45"],
       ["Thermomix", "sensor.kueche_thermomix_leistung", "sensor.thermomix_energie_heute", "sensor.thermomix_energie_monat", "2026-10-20T12:45"],
-      ["Kochen/Backen ≈", "sensor.kochen_leistung", "sensor.kochen_energie_heute", "sensor.kochen_energie_monat", "2026-10-15T10:12"]]],
+      ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
+      ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"]]],
     // 20.10.2026 (Nutzer): Haustechnik → „Infrastruktur“ (läuft immer, nicht abschaltbar) inkl. Router & Netzwerk + Smart Home.
     // 19.10.2026 (Nutzer): Block Haustechnik = Victron-Anlage (Netzbezug über dem Hausverbrauch, Haus gesamt enthält sie) + Heizungstechnik ≈
     ["⚙️ Infrastruktur", [["Victron-Anlage", "victron", "sensor.netz_an_victron_heute", "sensor.netz_an_victron_monat", "2026-10-01T00:00"],
