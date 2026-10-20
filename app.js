@@ -239,9 +239,13 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
       ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"],
       ["Kochen/Backen ≈", "sensor.kochen_leistung", "sensor.kochen_energie_heute", "sensor.kochen_energie_monat", "2026-10-15T10:12"]]],
+    // 20.10.2026 (Nutzer): Haustechnik → „Infrastruktur“ (läuft immer, nicht abschaltbar) inkl. Router & Netzwerk + Smart Home.
     // 19.10.2026 (Nutzer): Block Haustechnik = Victron-Anlage (Netzbezug über dem Hausverbrauch, Haus gesamt enthält sie) + Heizungstechnik ≈
-    ["⚙️ Haustechnik", [["Victron-Anlage", "victron", "sensor.netz_an_victron_heute", "sensor.netz_an_victron_monat", "2026-10-01T00:00"],
-      ["Heizungstechnik ≈", "sensor.heizungstechnik_leistung", "sensor.heizungstechnik_energie_heute", "sensor.heizungstechnik_energie_monat", "2026-10-01T00:00"]]],
+    ["⚙️ Infrastruktur", [["Victron-Anlage", "victron", "sensor.netz_an_victron_heute", "sensor.netz_an_victron_monat", "2026-10-01T00:00"],
+      ["Heizungstechnik ≈", "sensor.heizungstechnik_leistung", "sensor.heizungstechnik_energie_heute", "sensor.heizungstechnik_energie_monat", "2026-10-01T00:00"],
+      // 19.10.2026 (Nutzer): Router & Netzwerk (Router, Repeater, Pi, Switch, Daikin-Hub) + Smart Home geschätzt, Monat ab 01.10. nachgetragen
+      ["Router & Netzwerk", "sensor.router_pi_leistung", "sensor.router_pi_energie_heute", "sensor.router_pi_energie_monat", "2026-10-01T00:00"],
+      ["Smart Home", "sensor.smart_home_leistung", "sensor.smart_home_energie_heute", "sensor.smart_home_energie_monat", "2026-10-01T00:00"]]],
     ["🔌 Sonstiges", [["Entfeuchter", "sensor.keller_entfeuchter_power", "sensor.entfeuchter_energie_heute", "sensor.entfeuchter_energie_monat", "2026-09-24T02:30"],
       ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.nerdaxe_energie_heute", "sensor.nerdaxe_energie_monat", "2026-09-24T02:30"],
       ["Iceriver", "sensor.keller_iceriver_miner_power", "sensor.iceriver_energie_heute", "sensor.iceriver_energie_monat", "2026-09-24T02:30"],
@@ -250,9 +254,6 @@ function zeigeTabellen(s, k, lp, gh) {
       ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"],
       // 20.10.2026: Emils Schreibtisch (Shelly Plug M Gen3, PC/MacBook)
       ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung", "sensor.emil_schreibtisch_energie_heute", "sensor.emil_schreibtisch_energie_monat", "2026-10-20T08:42"],
-      // 19.10.2026 (Nutzer): Router & Netzwerk (Router, Repeater, Pi, Switch, Daikin-Hub) + Smart Home geschätzt, Monat ab 01.10. nachgetragen
-      ["Router & Netzwerk", "sensor.router_pi_leistung", "sensor.router_pi_energie_heute", "sensor.router_pi_energie_monat", "2026-10-01T00:00"],
-      ["Smart Home", "sensor.smart_home_leistung", "sensor.smart_home_energie_heute", "sensor.smart_home_energie_monat", "2026-10-01T00:00"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
       ["💡 Licht ≈", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
@@ -318,7 +319,7 @@ function zeigeTabellen(s, k, lp, gh) {
   const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ≈ ${zahl(glw, 0)} W</b> · ≈ ${zahl(glk, 0)} kWh/Jahr ≈ ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Victron-Anlage, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben (grau hinterlegt) – nicht addieren</small></div>`;
   $("gross_fuss").innerHTML = glHtml + (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
       : `kWh · € = ohne PV: kWh × ${zahl(preis * 100, 2)} ct je Gerät, als käme alles aus dem Netz`)
-    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Block Haustechnik; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
+    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Block Infrastechnik; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
   const um = $("gv_um");
   if (um && !um.__an) { um.__an = true;
     um.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (!b) return;
