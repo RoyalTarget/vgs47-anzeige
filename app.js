@@ -129,7 +129,7 @@ function zeigeFluss(s) {
     // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
     ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"],
     ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"], ["Bitaxe", "sensor.bitaxe_leistung"],
-    ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung"]]
+    ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung"], ["Wasserkocher", "sensor.kueche_wasserkocher_leistung"]]
     .map(([n, e]) => [n, num(s, e) ?? (e === "sensor.kochen_anzeige" ? num(s, "sensor.kochen_leistung") : undefined)]).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));   // Rückfall bis kochen_anzeige existiert
   $("verbraucher").innerHTML = geraete.map(([n, v]) =>
     `<span class="chip${(v ?? 0) < 10 ? " aus" : ""}">${n} ${watt(v)}</span>`).join("");
@@ -238,6 +238,8 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Trockner", "sensor.keller_miele_trockner_leistung", "sensor.trockner_energie_heute", "sensor.trockner_energie_monat", "2026-09-24T02:30"],
       ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
       ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"],
+      // 20.10.2026: Wasserkocher mit eigenem Shelly (vorher in Kochen/Backen ≈ erkannt)
+      ["Wasserkocher", "sensor.kueche_wasserkocher_leistung", "sensor.wasserkocher_energie_heute", "sensor.wasserkocher_energie_monat", "2026-10-20T11:08"],
       ["Kochen/Backen ≈", "sensor.kochen_leistung", "sensor.kochen_energie_heute", "sensor.kochen_energie_monat", "2026-10-15T10:12"]]],
     // 20.10.2026 (Nutzer): Haustechnik → „Infrastruktur“ (läuft immer, nicht abschaltbar) inkl. Router & Netzwerk + Smart Home.
     // 19.10.2026 (Nutzer): Block Haustechnik = Victron-Anlage (Netzbezug über dem Hausverbrauch, Haus gesamt enthält sie) + Heizungstechnik ≈
