@@ -127,7 +127,7 @@ function zeigeFluss(s) {
     ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"],
     ["Kochen/Backen ≈", "sensor.kochen_anzeige"], ["Licht ≈", "sensor.licht_leistung"],   // Licht ≈ 15.10.2026: gemessene Lichter + ungemessene geschätzt
     // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
-    ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"],
+    ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"], ["TV Yoga ≈", "sensor.tv_yoga_leistung"],
     ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"], ["Bitaxe", "sensor.bitaxe_leistung"],
     ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung"], ["Wasserkocher", "sensor.kueche_wasserkocher_leistung"],
     ["Airfryer", "sensor.kueche_airfryer_leistung"], ["Thermomix", "sensor.kueche_thermomix_leistung"]]
@@ -257,6 +257,8 @@ function zeigeTabellen(s, k, lp, gh) {
       // 18.10.2026: Bitaxe ohne Mess-Plug, Leistung aus AxeOS (bitaxe.yaml); Startzeit = HA-Neustart
       ["Bitaxe", "sensor.bitaxe_leistung", "sensor.bitaxe_energie_heute", "sensor.bitaxe_energie_monat", "2026-10-18T20:19"],
       ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"],
+      // 20.10.2026: TV Yoga ≈ (Toshiba, 275 W gemessen, an = Apple TV Yogazimmer wach)
+      ["TV Yoga ≈", "sensor.tv_yoga_leistung", "sensor.tv_yoga_energie_heute", "sensor.tv_yoga_energie_monat", "2026-10-20T13:15"],
       // 20.10.2026: Emils Schreibtisch (Shelly Plug M Gen3, PC/MacBook)
       ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung", "sensor.emil_schreibtisch_energie_heute", "sensor.emil_schreibtisch_energie_monat", "2026-10-20T08:42"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
