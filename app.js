@@ -122,12 +122,12 @@ function zeigeFluss(s) {
   $("fluss").innerHTML = svg;
 
   const geraete = [["Wärmepumpe", "sensor.wp_leistung_elektrisch_gesamt"], ["BWWP", "sensor.keller_bwwp_shelly_leistung"],
-    ["Klima ≈", "sensor.klima_leistung_geschatzt"], ["Entfeuchter", "sensor.keller_entfeuchter_power"],
+    ["Klima", "sensor.klima_leistung_geschatzt"], ["Entfeuchter", "sensor.keller_entfeuchter_power"],
     ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung"], ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung"],
     ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"],
-    ["Kochen/Backen ≈", "sensor.kochen_anzeige"], ["Licht ≈", "sensor.licht_leistung"],   // Licht ≈ 15.10.2026: gemessene Lichter + ungemessene geschätzt
+    ["Kochen/Backen", "sensor.kochen_anzeige"], ["Licht", "sensor.licht_leistung"],   // Licht 15.10.2026: gemessene Lichter + ungemessene geschätzt
     // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
-    ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"], ["TV Yoga ≈", "sensor.tv_yoga_leistung"],
+    ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"], ["TV Yoga", "sensor.tv_yoga_leistung"],
     ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"], ["Bitaxe", "sensor.bitaxe_leistung"],
     ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung"], ["Wasserkocher", "sensor.kueche_wasserkocher_leistung"],
     ["Airfryer", "sensor.kueche_airfryer_leistung"], ["Thermomix", "sensor.kueche_thermomix_leistung"]]
@@ -228,9 +228,9 @@ function zeigeTabellen(s, k, lp, gh) {
   };
   const G = [
     ["🔥 Heizen", [["Wärmepumpe", "sensor.cmi_wp_leistung_elektrisch", "sensor.wp_strom_heute", "sensor.wp_strom_monat", "2026-09-22T17:14"],
-      ["Klima Wintergarten ≈", "sensor.klima_wintergarten_leistung_geschatzt", "sensor.klima_wintergarten_heute", "sensor.klima_wintergarten_monat", null],
-      ["Klima Emil ≈", "sensor.klima_emil_leistung_geschatzt", "sensor.klima_emil_heute", "sensor.klima_emil_monat", null],
-      ["Klima Dachspitz ≈", "sensor.klima_dachspitz_leistung_geschatzt", "sensor.klima_dachspitz_heute", "sensor.klima_dachspitz_monat", null]]],
+      ["Klima Wintergarten", "sensor.klima_wintergarten_leistung_geschatzt", "sensor.klima_wintergarten_heute", "sensor.klima_wintergarten_monat", null],
+      ["Klima Emil", "sensor.klima_emil_leistung_geschatzt", "sensor.klima_emil_heute", "sensor.klima_emil_monat", null],
+      ["Klima Dachspitz", "sensor.klima_dachspitz_leistung_geschatzt", "sensor.klima_dachspitz_heute", "sensor.klima_dachspitz_monat", null]]],
     ["🚿 Warmwasser", [["BWWP", "sensor.keller_bwwp_shelly_leistung", "sensor.keller_bwwp_shelly_bwwp_energie_heute", "sensor.bwwp_energie_monat", "2026-09-22T17:14"],
       ["↳ Verdichter", "sensor.bwwp_verdichter_leistung", "sensor.bwwp_verdichter_energie_heute", "verdichter", "2026-09-22T17:14", "teil"],
       ["↳ Heizstab ⚡", "sensor.bwwp_heizstab_leistung", "sensor.bwwp_heizstab_energie_heute", "sensor.bwwp_heizstab_energie_monat", "2026-09-22T17:14", "teil hz"]]],
@@ -238,17 +238,17 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung", "sensor.waschmaschine_energie_heute", "sensor.waschmaschine_energie_monat", "2026-09-24T02:30"],
       ["Trockner", "sensor.keller_miele_trockner_leistung", "sensor.trockner_energie_heute", "sensor.trockner_energie_monat", "2026-09-24T02:30"],
       // 20.10.2026 (Nutzer): Reihenfolge Großgeräte → Kochen → Küchen-Kleingeräte → Kühlschränke (wie Dashboard)
-      ["Kochen/Backen ≈", "sensor.kochen_leistung", "sensor.kochen_energie_heute", "sensor.kochen_energie_monat", "2026-10-15T10:12"],
-      // 20.10.2026: Wasserkocher mit eigenem Shelly (vorher in Kochen/Backen ≈ erkannt)
+      ["Kochen/Backen", "sensor.kochen_leistung", "sensor.kochen_energie_heute", "sensor.kochen_energie_monat", "2026-10-15T10:12"],
+      // 20.10.2026: Wasserkocher mit eigenem Shelly (vorher in Kochen/Backen erkannt)
       ["Wasserkocher", "sensor.kueche_wasserkocher_leistung", "sensor.wasserkocher_energie_heute", "sensor.wasserkocher_energie_monat", "2026-10-20T11:08"],
       ["Airfryer", "sensor.kueche_airfryer_leistung", "sensor.airfryer_energie_heute", "sensor.airfryer_energie_monat", "2026-10-20T12:45"],
       ["Thermomix", "sensor.kueche_thermomix_leistung", "sensor.thermomix_energie_heute", "sensor.thermomix_energie_monat", "2026-10-20T12:45"],
       ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
       ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"]]],
     // 20.10.2026 (Nutzer): Haustechnik → „Infrastruktur“ (läuft immer, nicht abschaltbar) inkl. Router & Netzwerk + Smart Home.
-    // 19.10.2026 (Nutzer): Block Haustechnik = Victron-Anlage (Netzbezug über dem Hausverbrauch, Haus gesamt enthält sie) + Heizungstechnik ≈
+    // 19.10.2026 (Nutzer): Block Haustechnik = Victron-Anlage (Netzbezug über dem Hausverbrauch, Haus gesamt enthält sie) + Heizungstechnik
     ["⚙️ Infrastruktur", [["Victron-Anlage", "victron", "sensor.netz_an_victron_heute", "sensor.netz_an_victron_monat", "2026-10-01T00:00"],
-      ["Heizungstechnik ≈", "sensor.heizungstechnik_leistung", "sensor.heizungstechnik_energie_heute", "sensor.heizungstechnik_energie_monat", "2026-10-01T00:00"],
+      ["Heizungstechnik", "sensor.heizungstechnik_leistung", "sensor.heizungstechnik_energie_heute", "sensor.heizungstechnik_energie_monat", "2026-10-01T00:00"],
       // 19.10.2026 (Nutzer): Router & Netzwerk (Router, Repeater, Pi, Switch, Daikin-Hub) + Smart Home geschätzt, Monat ab 01.10. nachgetragen
       ["Router & Netzwerk", "sensor.router_pi_leistung", "sensor.router_pi_energie_heute", "sensor.router_pi_energie_monat", "2026-10-01T00:00"],
       ["Smart Home", "sensor.smart_home_leistung", "sensor.smart_home_energie_heute", "sensor.smart_home_energie_monat", "2026-10-01T00:00"]]],
@@ -258,14 +258,14 @@ function zeigeTabellen(s, k, lp, gh) {
       // 18.10.2026: Bitaxe ohne Mess-Plug, Leistung aus AxeOS (bitaxe.yaml); Startzeit = HA-Neustart
       ["Bitaxe", "sensor.bitaxe_leistung", "sensor.bitaxe_energie_heute", "sensor.bitaxe_energie_monat", "2026-10-18T20:19"],
       ["TV Sony", "sensor.tv_sony_power", "sensor.tv_sony_energie_heute", "sensor.tv_sony_energie_monat", "2026-09-29T22:44"],
-      // 20.10.2026: TV Yoga ≈ (Toshiba, 275 W gemessen, an = Apple TV Yogazimmer wach)
-      ["TV Yoga ≈", "sensor.tv_yoga_leistung", "sensor.tv_yoga_energie_heute", "sensor.tv_yoga_energie_monat", "2026-10-20T13:15"],
+      // 20.10.2026: TV Yoga (Toshiba, 275 W gemessen, an = Apple TV Yogazimmer wach)
+      ["TV Yoga", "sensor.tv_yoga_leistung", "sensor.tv_yoga_energie_heute", "sensor.tv_yoga_energie_monat", "2026-10-20T13:15"],
       // 20.10.2026: Emils Schreibtisch (Shelly Plug M Gen3, PC/MacBook)
       ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung", "sensor.emil_schreibtisch_energie_heute", "sensor.emil_schreibtisch_energie_monat", "2026-10-20T08:42"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
-      ["💡 Licht ≈", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
+      ["💡 Licht", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
-  const GL_ZEILEN = ["Kühlschrank", "Kühlschrank Garage", "Victron-Anlage", "Heizungstechnik ≈", "Router & Netzwerk", "Smart Home"];
+  const GL_ZEILEN = ["Kühlschrank", "Kühlschrank Garage", "Victron-Anlage", "Heizungstechnik", "Router & Netzwerk", "Smart Home"];
   // „echt bezahlt“ / „ohne PV“ (01.10.2026, wie im Dashboard): € je Gerät = kWh × Preis × Netzanteil des Geräts (Payload gh aus
   // sensor.geraete_herkunft: {h|m: {Leistungs-Entität: [kWh, davon Netz]}}); Ø/Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses
   const echt = gvModus() === "echt", GH = (gh && gh.h) || {}, GM = (gh && gh.m) || {};
@@ -292,7 +292,7 @@ function zeigeTabellen(s, k, lp, gh) {
   const wpStill = (num(s, "sensor.wp_leistung_elektrisch_gesamt") ?? 0) < 50, hkAn = s["binary_sensor.cmi_hk_pumpe"] === "on", zpAn = s["binary_sensor.cmi_zirkulationspumpe"] === "on";
   const TEILE = {
     "Victron-Anlage": "MultiPlus-Eigenverbrauch + Akku-Nachladen · nur Netzbezug sichtbar",
-    "Heizungstechnik ≈": [infT("Regelung", "input_number.ht_regelung_w"), infT("Daikin-Standby", "input_number.ht_daikin_w"), infT("SYR/Wolf-Link/Leisten", "input_number.ht_sonst_w"),
+    "Heizungstechnik": [infT("Regelung", "input_number.ht_regelung_w"), infT("Daikin-Standby", "input_number.ht_daikin_w"), infT("SYR/Wolf-Link/Leisten", "input_number.ht_sonst_w"),
       infT("Kellerlüfter", "input_number.ht_luefter_w"), infT("WP-Standby", "input_number.ht_wp_standby_w", wpStill), infT("HK-Pumpe", "input_number.ht_hk_pumpe_w", hkAn),
       infT("Stellantriebe", "input_number.ht_stellantriebe_w", hkAn), infT("Zirkulation", "input_number.ht_zirk_w", zpAn)].join(" · "),
     "Router & Netzwerk": [infT("FRITZ!Box + Repeater", "input_number.router_w"), infT("Pi", "input_number.pi_w"), infT("Switch", "input_number.switch_keller_w"), infT("Daikin-Hub", "input_number.daikin_hub_w")].join(" · "),
@@ -318,7 +318,7 @@ function zeigeTabellen(s, k, lp, gh) {
   }
   const ra = ha === null ? null : Math.max(ha - sa, 0), rh = hh === null ? null : Math.max(hh - sh, 0);
   const rm = ra === null ? null : ra * (jetztMs - Math.max(ms.getTime(), new Date(haStart).getTime())) / 864e5;
-  // 14.10.2026: Kochen/Backen ≈ steckt im Rest (ungemessen) → live abziehen (kWh-Spalten: Rest = Haus − Geräte)
+  // 14.10.2026: Kochen/Backen steckt im Rest (ungemessen) → live abziehen (kWh-Spalten: Rest = Haus − Geräte)
   const rp0 = num(s, "sensor.rest_ungemessen"), rp = rp0 === null ? null : Math.max(rp0 - (num(s, "sensor.kochen_leistung") ?? 0) - (num(s, "sensor.licht_ungemessen") ?? 0), 0), [rah, ram, raa] = anteile("sensor.rest_ungemessen");
   const reh = (rh ?? 0) * preis * rah, rem = (rm ?? 0) * preis * ram, rea = (ra ?? 0) * preis * raa;
   for (const [gn, gp, gh, gm, ga, zeilen, geh, gem, gea] of gruppen) {
@@ -669,7 +669,7 @@ const TL_K = ["a_dusche", "a_badewanne", "a_abspuelen", "a_warm_kurz", "a_wc", "
   "cmi_wp", "keller_bwwp_shelly_energie", "klima_betrieb_heute", "wp_strom_gratis_heute", "bwwp_strom_gratis_heute",
   "haus", "netz", "einsp", "akku_ent", "akku_lad", "g_waschmaschine", "g_trockner", "g_spulmaschine", "g_kuhlschrank", "g_kuhlschrank_garage",
   "g_entfeuchter", "g_nerdaxe", "g_iceriver", "g_tv_sony",
-  "h_pv", "h_akku", "h_netz", "ak_pv", "ak_netz", "g_kochen"];   // 14.10.2026: g_kochen = Kochen/Backen ≈ (Schätzung)   // 04.10.2026: haus_herkunft.yaml (Haus aus PV/Akku/Netz, Akku aus PV/Netz), ab 24.09.
+  "h_pv", "h_akku", "h_netz", "ak_pv", "ak_netz", "g_kochen"];   // 14.10.2026: g_kochen = Kochen/Backen (Schätzung)   // 04.10.2026: haus_herkunft.yaml (Haus aus PV/Akku/Netz, Akku aus PV/Netz), ab 24.09.
 function tlSetzen(v) { TL = {}; for (const r of (v && v.tl) || []) { if (!Array.isArray(r)) continue; const x = TL[r[0]] = {}; TL_K.forEach((k, i) => { if (r[i + 1] != null) x[k] = r[i + 1]; }); } }
 const fwBogen = (cx, cy, r0, r1, a0, a1) => { if (a1 - a0 >= 2 * Math.PI - 1e-6) a1 = a0 + 2 * Math.PI - 1e-4;
   const p = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)], g = a1 - a0 > Math.PI ? 1 : 0;
@@ -802,7 +802,7 @@ const GER_TORTE = { start: new Date(2026, 8, 22).getTime(), einheit: "kWh", dec:
     const G = [["Waschmaschine", "g_waschmaschine", "Wäsche", "#06b6d4"], ["Trockner", "g_trockner", "Wäsche", "#a855f7"], ["Spülmaschine", "g_spulmaschine", "Küche & Kühlen", "#22c55e"],
       ["Kühlschrank", "g_kuhlschrank", "Küche & Kühlen", "#86efac"], ["Kühlschrank Garage", "g_kuhlschrank_garage", "Küche & Kühlen", "#4ade80"], ["Entfeuchter", "g_entfeuchter", "Entfeuchter", "#f59e0b"],
       ["Nerdaxe", "g_nerdaxe", "Miner", "#f472b6"], ["Iceriver", "g_iceriver", "Miner", "#db2777"], ["TV", "g_tv_sony", "TV", "#94a3b8"],
-      ["Kochen/Backen ≈", "g_kochen", "Küche & Kühlen", "#ef4444"]];
+      ["Kochen/Backen", "g_kochen", "Küche & Kühlen", "#ef4444"]];
     const FG = { "Wäsche": "#06b6d4", "Küche & Kühlen": "#22c55e", "Entfeuchter": "#f59e0b", "Miner": "#ec4899", "TV": "#94a3b8" }, je = {}, gr = {};
     for (const [k, , , an] of fwTage(von, bis)) { const x = TL[k]; if (!x) continue; for (const g of G) { const v = (x[g[1]] || 0) * an; je[g[0]] = (je[g[0]] || 0) + v; gr[g[2]] = (gr[g[2]] || 0) + v; } }
     return { ringe: [Object.entries(gr).map(([n, v]) => ({ n, v: rd1(v), f: FG[n] })).sort((a, b) => b.v - a.v),
@@ -1054,7 +1054,7 @@ function zeigeWann(d) {
 // „Jetzt“ springt zurück. Dämmerung + Sonnenkurve (sonnenhoehe), Mitternacht Linie + Datum mittig, Tooltips per <title>.
 const ZL = {
   zeitleiste: [["WP", ["wp"], ["#3b82f6"]], ["BWWP", ["bw", "hz"], ["#f87171", "#dc2626"], ["", " Heizstab"]], ["LLWP", ["ll"], ["#facc15"]]],
-  zeitleiste2: [["Waschmaschine", ["wa"], ["#06b6d4"]], ["Trockner", ["tr"], ["#a855f7"]], ["Spülmaschine", ["sp"], ["#22c55e"]], ["Entfeuchter", ["en"], ["#f59e0b"]], ["Kochen/Backen ≈", ["ko"], ["#ef4444"]]],
+  zeitleiste2: [["Waschmaschine", ["wa"], ["#06b6d4"]], ["Trockner", ["tr"], ["#a855f7"]], ["Spülmaschine", ["sp"], ["#22c55e"]], ["Entfeuchter", ["en"], ["#f59e0b"]], ["Kochen/Backen", ["ko"], ["#ef4444"]]],
 };
 const zlEnde = {};            // Fensterende je Leiste (ms), null = live
 let zlSeg = {};               // Kürzel → [[von, bis, läuft]]
