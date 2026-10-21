@@ -45,6 +45,8 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 .drei-fest { grid-template-columns: repeat(3, 1fr); }
 .zwei-fest { grid-template-columns: repeat(2, 1fr); }
 .zwei { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.buendig > section { display: flex; flex-direction: column; }
+.buendig .wachsen { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 
 .kachel { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; padding: 10px 12px; }
 .kachel .name { font-weight: 600; font-size: 14px; }
