@@ -232,7 +232,7 @@ function zeigeBatterie(s, ap) {
   $("batt_entladen").hidden = !(b < -50);
   $("batt_w").textContent = b === null ? "–" : zahl(b, 1) + " W";
 
-  $("phasen").innerHTML = [1, 2, 3].map((i) =>
+  if ($("phasen")) $("phasen").innerHTML = [1, 2, 3].map((i) =>
     `<div class="phase"><div class="name">L${i}</div><div class="zahl">${watt(num(s, "sensor.venus_verbrauchsleistung_l" + i))}</div></div>`).join("");
 }
 
@@ -1735,6 +1735,7 @@ function zeigeKueche() {
   };
   const neu = !el.hass;
   el.hass = { states: st, config: { latitude: 48.14, longitude: 11.58 }, callWS };
+  const ee = $("kueche_energie"); if (ee) ee.hass = el.hass;   // 21.10.2026: Teil „Energie jetzt“ in der Batterie-Spalte
   if (!neu && el._kT !== KUECHE.t) { el._kT = KUECHE.t; el._statZeit = 0; try { el._ladeStat(); el._ladeTemp(); } catch (e) {} }
   el._kT = KUECHE.t;
 }
