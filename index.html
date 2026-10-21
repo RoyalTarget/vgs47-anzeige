@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202610211637">
+<link rel="stylesheet" href="style.css?v=202610211644">
 </head>
 <body>
 <header>
@@ -69,17 +69,20 @@
     </div>
   </section>
 
-  <div class="zwei">
+  <!-- 21.10.2026 (Nutzer): Stromzähler unter den Energiefluss (linke Spalte), beide Spalten schließen unten bündig ab -->
+  <div class="zwei buendig">
     <section>
       <h2>Energie</h2>
-      <div class="karte">
+      <div class="karte wachsen">
         <svg id="fluss" viewBox="0 0 480 345" class="fluss" aria-label="Energiefluss"></svg>
         <div id="verbraucher" class="ausserdem"></div>
       </div>
+      <h3>Stromzähler</h3>
+      <div class="karte" style="padding:0"><vgs-zaehler-card id="zaehler_strom"></vgs-zaehler-card></div>
     </section>
     <section>
       <h2>Batterie</h2>
-      <div class="karte">
+      <div class="karte wachsen">
         <svg id="tacho" viewBox="0 0 200 162" class="tacho" aria-label="Batterie-Ladestand"></svg>
       </div>
       <div class="karte streifen">
@@ -93,10 +96,6 @@
     </section>
   </div>
 
-  <section>
-    <h2>Stromzähler</h2>
-    <div class="karte" style="padding:0"><vgs-zaehler-card id="zaehler_strom"></vgs-zaehler-card></div>
-  </section>
 
   <section>
     <h2>PV-Anlage 3D</h2>
