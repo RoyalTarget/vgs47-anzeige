@@ -208,6 +208,12 @@ function bogen(a0, a1, r) {
   return `M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
 }
 function zeigeBatterie(s, ap) {
+  // 21.10.2026: Phasen + Akku-Reserve stehen nicht in kueche.json → aus data.json in den Teil „Energie jetzt“ geben;
+  // Tacho + liegende Batterie sind seit 21.10.2026 abends raus (Nutzer: doppelt mit „Energie jetzt“) → Rest nur, falls noch vorhanden
+  const ee = $("kueche_energie");
+  if (ee && ee._h) { for (const e of ["sensor.venus_verbrauchsleistung_l1", "sensor.venus_verbrauchsleistung_l2", "sensor.venus_verbrauchsleistung_l3", "sensor.venus_aktiver_soc_grenzwert"])
+    if (s[e] != null) ee._h.states[e] = { state: String(s[e]), attributes: {} }; try { ee._energie(); ee._phasen(); } catch (x) {} }
+  if (!$("tacho")) return;
   const soc = num(s, "sensor.venus_dc_batterie_ladestand");
   const w = (p) => 180 - p * 1.8;
   let svg = `<path d="${bogen(w(0), w(20), 80)}" stroke="#db4437" stroke-width="18" fill="none"/>`
@@ -232,9 +238,6 @@ function zeigeBatterie(s, ap) {
   $("batt_entladen").hidden = !(b < -50);
   $("batt_w").textContent = b === null ? "–" : zahl(b, 1) + " W";
 
-  // 21.10.2026: Phasen stehen nicht in kueche.json → aus data.json in den Teil „Energie jetzt“ geben
-  const ee = $("kueche_energie");
-  if (ee && ee._h) { for (const i of [1, 2, 3]) { const e = "sensor.venus_verbrauchsleistung_l" + i; if (s[e] != null) ee._h.states[e] = { state: String(s[e]), attributes: {} }; } try { ee._phasen(); } catch (x) {} }
   if ($("phasen")) $("phasen").innerHTML = [1, 2, 3].map((i) =>
     `<div class="phase"><div class="name">L${i}</div><div class="zahl">${watt(num(s, "sensor.venus_verbrauchsleistung_l" + i))}</div></div>`).join("");
 }
