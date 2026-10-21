@@ -70,17 +70,45 @@ function zeigeSchema(s, sk) {
 }
 
 // ---------- Energiefluss ----------
-const P = { pv: [200, 48], netz: [58, 150], haus: [342, 150], batt: [200, 252] };
+// 21.10.2026 (Nutzer): wie die power-flow-card-plus der Übersicht – 4 größte Verbraucher als Kreise (ab 10 W), MDI-Icons,
+// Haus mit Glow in der Farbe der Hauptquelle + Quellen-Ring, Netz/Akku mit beiden Richtungen, darunter „außerdem an“ + Rest.
+// Gruppen = Kopie packages/flow_gruppen.yaml, Liste = Kopie Liste I der Dashboard-Karte → bei neuem Verbraucher beide nachziehen.
+const P = { pv: [185, 62], netz: [55, 170], haus: [310, 170], batt: [185, 280] };
+const IND_POS = [[310, 62], [310, 280], [425, 62], [425, 280]];
+const IND_LINIE = ["M310,128 L310,96", "M310,212 L310,246", "M352,166 C395,166 425,140 425,96", "M352,174 C395,174 425,200 425,246"];
+const IND_FARBE = ["#d0cc5b", "#964cb5", "#b54c9d", "#5bd0cc"];
 const LINIEN = {
-  pv_haus: "M200,82 C200,138 260,143 308,143",
-  pv_netz: "M200,82 C200,138 140,143 92,143",
-  pv_batt: "M200,82 L200,218",
-  netz_haus: "M92,150 L308,150",
-  batt_haus: "M200,218 C200,162 260,157 308,157",
-  netz_batt: "M92,157 C140,157 200,162 200,218",
+  pv_haus: "M185,96 C185,148 225,164 268,164",
+  pv_netz: "M185,96 C185,148 145,164 89,164",
+  pv_batt: "M185,96 L185,246",
+  netz_haus: "M89,170 L268,170",
+  batt_haus: "M185,246 C185,192 225,176 268,176",
+  netz_batt: "M89,176 C145,176 185,192 185,246",
 };
 // 16.10.2026 (Nutzer): Farben wie „Woher kommt der Strom“ (HK_F): Sonne gelb · Netz orange · Einspeisung grün · Akku lädt hellblau / entlädt blau
 const FARBE = { pv: "#facc15", netz: "#f97316", export: "#22c55e", batt: "#93c5fd", entladen: "#3b82f6", haus: "#5bc0de" };
+const MDI = {
+  haus: "M12 3L2 12H5V20H19V12H22L12 3M11.5 18V14H9L12.5 7V11H15L11.5 18Z",
+  pv: "M11.45,2V5.55L15,3.77L11.45,2M10.45,8L8,10.46L11.75,11.71L10.45,8M2,11.45L3.77,15L5.55,11.45H2M10,2H2V10C2.57,10.17 3.17,10.25 3.77,10.25C7.35,10.26 10.26,7.35 10.27,3.75C10.26,3.16 10.17,2.57 10,2M17,22V16H14L19,7V13H22L17,22Z",
+  netz: "M8.28,5.45L6.5,4.55L7.76,2H16.23L17.5,4.55L15.72,5.44L15,4H9L8.28,5.45M18.62,8H14.09L13.3,5H10.7L9.91,8H5.38L4.1,10.55L5.89,11.44L6.62,10H17.38L18.1,11.45L19.89,10.56L18.62,8M17.77,22H15.7L15.46,21.1L12,15.9L8.53,21.1L8.3,22H6.23L9.12,11H11.19L10.83,12.35L12,14.1L13.16,12.35L12.81,11H14.88L17.77,22M11.4,15L10.5,13.65L9.32,18.13L11.4,15M14.68,18.12L13.5,13.64L12.6,15L14.68,18.12Z",
+  batt: "M16 20H8V6H16M16.67 4H15V2H9V4H7.33C6.6 4 6 4.6 6 5.33V20.67C6 21.4 6.6 22 7.33 22H16.67C17.41 22 18 21.41 18 20.67V5.33C18 4.6 17.4 4 16.67 4M15 16H9V19H15V16M15 7H9V10H15V7M15 11.5H9V14.5H15V11.5Z",
+  wp: "M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M12.75 7.08C13.57 7.2 14.32 7.5 14.95 8L12.75 10.19V7.08M11.25 7.08V10.19L9.05 8C9.68 7.5 10.43 7.2 11.25 7.08M8 9.05L10.19 11.25H7.08C7.2 10.43 7.5 9.68 8 9.05M7.08 12.75H10.19L8 14.95C7.5 14.32 7.2 13.57 7.08 12.75M11.25 16.92C10.43 16.8 9.68 16.5 9.05 16L11.25 13.81V16.92M12 13C11.45 13 11 12.55 11 12S11.45 11 12 11 13 11.45 13 12 12.55 13 12 13M12.75 16.92V13.81L14.95 16C14.32 16.5 13.57 16.8 12.75 16.92M16 14.95L13.81 12.75H16.92C16.8 13.57 16.5 14.32 16 14.95M13.81 11.25L16 9.05C16.5 9.69 16.8 10.44 16.92 11.25H13.81Z",
+  bwwp: "M8 2C6.89 2 6 2.89 6 4V16C6 17.11 6.89 18 8 18H9V20H6V22H9C10.11 22 11 21.11 11 20V18H13V20C13 21.11 13.89 22 15 22H18V20H15V18H16C17.11 18 18 17.11 18 16V4C18 2.89 17.11 2 16 2H8M12 4.97A2 2 0 0 1 14 6.97A2 2 0 0 1 12 8.97A2 2 0 0 1 10 6.97A2 2 0 0 1 12 4.97M10 14.5H14V16H10V14.5Z",
+  entf: "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z",
+  spuel: "M18,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V4A2,2 0 0,0 18,2M10,4A1,1 0 0,1 11,5A1,1 0 0,1 10,6A1,1 0 0,1 9,5A1,1 0 0,1 10,4M7,4A1,1 0 0,1 8,5A1,1 0 0,1 7,6A1,1 0 0,1 6,5A1,1 0 0,1 7,4M18,20H6V8H18V20M14.67,15.33C14.69,16.03 14.41,16.71 13.91,17.21C12.86,18.26 11.15,18.27 10.09,17.21C9.59,16.71 9.31,16.03 9.33,15.33C9.4,14.62 9.63,13.94 10,13.33C10.37,12.5 10.81,11.73 11.33,11L12,10C13.79,12.59 14.67,14.36 14.67,15.33",
+  wasch: "M14.83,11.17C16.39,12.73 16.39,15.27 14.83,16.83C13.27,18.39 10.73,18.39 9.17,16.83L14.83,11.17M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M7,4A1,1 0 0,0 6,5A1,1 0 0,0 7,6A1,1 0 0,0 8,5A1,1 0 0,0 7,4M10,4A1,1 0 0,0 9,5A1,1 0 0,0 10,6A1,1 0 0,0 11,5A1,1 0 0,0 10,4M12,8A6,6 0 0,0 6,14A6,6 0 0,0 12,20A6,6 0 0,0 18,14A6,6 0 0,0 12,8Z",
+  trock: "M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M7,4A1,1 0 0,0 6,5A1,1 0 0,0 7,6A1,1 0 0,0 8,5A1,1 0 0,0 7,4M10,4A1,1 0 0,0 9,5A1,1 0 0,0 10,6A1,1 0 0,0 11,5A1,1 0 0,0 10,4M12,8A6,6 0 0,0 6,14A6,6 0 0,0 12,20A6,6 0 0,0 18,14A6,6 0 0,0 12,8M8.11,10.5H10C9.76,11.88 10,12.67 10.58,13.29C11.68,14.36 12.16,15.71 11.89,17.5H10C10.24,16.12 10,15.33 9.42,14.71C8.32,13.64 7.85,12.29 8.11,10.5M12.11,10.5H14C13.76,11.88 14,12.67 14.58,13.29C15.68,14.36 16.16,15.71 15.89,17.5H14C14.24,16.12 14,15.33 13.42,14.71C12.32,13.64 11.85,12.29 12.11,10.5Z",
+  klima: "M6.59,0.66C8.93,-1.15 11.47,1.06 12.04,4.5C12.47,4.5 12.89,4.62 13.27,4.84C13.79,4.24 14.25,3.42 14.07,2.5C13.65,0.35 16.06,-1.39 18.35,1.58C20.16,3.92 17.95,6.46 14.5,7.03C14.5,7.46 14.39,7.89 14.16,8.27C14.76,8.78 15.58,9.24 16.5,9.06C18.63,8.64 20.38,11.04 17.41,13.34C15.07,15.15 12.53,12.94 11.96,9.5C11.53,9.5 11.11,9.37 10.74,9.15C10.22,9.75 9.75,10.58 9.93,11.5C10.35,13.64 7.94,15.39 5.65,12.42C3.83,10.07 6.05,7.53 9.5,6.97C9.5,6.54 9.63,6.12 9.85,5.74C9.25,5.23 8.43,4.76 7.5,4.94C5.37,5.36 3.62,2.96 6.59,0.66M5,16H7A2,2 0 0,1 9,18V24H7V22H5V24H3V18A2,2 0 0,1 5,16M5,18V20H7V18H5M12.93,16H15L12.07,24H10L12.93,16M18,16H21V18H18V22H21V24H18A2,2 0 0,1 16,22V18A2,2 0 0,1 18,16Z",
+  kochen: "M6,14H8L11,17H9L6,14M4,4H5V3A1,1 0 0,1 6,2H10A1,1 0 0,1 11,3V4H13V3A1,1 0 0,1 14,2H18A1,1 0 0,1 19,3V4H20A2,2 0 0,1 22,6V19A2,2 0 0,1 20,21V22H17V21H7V22H4V21A2,2 0 0,1 2,19V6A2,2 0 0,1 4,4M18,7A1,1 0 0,1 19,8A1,1 0 0,1 18,9A1,1 0 0,1 17,8A1,1 0 0,1 18,7M14,7A1,1 0 0,1 15,8A1,1 0 0,1 14,9A1,1 0 0,1 13,8A1,1 0 0,1 14,7M20,6H4V10H20V6M4,19H20V12H4V19M6,7A1,1 0 0,1 7,8A1,1 0 0,1 6,9A1,1 0 0,1 5,8A1,1 0 0,1 6,7M13,14H15L18,17H16L13,14Z",
+  licht: "M15 14V16A1 1 0 0 1 14 17H10A1 1 0 0 1 9 16V14A5 5 0 1 1 15 14M14 18H10V19A1 1 0 0 0 11 20H13A1 1 0 0 0 14 19M7 19V18H5V19A1 1 0 0 0 6 20H7.17A2.93 2.93 0 0 1 7 19M5 10A6.79 6.79 0 0 1 5.68 7A4 4 0 0 0 4 14.45V16A1 1 0 0 0 5 17H7V14.88A6.92 6.92 0 0 1 5 10M17 18V19A2.93 2.93 0 0 1 16.83 20H18A1 1 0 0 0 19 19V18M18.32 7A6.79 6.79 0 0 1 19 10A6.92 6.92 0 0 1 17 14.88V17H19A1 1 0 0 0 20 16V14.45A4 4 0 0 0 18.32 7Z",
+  infra: "M12,3L2,12H5V20H19V12H22L12,3M12,8.5C14.34,8.5 16.46,9.43 18,10.94L16.8,12.12C15.58,10.91 13.88,10.17 12,10.17C10.12,10.17 8.42,10.91 7.2,12.12L6,10.94C7.54,9.43 9.66,8.5 12,8.5M12,11.83C13.4,11.83 14.67,12.39 15.6,13.3L14.4,14.47C13.79,13.87 12.94,13.5 12,13.5C11.06,13.5 10.21,13.87 9.6,14.47L8.4,13.3C9.33,12.39 10.6,11.83 12,11.83M12,15.17C12.94,15.17 13.7,15.91 13.7,16.83C13.7,17.75 12.94,18.5 12,18.5C11.06,18.5 10.3,17.75 10.3,16.83C10.3,15.91 11.06,15.17 12,15.17Z",
+  kuehl: "M7,2H17A2,2 0 0,1 19,4V9H5V4A2,2 0 0,1 7,2M19,19A2,2 0 0,1 17,21V22H15V21H9V22H7V21A2,2 0 0,1 5,19V10H19V19M8,5V7H10V5H8M8,12V15H10V12H8Z",
+  miner: "M14.79,10.62L3.5,21.9L2.1,20.5L13.38,9.21L14.79,10.62M19.27,7.73L19.86,7.14L19.07,6.35L19.71,5.71L18.29,4.29L17.65,4.93L16.86,4.14L16.27,4.73C14.53,3.31 12.57,2.17 10.47,1.37L9.64,3.16C11.39,4.08 13,5.19 14.5,6.5L14,7L17,10L17.5,9.5C18.81,11 19.92,12.61 20.84,14.36L22.63,13.53C21.83,11.43 20.69,9.47 19.27,7.73Z",
+  tv: "M21,17H3V5H21M21,3H3A2,2 0 0,0 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,0 23,17V5A2,2 0 0,0 21,3Z",
+  emil: "M22,18H17A1,1 0 0,1 16,17V7A1,1 0 0,1 17,6H22A1,1 0 0,1 23,7V17A1,1 0 0,1 22,18M22,8H17V9H22V8M22,10H17V11H22V10M9,15V17H10V18H5V17H6V15H2A1,1 0 0,1 1,14V7A1,1 0 0,1 2,6H13A1,1 0 0,1 14,7V14A1,1 0 0,1 13,15H9M12,8H3V13H12V8Z",
+  kgeraete: "M16.13 15.13L18 3H14V2H10V3H5C3.9 3 3 3.9 3 5V9C3 10.1 3.9 11 5 11H7.23L7.87 15.13C6.74 16.05 6 17.43 6 19V20C6 21.1 6.9 22 8 22H16C17.1 22 18 21.1 18 20V19C18 17.43 17.26 16.05 16.13 15.13M5 9V5H6.31L6.93 9H5M12 19C11.45 19 11 18.55 11 18S11.45 17 12 17 13 17.45 13 18 12.55 19 12 19M14.29 14H9.72L8.33 5H15.67L14.29 14Z"
+};
+const summe = (s, l) => l.reduce((a, e) => a + Math.max(num(s, e) ?? 0, 0), 0);
 
 function zeigeFluss(s) {
   const pv = Math.max(num(s, "sensor.pv_gesamt") ?? 0, 0);
@@ -99,41 +127,78 @@ function zeigeFluss(s) {
   const fluesse = [["pv_haus", pvHaus, FARBE.pv], ["pv_netz", pvNetz, FARBE.pv], ["pv_batt", pvBatt, FARBE.pv],
     ["netz_haus", netzHaus, FARBE.netz], ["batt_haus", entl, FARBE.entladen], ["netz_batt", netzBatt, FARBE.netz]];
 
-  let svg = "";
-  for (const [k, d] of Object.entries(LINIEN)) svg += `<path class="linie" d="${d}" stroke="#6b7280"/>`;
-  for (const [k, w, f] of fluesse) {
-    if (w < 10) continue;
-    const dauer = Math.max(0.6, 4 - w / 1000).toFixed(2);
-    svg += `<path class="punkt" d="${LINIEN[k]}" stroke="${f}" style="animation-duration:${dauer}s"/>`;
-  }
-  const knoten = (key, farbe, zeilen, name) => {
-    const [x, y] = P[key];
-    let t = `<g class="knoten"><circle cx="${x}" cy="${y}" r="34" stroke="${farbe}"/>`;
-    zeilen.forEach((z, i) => { t += `<text x="${x}" y="${y + 4 + (i - (zeilen.length - 1) / 2) * 14}">${z}</text>`; });
-    t += `<text class="klein" x="${x}" y="${key === "pv" ? y - 40 : y + 48}">${name}</text></g>`;
-    return t;
-  };
-  svg += knoten("pv", FARBE.pv, [watt(pv)], "PV");
-  svg += knoten("netz", einsp > bezug ? FARBE.export : FARBE.netz,
-    [bezug >= einsp ? "→ " + watt(bezug) : "← " + watt(einsp)], bezug >= einsp ? "Netz (Bezug)" : "Netz (Einspeisung)");
-  svg += knoten("haus", FARBE.haus, [watt(haus)], "Haus");
-  svg += knoten("batt", entl > laden ? FARBE.entladen : FARBE.batt,
-    [soc === null ? "–" : zahl(soc, 0) + " %", (entl > laden ? "↑ " + watt(entl) : "↓ " + watt(laden))], "Batterie");
-  $("fluss").innerHTML = svg;
+  const an = (e) => s[e] === "on", w = (e) => num(s, e) ?? 0;
+  const kochen = num(s, "sensor.kochen_anzeige") ?? num(s, "sensor.kochen_leistung");   // Rückfall bis kochen_anzeige existiert
+  const ind = [
+    ["Wärmepumpe", "wp", w("sensor.wp_leistung_elektrisch_gesamt"), "L1–L3" + (an("binary_sensor.cmi_anforderung_wp_ww_ladung") ? " · 🚿 WW" : "")],
+    ["BWWP", "bwwp", w("sensor.keller_bwwp_shelly_leistung"), "L2" + (an("binary_sensor.bwwp_heizstab") ? " · ⚡ HZ" : "")],
+    ["Entfeuchter", "entf", w("sensor.keller_entfeuchter_power"), "L2"],
+    ["Spülmaschine", "spuel", w("sensor.kuche_spulmaschine_shelly_leistung"), "L1"],
+    ["Waschmaschine", "wasch", w("sensor.keller_miele_waschmaschine_leistung"), "L2"],
+    ["Trockner", "trock", w("sensor.keller_miele_trockner_leistung"), "L3"],
+    ["Klima", "klima", w("sensor.klima_leistung_geschatzt"), "L2"],
+    ["Kochen/Backen", "kochen", kochen ?? 0, ""],
+    ["Licht", "licht", w("sensor.licht_leistung"), ""],
+    ["Infrastruktur", "infra", summe(s, ["sensor.router_pi_leistung", "sensor.smart_home_leistung", "sensor.heizungstechnik_leistung"]), "immer an"],
+    ["Kühlschränke", "kuehl", summe(s, ["sensor.kuche_kuhlschrank_shelly_leistung", "sensor.garage_kuhlschrank_shelly_leistung"]), "L2"],
+    ["Miner", "miner", summe(s, ["sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.keller_iceriver_miner_power",
+      "sensor.keller_miner_lufter_power", "sensor.bitaxe_leistung"]), "Keller"],
+    ["Fernseher", "tv", summe(s, ["sensor.tv_sony_power", "sensor.tv_yoga_leistung"]),
+      [w("sensor.tv_sony_power") > 20 ? "WZ" : "", w("sensor.tv_yoga_leistung") > 20 ? "Yoga ≈" : ""].filter(Boolean).join(" + ")],
+    ["Emils Schreibtisch", "emil", w("sensor.emils_schreibtisch_leistung"), ""],
+    ["Küchengeräte", "kgeraete", summe(s, ["sensor.kueche_wasserkocher_leistung", "sensor.kueche_airfryer_leistung", "sensor.kueche_thermomix_leistung"]),
+      [["Wasserkocher", "sensor.kueche_wasserkocher_leistung"], ["Airfryer", "sensor.kueche_airfryer_leistung"], ["Thermomix", "sensor.kueche_thermomix_leistung"]]
+        .filter(([, e]) => w(e) > 10).map(([n]) => n).join(" + ")],
+  ].sort((a, b) => b[2] - a[2]);
+  const kreise = ind.slice(0, 4).filter((x) => x[2] >= 10);
 
-  const geraete = [["Wärmepumpe", "sensor.wp_leistung_elektrisch_gesamt"], ["BWWP", "sensor.keller_bwwp_shelly_leistung"],
-    ["Klima", "sensor.klima_leistung_geschatzt"], ["Entfeuchter", "sensor.keller_entfeuchter_power"],
-    ["Spülmaschine", "sensor.kuche_spulmaschine_shelly_leistung"], ["Waschmaschine", "sensor.keller_miele_waschmaschine_leistung"],
-    ["Trockner", "sensor.keller_miele_trockner_leistung"], ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung"],
-    ["Kochen/Backen", "sensor.kochen_anzeige"], ["Licht", "sensor.licht_leistung"],   // Licht 15.10.2026: gemessene Lichter + ungemessene geschätzt
-    // 14.10.2026: wie die Dashboard-Zeile „außerdem an“
-    ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung"], ["TV", "sensor.tv_sony_power"], ["TV Yoga", "sensor.tv_yoga_leistung"],
-    ["Nerdaxe", "sensor.smart_switch_23022384462303510d0248e1e9bb5091_power"], ["Iceriver", "sensor.keller_iceriver_miner_power"], ["Bitaxe", "sensor.bitaxe_leistung"],
-    ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung"], ["Wasserkocher", "sensor.kueche_wasserkocher_leistung"],
-    ["Airfryer", "sensor.kueche_airfryer_leistung"], ["Thermomix", "sensor.kueche_thermomix_leistung"]]
-    .map(([n, e]) => [n, num(s, e) ?? (e === "sensor.kochen_anzeige" ? num(s, "sensor.kochen_leistung") : undefined)]).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));   // Rückfall bis kochen_anzeige existiert
-  $("verbraucher").innerHTML = geraete.map(([n, v]) =>
-    `<span class="chip${(v ?? 0) < 10 ? " aus" : ""}">${n} ${watt(v)}</span>`).join("");
+  const icon = (k, x, y, f, gr = 22) => `<path d="${MDI[k]}" fill="${f}" transform="translate(${x - gr / 2},${y - gr / 2}) scale(${gr / 24})"/>`;
+  let svg = "";
+  for (const d of Object.values(LINIEN)) svg += `<path class="linie" d="${d}" stroke="#6b7280"/>`;
+  kreise.forEach((x, i) => { svg += `<path class="linie" d="${IND_LINIE[i]}" stroke="${IND_FARBE[i]}"/>`; });
+  const punkt = (d, f, wt) => `<path class="punkt" d="${d}" stroke="${f}" style="animation-duration:${Math.max(0.6, 4 - wt / 1000).toFixed(2)}s"/>`;
+  for (const [k, wt, f] of fluesse) if (wt >= 10) svg += punkt(LINIEN[k], f, wt);
+  kreise.forEach((x, i) => { svg += punkt(IND_LINIE[i], IND_FARBE[i], x[2]); });
+
+  const kreis = (x, y, r, f) => `<circle cx="${x}" cy="${y}" r="${r}" stroke="${f}"/>`;
+  const txt = (x, y, t, cls = "", f = "") => `<text x="${x}" y="${y}"${cls ? ` class="${cls}"` : ""}${f ? ` style="fill:${f}"` : ""}>${t}</text>`;
+  let k = `<g class="knoten">`;
+  // PV
+  k += kreis(...P.pv, 34, FARBE.pv) + icon("pv", P.pv[0], P.pv[1] - 8, FARBE.pv) + txt(P.pv[0], P.pv[1] + 18, watt(pv)) + txt(P.pv[0], P.pv[1] - 42, "PV", "klein");
+  // Netz: beide Richtungen wie die Karte (← Einspeisung grün, → Bezug orange)
+  const nf = einsp > bezug ? FARBE.export : FARBE.netz;
+  k += kreis(...P.netz, 34, nf) + icon("netz", P.netz[0], P.netz[1] - 13, nf)
+    + txt(P.netz[0], P.netz[1] + 9, "← " + watt(einsp), "zahl", FARBE.export) + txt(P.netz[0], P.netz[1] + 22, "→ " + watt(bezug), "zahl", FARBE.netz)
+    + txt(P.netz[0], P.netz[1] + 48, "Netz", "klein");
+  // Batterie: SoC oben, ↓ lädt / ↑ entlädt
+  const bf = entl > laden ? FARBE.entladen : FARBE.batt;
+  k += kreis(...P.batt, 34, bf) + txt(P.batt[0], P.batt[1] - 17, soc === null ? "–" : zahl(soc, 0) + " %", "zahl") + icon("batt", P.batt[0], P.batt[1] - 2, FARBE.batt, 18)
+    + txt(P.batt[0], P.batt[1] + 15, "↓ " + watt(laden), "zahl", FARBE.batt) + txt(P.batt[0], P.batt[1] + 27, "↑ " + watt(entl), "zahl", FARBE.entladen)
+    + txt(P.batt[0], P.batt[1] + 48, "Batterie", "klein");
+  // Haus: Ring = Anteile der Quellen, Glow + Zahl in der Farbe der Hauptquelle
+  const quellen = [[pvHaus, FARBE.pv], [netzHaus, FARBE.netz], [entl, FARBE.entladen]].filter(([v]) => v > 0);
+  const qs = quellen.reduce((a, [v]) => a + v, 0);
+  const haupt = qs > 0 ? quellen.reduce((a, b) => (b[0] > a[0] ? b : a))[1] : FARBE.haus;
+  k += `<circle cx="${P.haus[0]}" cy="${P.haus[1]}" r="42" class="hausglow" style="filter:drop-shadow(0 0 6px ${haupt})" stroke="${haupt}"/>`;
+  let ab = 0;
+  for (const [v, f] of quellen) {
+    const l = (v / qs) * 100;
+    k += `<circle cx="${P.haus[0]}" cy="${P.haus[1]}" r="42" pathLength="100" class="ring" stroke="${f}" stroke-dasharray="${l} ${100 - l}" stroke-dashoffset="${-ab}" transform="rotate(-90 ${P.haus[0]} ${P.haus[1]})"/>`;
+    ab += l;
+  }
+  k += icon("haus", P.haus[0], P.haus[1] - 10, "#e5e7eb", 26) + txt(P.haus[0], P.haus[1] + 20, watt(haus), "haus", haupt);   // ohne Beschriftung „Haus“ wie die Karte (Linie nach unten)
+  // Einzelverbraucher (oben: Name über dem Kreis, unten: darunter)
+  kreise.forEach(([n, ik, v, info], i) => {
+    const [x, y] = IND_POS[i], f = IND_FARBE[i], oben = i % 2 === 0;
+    k += kreis(x, y, 34, f) + (info ? txt(x, y - 14, escH(info), "info") : "") + icon(ik, x, y + (info ? 2 : -6), f, 20)
+      + txt(x, y + (info ? 22 : 18), watt(v)) + txt(x, oben ? y - 42 : y + 48, escH(n), "klein");
+  });
+  $("fluss").innerHTML = svg + k + "</g>";
+
+  // „außerdem an“ = Verbraucher ab 20 W, die keinen Kreis haben + Rest ungemessen (ohne Kochen/Licht ≈) – wie Dashboard-Zeile
+  const weitere = ind.slice(4).filter((x) => x[2] >= 20).map(([n, , v]) => `${escH(n)} ${watt(v)}`);
+  const ru = Math.max((num(s, "sensor.rest_ungemessen") ?? 0) - (num(s, "sensor.kochen_leistung") ?? 0) - (num(s, "sensor.licht_ungemessen") ?? 0), 0);
+  $("verbraucher").innerHTML = `außerdem an: ${weitere.length ? weitere.join("  ·  ") : "nichts weiter"}  ·  Rest ungemessen ${watt(ru)}`;
 }
 
 // ---------- Batterie ----------
