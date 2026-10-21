@@ -232,6 +232,9 @@ function zeigeBatterie(s, ap) {
   $("batt_entladen").hidden = !(b < -50);
   $("batt_w").textContent = b === null ? "–" : zahl(b, 1) + " W";
 
+  // 21.10.2026: Phasen stehen nicht in kueche.json → aus data.json in den Teil „Energie jetzt“ geben
+  const ee = $("kueche_energie");
+  if (ee && ee._h) { for (const i of [1, 2, 3]) { const e = "sensor.venus_verbrauchsleistung_l" + i; if (s[e] != null) ee._h.states[e] = { state: String(s[e]), attributes: {} }; } try { ee._phasen(); } catch (x) {} }
   if ($("phasen")) $("phasen").innerHTML = [1, 2, 3].map((i) =>
     `<div class="phase"><div class="name">L${i}</div><div class="zahl">${watt(num(s, "sensor.venus_verbrauchsleistung_l" + i))}</div></div>`).join("");
 }
