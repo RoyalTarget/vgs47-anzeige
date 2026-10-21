@@ -862,7 +862,10 @@ function wasserFensterDaten(d, v) {
       if (dv > 0 && dv < 2000) { if (akt && t - akt.t1 <= 15e4) { akt.t1 = t; akt.l += dv; } else { schliesse(); akt = { t0: t - 6e4, t1: t, l: dv }; } }
       else if (akt && t - akt.t1 > 15e4) schliesse(); }
     prev = [t, vl]; }
-  schliesse(); if (prev) { const w = Math.max(prev[1] - basis, 0); kum.push([jetzt, w]); ende.push([jetzt, w]); }
+  schliesse(); if (prev) { const w = Math.max(prev[1] - basis, 0), m0 = mn(jetzt);
+    // 21.10.2026: noch keine Zapfung seit 0:00 → Vortag abschließen, Linie bei 0 beginnen
+    if (m0 !== tag) { kum.push([m0 - 1, w], [m0 - 0.5, null], [m0, 0], [jetzt, 0]); ende.push([m0 - 1, w], [jetzt, 0]); }
+    else { kum.push([jetzt, w]); ende.push([jetzt, w]); } }
   ev.sort((a, b) => a.t - b.t);
   for (const e of ev) { const k = fwKey(e.t), x = tage[k] = tage[k] || { ges: 0 }; x.arten = x.arten || {};
     if (e.art) { const a = x.arten[e.art] = x.arten[e.art] || { n: 0, l: 0 }; a.n++; a.l += e.l; }
