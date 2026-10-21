@@ -66,7 +66,13 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 .fluss { width: 100%; height: auto; display: block; }
 .fluss .knoten circle { fill: var(--karte); stroke-width: 3; }
 .fluss text { fill: var(--text); font-size: 12px; text-anchor: middle; }
-.fluss .klein { fill: var(--leise); font-size: 10px; }
+.fluss .klein { fill: var(--leise); font-size: 11px; }
+.fluss .zahl { font-size: 10.5px; }
+.fluss .info { fill: var(--text); font-size: 10px; }
+.fluss .haus { font-size: 14px; font-weight: 600; }
+.fluss .hausglow { fill: var(--karte); stroke-width: 4; }
+.fluss .ring { fill: none; stroke-width: 4; }
+.ausserdem { margin-top: 6px; text-align: center; font-size: 12.5px; line-height: 1.4; color: var(--leise); white-space: pre-wrap; }
 .fluss .linie { fill: none; stroke-width: 1.5; opacity: .35; }
 .fluss .punkt { fill: none; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 0.1 26;
   animation: lauf linear infinite; }
