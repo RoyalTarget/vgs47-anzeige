@@ -1734,8 +1734,9 @@ function zeigeKueche() {
     return r;
   };
   const neu = !el.hass;
-  el.hass = { states: st, config: { latitude: 48.14, longitude: 11.58 }, callWS };
-  const ee = $("kueche_energie"); if (ee) ee.hass = el.hass;   // 21.10.2026: Teil „Energie jetzt“ in der Batterie-Spalte
+  const hs = { states: st, config: { latitude: 48.14, longitude: 11.58 }, callWS };
+  el.hass = hs;
+  const ee = $("kueche_energie"); if (ee) ee.hass = hs;   // 21.10.2026: Teil „Energie jetzt“ in der Batterie-Spalte (hass hat keinen Getter)
   if (!neu && el._kT !== KUECHE.t) { el._kT = KUECHE.t; el._statZeit = 0; try { el._ladeStat(); el._ladeTemp(); } catch (e) {} }
   el._kT = KUECHE.t;
 }
