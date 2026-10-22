@@ -1779,7 +1779,7 @@ function zeigeFrueher(v) {
     if (!el._c) el.setConfig(cfg); el.hass = h; }
   const t = $("frueher_tab"); if (t && fv.md && t.__md !== fv.md) { t.__md = fv.md; t.innerHTML = mdHtml(fv.md); }
   const fw = (v && v.fw) || {};
-  for (const [id, md] of [["gas_tab", fw.gas], ["az_tab", fw.az]]) { const el = $(id); if (el && md && el.__md !== md) { el.__md = md; el.innerHTML = mdHtml(md); } } }
+  for (const [id, md] of [["gas_tab", fw.gas], ["az_tab", fw.az], ["bwwp_tab", fw.bwwp]]) { const el = $(id); if (el && md && el.__md !== md) { el.__md = md; el.innerHTML = mdHtml(md); } } }
 
 let VERLAUF = null, VERLAUF_T = 0;
 async function holen() {
