@@ -1748,6 +1748,39 @@ function zeigeKueche() {
 }
 
 // ---------- Laden ----------
+// 22.10.2026 (Nutzer): „Früher ↔ heute“ wie im Reiter Wärme. Torten = gleiche Karte (lib/vgs_ring.js, Konfiguration = Kopie aus dem Dashboard),
+// Tabelle = in HA fertig gerendertes Markdown (sensor.frueher_heute_vergleich, Attribut md → verlauf.json fv.md) → hier nur Tabelle/Fett/Absätze umsetzen.
+const RING_F = { title: "früher", entity: "sensor.frueher_heute_vergleich", unter: "Gas + Strom",
+  segments: [{ attr: "frueher_haus", name: "Hausstrom", color: "#fbbf24" }, { attr: "frueher_ww", name: "Warmwasser", color: "#60a5fa" }, { attr: "frueher_heiz", name: "Heizung", color: "#ef4444" }] };
+const RING_H = { title: "heute ≈", entity: "sensor.frueher_heute_vergleich",
+  segments: [{ attr: "haus_h", name: "Hausstrom", color: "#fbbf24" }, { attr: "ww_h", name: "Warmwasser", color: "#60a5fa" }, { attr: "heiz_h", name: "Heizung", color: "#ef4444" }],
+  pv: { attr: ["haus_pv", "ww_pv", "heiz_pv"], netz: ["haus_netz", "ww_netz", "heiz_netz"] } };
+function mdHtml(md) {   // nur was die HA-Vorlage benutzt: Pipe-Tabelle, **fett**, <br>, <sub>, <font color>, &nbsp;, Absätze
+  const frei = (t) => escH(t).replace(/&lt;(\/?)(br|sub|b|small)&gt;/g, "<$1$2>").replace(/&lt;font color="(#[0-9a-fA-F]{3,6})"&gt;/g, '<font color="$1">')
+    .replace(/&lt;\/font&gt;/g, "</font>").replace(/&amp;nbsp;/g, "&nbsp;").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  const zeilen = md.split("\n"), out = []; let tab = null, ausr = [];
+  const zellen = (l) => l.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((x) => x.trim());
+  for (const l of zeilen) {
+    if (/^\s*\|/.test(l)) {
+      const c = zellen(l);
+      if (c.every((x) => /^:?-+:?$/.test(x))) { ausr = c.map((x) => x.endsWith(":") ? "right" : "left"); continue; }
+      if (!tab) { tab = { kopf: c, rows: [] }; continue; } tab.rows.push(c); continue; }
+    if (tab) { out.push(tabHtml(tab, ausr, frei)); tab = null; }
+    if (l.trim()) out.push("<p>" + frei(l) + "</p>"); }
+  if (tab) out.push(tabHtml(tab, ausr, frei));
+  return out.join(""); }
+function tabHtml(t, a, frei) {
+  const z = (c, tag) => c.map((x, i) => `<${tag} style="text-align:${a[i] || "left"}">${frei(x)}</${tag}>`).join("");
+  return `<table><tr>${z(t.kopf, "th")}</tr>${t.rows.map((r) => `<tr>${z(r, "td")}</tr>`).join("")}</table>`; }
+function zeigeFrueher(v) {
+  const fv = (v && v.fv) || {};
+  const h = { states: { "sensor.frueher_heute_vergleich": { state: "", attributes: fv.a || {} } } };
+  if (fv.a) for (const [id, cfg] of [["ring_frueher", RING_F], ["ring_heute", RING_H]]) { const el = $(id); if (!el || !el.setConfig) continue;
+    if (!el._c) el.setConfig(cfg); el.hass = h; }
+  const t = $("frueher_tab"); if (t && fv.md && t.__md !== fv.md) { t.__md = fv.md; t.innerHTML = mdHtml(fv.md); }
+  const fw = (v && v.fw) || {};
+  for (const [id, md] of [["gas_tab", fw.gas], ["az_tab", fw.az]]) { const el = $(id); if (el && md && el.__md !== md) { el.__md = md; el.innerHTML = mdHtml(md); } } }
+
 let VERLAUF = null, VERLAUF_T = 0;
 async function holen() {
   try {
@@ -1763,6 +1796,7 @@ async function holen() {
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
     try { zeigeWpFenster(d, VERLAUF); for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id); } catch (e) { console.warn("wpf", e); }   // Zeitleiste neu: LLWP-kWh brauchen WPF (18.10.2026)
     try { zeigeSchwellen(d, VERLAUF); } catch (e) { console.warn("schwellen", e); }
+    try { zeigeFrueher(VERLAUF); } catch (e) { console.warn("frueher", e); }
     try { zeigeZaehler(s); } catch (e) { console.warn("zaehler", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     // 13.10.2026 (Nutzer): hängt die Lieferung aus dem Haus, deutlich sagen seit wann (Datum + Dauer) – vorher nur „Stand 22:29 · Daten veraltet“
