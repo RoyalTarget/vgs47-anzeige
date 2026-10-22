@@ -269,3 +269,19 @@ vgs-ring-card { display: block; --primary-text-color: var(--text); --secondary-t
 /* 22.10.2026: Kennzahlen-Karten (lib/vgs_kennzahlen.js) */
 vgs-kennzahlen-card { display: block; --primary-text-color: var(--text); --secondary-text-color: var(--leise); }
 .kz-karte { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; margin-bottom: 12px; }
+
+/* 22.10.2026 (Nutzer): erster Blick (blaues Band) + zweiter Blick nach Kategorien mit Sprungleiste */
+html { scroll-behavior: smooth; }
+.ueb-band { background: linear-gradient(180deg, #0d1d3a, #0a1630); border: 1px solid #1e3a8a; border-radius: 16px; padding: 12px 14px 6px; margin: 8px 0 30px; }
+.ueb-band-titel { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #93c5fd; margin: 2px 2px 10px; }
+.ueb-band h2 { color: #bfdbfe; }
+.detail-kopf { border-top: 4px solid rgba(229, 231, 235, .25); padding-top: 14px; }
+.detail-titel { font-size: 26px; font-weight: 600; }
+.detail-sub { font-size: 13px; color: var(--leise); margin-top: 2px; }
+.sprung { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; background: var(--bg); }
+.sprung a { --k: #9ca3af; border: 1px solid var(--k); color: var(--text); text-decoration: none; padding: 4px 12px; border-radius: 999px; font-size: 14px; white-space: nowrap;
+  background: color-mix(in srgb, var(--k) 14%, transparent); }
+.kat { border-top: 3px solid var(--k); margin-top: 34px; padding-top: 6px; scroll-margin-top: 58px; }
+.kat-titel { font-size: 22px; font-weight: 600; color: var(--k); margin: 6px 0 2px; }
+.kat-hinweis { font-size: 13px; color: var(--leise); line-height: 1.5; margin: 6px 0 0; }
+@media (max-width: 500px) { .sprung { gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .sprung::-webkit-scrollbar { display: none; } .sprung a { font-size: 13px; padding: 4px 10px; } .detail-titel { font-size: 22px; } .kat-titel { font-size: 20px; } }
