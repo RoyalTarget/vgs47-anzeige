@@ -95,6 +95,7 @@ function webOhneNamen() {
 async function ladeWeb() {
   try { const r = await fetch(GIST_V + '?t=' + Date.now(), { cache: 'no-store' }); WEB.d = (await r.json()).fh; } catch (e) { setTimeout(lade, 30000); return; }
   const d = WEB.d; if (!d || !d.fc || !d.t0) return; webOhneNamen();
+  $('leiste').style.display = 'none';   // 22.10.2026 (Nutzer): Website hat nur 48 h → Übersichtsleiste (14 Tage + Fenster) ergibt keinen Sinn
   const K = d.k || [], t0 = d.t0 * 1000, serie = {}; let n = 0;
   FI.forEach((e, i) => { const l = d.fc[i]; if (Array.isArray(l)) { serie[e] = l; n = Math.max(n, l.length); } });
   if (!n) return;
@@ -320,7 +321,7 @@ function zeichne() {
   geo = { X0, X1, von, bis, zl, plan, ACHSE, yEnde: y, schmal };
   zeichneLeiste(W);
   if (inHA) { fussZeile(h, hy, schmal); karteAnpassen(KOPF + FH + 40 + $('fuss').offsetHeight + 4); }
-  else if (WEB.h) { fussZeile(h, hy, schmal); webHoehe(KOPF + FH + 40 + $('fuss').offsetHeight + 4); }
+  else if (WEB.h) { fussZeile(h, hy, schmal); webHoehe(KOPF + FH + $('fuss').offsetHeight + 8); }
 }
 
 function zeichneLeiste(W) {
