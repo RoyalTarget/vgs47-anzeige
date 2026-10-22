@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202610211644">
+<link rel="stylesheet" href="style.css?v=202610221238">
 </head>
 <body>
 <header>
@@ -50,6 +50,24 @@
   <section>
     <h2>Fußbodenheizung – Wärmebild &amp; Hydraulik</h2>
     <div class="karte" style="padding:0;overflow:hidden"><iframe src="fbh_waermebild.html?v=202610221219" title="Wärmebild Fußbodenheizung" class="fbhbild" loading="lazy"></iframe></div>
+  </section>
+
+  <!-- 22.10.2026 (Nutzer): Früher ↔ heute wie Reiter Wärme – Torten (lib/vgs_ring.js) + Tabelle aus HA (verlauf.json fv) -->
+  <section>
+    <h2>Früher ↔ heute – Energie im Jahr</h2>
+    <div class="karte"><div class="ringe"><vgs-ring-card id="ring_frueher"></vgs-ring-card><vgs-ring-card id="ring_heute"></vgs-ring-card></div>
+      <div id="frueher_tab" class="md-tab"></div></div>
+  </section>
+
+  <!-- 22.10.2026 (Nutzer): Gasvergleich + Heiz-AZ (Tabellen fertig aus HA, web_texte.yaml → verlauf.json fw) -->
+  <section>
+    <h2>Gas geblieben? – Kosten &amp; Primärenergie</h2>
+    <div class="karte"><div id="gas_tab" class="md-tab"></div></div>
+  </section>
+
+  <section>
+    <h2>Wärmepumpe – Arbeitszahl je Außentemperatur</h2>
+    <div class="karte"><div id="az_tab" class="md-tab"></div></div>
   </section>
 
   <section>
@@ -166,7 +184,8 @@
 <script src="lib/vgs_schwellen.js?v=202610221211"></script>
 <script src="lib/vgs_wann.js?v=202610071920"></script>
 <script src="lib/vgs_zaehler.js?v=202610061700"></script>
+<script src="lib/vgs_ring.js?v=202610221238"></script>
 <script src="lib/vgs_kueche.js?v=202610221211"></script>
-<script src="app.js?v=202610221211"></script>
+<script src="app.js?v=202610221238"></script>
 </body>
 </html>
