@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202610221238">
+<link rel="stylesheet" href="style.css?v=202610221308">
 </head>
 <body>
 <header>
@@ -52,6 +52,13 @@
     <div class="karte" style="padding:0;overflow:hidden"><iframe src="fbh_waermebild.html?v=202610221219" title="Wärmebild Fußbodenheizung" class="fbhbild" loading="lazy"></iframe></div>
   </section>
 
+  <!-- 22.10.2026 (Nutzer): „Auf einen Blick“ – Kacheln + „Aus 1 kWh Strom wird …“ (lib/vgs_kennzahlen.js, Daten verlauf.json fw.kpi) -->
+  <section>
+    <h2>Auf einen Blick</h2>
+    <vgs-kennzahlen-card id="kz_kacheln" class="kz-karte"></vgs-kennzahlen-card>
+    <vgs-kennzahlen-card id="kz_faktor" class="kz-karte"></vgs-kennzahlen-card>
+  </section>
+
   <!-- 22.10.2026 (Nutzer): Früher ↔ heute wie Reiter Wärme – Torten (lib/vgs_ring.js) + Tabelle aus HA (verlauf.json fv) -->
   <section>
     <h2>Früher ↔ heute – Energie im Jahr</h2>
@@ -67,6 +74,7 @@
 
   <section>
     <h2>Wärmepumpe – Arbeitszahl je Außentemperatur</h2>
+    <vgs-kennzahlen-card id="kz_punkte" class="kz-karte"></vgs-kennzahlen-card>
     <div class="karte"><div id="az_tab" class="md-tab"></div></div>
   </section>
 
@@ -190,8 +198,9 @@
 <script src="lib/vgs_schwellen.js?v=202610221252"></script>
 <script src="lib/vgs_wann.js?v=202610071920"></script>
 <script src="lib/vgs_zaehler.js?v=202610061700"></script>
+<script src="lib/vgs_kennzahlen.js?v=202610221308"></script>
 <script src="lib/vgs_ring.js?v=202610221238"></script>
 <script src="lib/vgs_kueche.js?v=202610221211"></script>
-<script src="app.js?v=202610221257"></script>
+<script src="app.js?v=202610221308"></script>
 </body>
 </html>
