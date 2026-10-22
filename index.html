@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202610221308">
+<link rel="stylesheet" href="style.css?v=202610221343">
 </head>
 <body>
 <header>
@@ -16,12 +16,36 @@
 <div id="alt_hinweis" class="alt-hinweis" role="alert" hidden></div>
 
 <main>
+  <!-- 22.10.2026 (Nutzer): erster Blick = blaues Band (Küchen-Panel live + „Auf einen Blick“), darunter der zweite Blick nach Kategorien -->
+  <div class="ueb-band">
+    <div class="ueb-band-titel">Überblick · live</div>
+
   <!-- 16.10.2026 (Nutzer): Küchen-Ansicht wie im Dashboard (iPad-Startseite), ohne Haustür/Schloss -->
   <section class="kueche-sek">
     <vgs-kueche-card id="kueche" ohne-tuer></vgs-kueche-card>
   </section>
+
   <!-- 09.10.2026: Tagesbericht-Zeile (Blickfang, Daten d.tb), Antippen → Bild unten -->
   <div id="tb_zeile" class="tbz" hidden></div>
+
+
+  <!-- 22.10.2026 (Nutzer): „Auf einen Blick“ – Kacheln + „Aus 1 kWh Strom wird …“ (lib/vgs_kennzahlen.js, Daten verlauf.json fw.kpi) -->
+  <section>
+    <h2>Auf einen Blick</h2>
+    <vgs-kennzahlen-card id="kz_kacheln" class="kz-karte"></vgs-kennzahlen-card>
+    <vgs-kennzahlen-card id="kz_faktor" class="kz-karte"></vgs-kennzahlen-card>
+  </section>
+  </div>
+
+  <div class="detail-kopf">
+    <div class="detail-titel" role="heading" aria-level="1">Im Detail</div>
+    <div class="detail-sub">nach Themen – Überschneidungen sind gewollt (z. B. Warmwasser-Speicher auch bei der Heizung)</div>
+  </div>
+  <nav class="sprung"><a href="#k_heizung" style="--k:#ef4444">🔥 Heizung</a><a href="#k_ww" style="--k:#60a5fa">🚿 Warmwasser</a><a href="#k_strom" style="--k:#facc15">⚡ Strom &amp; PV</a><a href="#k_wasser" style="--k:#2dd4bf">💧 Wasser</a><a href="#k_bilanz" style="--k:#4ade80">📊 Bilanz</a></nav>
+
+  <div class="kat" id="k_heizung" style="--k:#ef4444">
+    <div class="kat-titel" role="heading" aria-level="2">🔥 Heizung</div>
+
   <section>
     <h2>Temperaturen</h2>
     <div class="karte">
@@ -29,6 +53,7 @@
       <div class="prog-legende"><span class="l au">Außen</span><span class="l aup">Außen Prognose</span><span class="l in">Innen</span></div>
     </div>
   </section>
+
 
   <section>
     <h2>Heizung</h2>
@@ -41,53 +66,12 @@
     </div>
   </section>
 
+
   <section>
     <h2>Wann schaltet was?</h2>
     <div class="karte schwellen-karte"><vgs-schwellen-card id="schwellen"></vgs-schwellen-card></div>
   </section>
 
-  <!-- 22.10.2026 (Nutzer): FBH-Wärmebild & Hydraulik wieder auf der Website (Daten verlauf.json fh) -->
-  <section>
-    <h2>Fußbodenheizung – Wärmebild &amp; Hydraulik</h2>
-    <div class="karte" style="padding:0;overflow:hidden"><iframe src="fbh_waermebild.html?v=202610221219" title="Wärmebild Fußbodenheizung" class="fbhbild" loading="lazy"></iframe></div>
-  </section>
-
-  <!-- 22.10.2026 (Nutzer): „Auf einen Blick“ – Kacheln + „Aus 1 kWh Strom wird …“ (lib/vgs_kennzahlen.js, Daten verlauf.json fw.kpi) -->
-  <section>
-    <h2>Auf einen Blick</h2>
-    <vgs-kennzahlen-card id="kz_kacheln" class="kz-karte"></vgs-kennzahlen-card>
-    <vgs-kennzahlen-card id="kz_faktor" class="kz-karte"></vgs-kennzahlen-card>
-  </section>
-
-  <!-- 22.10.2026 (Nutzer): Früher ↔ heute wie Reiter Wärme – Torten (lib/vgs_ring.js) + Tabelle aus HA (verlauf.json fv) -->
-  <section>
-    <h2>Früher ↔ heute – Energie im Jahr</h2>
-    <div class="karte"><div class="ringe"><vgs-ring-card id="ring_frueher"></vgs-ring-card><vgs-ring-card id="ring_heute"></vgs-ring-card></div>
-      <div id="frueher_tab" class="md-tab"></div></div>
-  </section>
-
-  <!-- 22.10.2026 (Nutzer): Gasvergleich + Heiz-AZ (Tabellen fertig aus HA, web_texte.yaml → verlauf.json fw) -->
-  <section>
-    <h2>Gas geblieben? – Kosten &amp; Primärenergie</h2>
-    <div class="karte"><div id="gas_tab" class="md-tab"></div></div>
-  </section>
-
-  <section>
-    <h2>Wärmepumpe – Arbeitszahl je Außentemperatur</h2>
-    <vgs-kennzahlen-card id="kz_punkte" class="kz-karte"></vgs-kennzahlen-card>
-    <div class="karte"><div id="az_tab" class="md-tab"></div></div>
-  </section>
-
-  <!-- 22.10.2026 (Nutzer): BWWP-Kennzahlen (web_texte.yaml bwwp_md → verlauf.json fw.bwwp) -->
-  <section>
-    <h2>Warmwasser – BWWP Kennzahlen</h2>
-    <div class="karte"><div id="bwwp_tab" class="md-tab"></div></div>
-  </section>
-
-  <section>
-    <h2>Klima</h2>
-    <div id="klima" class="raster drei"></div>
-  </section>
 
   <section>
     <h2>Wärmepumpen – Strom</h2>
@@ -96,6 +80,7 @@
       <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP</span><span class="l" style="--c:#facc15">LLWP (Daikin)</span><span class="l" style="--c:#e5e7eb">kWh seit 0:00</span></div>
       <div class="zl-hinweis">Im Feld ziehen oder unten tippen/ziehen = blättern, Griffe = zoomen, Doppeltippen = Standard</div></div>
   </section>
+
 
   <section>
     <h2>Wärmequellen – wann lief was</h2>
@@ -106,6 +91,42 @@
       <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP Verdichter</span><span class="l" style="--c:#dc2626">BWWP + Heizstab</span><span class="l" style="--c:#facc15">LLWP</span></div>
     </div>
   </section>
+
+
+  <section>
+    <h2>Wärmepumpe – Arbeitszahl je Außentemperatur</h2>
+    <vgs-kennzahlen-card id="kz_punkte" class="kz-karte"></vgs-kennzahlen-card>
+    <div class="karte"><div id="az_tab" class="md-tab"></div></div>
+  </section>
+
+
+  <!-- 22.10.2026 (Nutzer): FBH-Wärmebild & Hydraulik wieder auf der Website (Daten verlauf.json fh) -->
+  <section>
+    <h2>Fußbodenheizung – Wärmebild &amp; Hydraulik</h2>
+    <div class="karte" style="padding:0;overflow:hidden"><iframe src="fbh_waermebild.html?v=202610221219" title="Wärmebild Fußbodenheizung" class="fbhbild" loading="lazy"></iframe></div>
+  </section>
+
+
+  <section>
+    <h2>Klima</h2>
+    <div id="klima" class="raster drei"></div>
+  </section>
+  </div>
+
+  <div class="kat" id="k_ww" style="--k:#60a5fa">
+    <div class="kat-titel" role="heading" aria-level="2">🚿 Warmwasser</div>
+
+
+  <!-- 22.10.2026 (Nutzer): BWWP-Kennzahlen (web_texte.yaml bwwp_md → verlauf.json fw.bwwp) -->
+  <section>
+    <h2>Warmwasser – BWWP Kennzahlen</h2>
+    <div class="karte"><div id="bwwp_tab" class="md-tab"></div></div>
+  </section>
+  </div>
+
+  <div class="kat" id="k_strom" style="--k:#facc15">
+    <div class="kat-titel" role="heading" aria-level="2">⚡ Strom &amp; PV</div>
+
 
   <!-- 21.10.2026 (Nutzer): Stromzähler unter den Energiefluss (linke Spalte), beide Spalten schließen unten bündig ab -->
   <div class="zwei buendig">
@@ -125,10 +146,12 @@
   </div>
 
 
+
   <section>
     <h2>PV-Anlage 3D</h2>
     <div class="karte" style="padding:0;overflow:hidden"><iframe src="pv3d.html?v=202610090939" title="PV-Anlage 3D" class="pv3d" loading="lazy"></iframe></div>
   </section>
+
 
   <section>
     <h2>PV-Überschuss</h2>
@@ -138,6 +161,7 @@
     </div>
   </section>
 
+
   <section>
     <h2>Woher kommt der Strom</h2>
     <div class="karte">
@@ -146,6 +170,7 @@
       <div class="prog-legende"><span class="l" style="--c:#facc15">PV</span><span class="l" style="--c:#3b82f6">Akku</span><span class="l" style="--c:#f97316">Netz</span><span class="l" style="--c:#93c5fd">unten: Akku lädt</span><span class="l" style="--c:#22c55e">unten: Einspeisung</span></div>
     </div>
   </section>
+
 
   <section>
     <h2>PV · Verbrauch · Akku</h2>
@@ -157,6 +182,7 @@
     </div>
   </section>
 
+
   <section>
     <h2>Haushaltsgeräte – wann lief was</h2>
     <div class="karte">
@@ -167,16 +193,23 @@
     </div>
   </section>
 
+
   <section>
     <h2>Wann starten?</h2>
     <div class="karte" style="padding:0"><vgs-wann-card id="wann_karte" ohne-titel></vgs-wann-card></div>
   </section>
+
 
   <section>
     <h2 class="gv-kopf">Großverbraucher <span class="gv-um" id="gv_um"><button data-m="echt" class="an">echt bezahlt</button><button data-m="ohne">ohne PV</button></span></h2>
     <div class="karte gross-karte"><div class="scroll"><table class="tab gross" id="gross"></table></div>
       <div class="fuss" id="gross_fuss"></div></div>
   </section>
+  </div>
+
+  <div class="kat" id="k_wasser" style="--k:#2dd4bf">
+    <div class="kat-titel" role="heading" aria-level="2">💧 Wasser</div>
+
 
   <section>
     <h2>Wasser</h2>
@@ -187,11 +220,34 @@
       <div class="prog-legende"><span class="l" style="--c:#ef4444">warm</span><span class="l" style="--c:#3b82f6">kalt</span><span class="l" style="--c:#9ca3af">ohne Aufteilung</span><span class="l" style="--c:#e5e7eb">Liter seit 0:00</span></div>
       <div class="zl-hinweis">Im Feld ziehen oder unten tippen/ziehen = blättern, Griffe = zoomen, Doppeltippen = Standard</div></div>
   </section>
+  </div>
+
+  <div class="kat" id="k_bilanz" style="--k:#4ade80">
+    <div class="kat-titel" role="heading" aria-level="2">📊 Bilanz</div>
+  <div class="kat-hinweis">Zwei Blickwinkel auf dieselbe Frage: <b>Früher ↔ heute</b> rechnet aufs ganze Jahr hoch (früher = Rechnungen, heute = Ø je Tag × 365, Heizung wetterbereinigt), <b>Gas geblieben?</b> vergleicht nur die tatsächlich gemessenen Tage seit Messbeginn mit einem Gasmodell aus den alten Gasrechnungen und Gradtagen – daher leicht unterschiedliche Prozente.</div>
+
+
+  <!-- 22.10.2026 (Nutzer): Früher ↔ heute wie Reiter Wärme – Torten (lib/vgs_ring.js) + Tabelle aus HA (verlauf.json fv) -->
+  <section>
+    <h2>Früher ↔ heute – Energie im Jahr</h2>
+    <div class="karte"><div class="ringe"><vgs-ring-card id="ring_frueher"></vgs-ring-card><vgs-ring-card id="ring_heute"></vgs-ring-card></div>
+      <div id="frueher_tab" class="md-tab"></div></div>
+  </section>
+
+
+  <!-- 22.10.2026 (Nutzer): Gasvergleich + Heiz-AZ (Tabellen fertig aus HA, web_texte.yaml → verlauf.json fw) -->
+  <section>
+    <h2>Gas geblieben? – Kosten &amp; Primärenergie</h2>
+    <div class="karte"><div id="gas_tab" class="md-tab"></div></div>
+  </section>
+
 
   <section id="tb_sek" hidden>
     <h2>Tagesbericht</h2>
     <div class="karte" style="padding:0;overflow:hidden"><img id="tb_bild" alt="Tagesbericht" style="display:block;width:100%;max-width:600px;margin:0 auto" loading="lazy"></div>
   </section>
+  </div>
+
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
