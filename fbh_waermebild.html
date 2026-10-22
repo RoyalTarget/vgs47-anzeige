@@ -81,12 +81,27 @@ function binne(pkte, t0, n, bin, binaer) {
     out[k] = dur > bin / 3 ? acc / dur : (binaer && dur > 0 ? acc / dur : null); }
   return out; }
 
+// 22.10.2026 (Nutzer): Website wieder mit Wärmebild + Hydraulik. Daten aus verlauf.json `fh` (anzeige.yaml): fc = 10-min-Mittel 48 h je Index
+// (Reihenfolge FI wie SQL sensor.fbh_waermebild), k = Kreise, ta = Messnächte [Kreis, Spreizung, zu], lf/mf = Messnacht, s = Raum-/Außentemperaturen.
+// Personennamen sind dort schon ersetzt (Emil → KiZi/Kinderzimmer) → Raumliste hier passend umbenennen.
+const GIST_V = GIST.replace('data.json', 'verlauf.json');
+const FI = ['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden', 'sensor.rl_dg_3', 'sensor.rl_dg_4', 'sensor.rl_yoga', 'sensor.rl_og_bad', 'sensor.rl_og_bad_wand', 'sensor.rl_og_flur',
+  'sensor.rl_og_5', 'sensor.rl_og_6', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5', 'sensor.rl_wc', 'sensor.rl_flur',
+  'sensor.cmi_hk_vorlauf', 'sensor.cmi_hk_ruecklauf', 'sensor.cmi_hk_durchfluss'];
+function webOhneNamen() {
+  for (const r of RAEUME) if (r[0] === 'Emils Zimmer') r[0] = 'Kinderzimmer';
+  if (HT_ORT['Emils Zimmer']) { delete HT_ORT['Emils Zimmer']; HT_ORT['Kinderzimmer'] = 'Kinderzimmer'; }
+  if (RAUM_T['Emils Zimmer']) { RAUM_T['Kinderzimmer'] = RAUM_T['Emils Zimmer']; delete RAUM_T['Emils Zimmer']; } }
 async function ladeWeb() {
-  try { const r = await fetch(GIST + '?t=' + Date.now(), { cache: 'no-store' }); WEB.d = await r.json(); } catch (e) { setTimeout(lade, 30000); return; }
-  const d = WEB.d, fi = d.fi || [], fb = d.fb || [], K = d.fk || []; if (!fb.length) return;
-  const t0 = fb[0][0] * 1000, n = Math.round((fb[fb.length - 1][0] * 1000 - t0) / BIN) + 1, serie = {};
-  for (const [b, i, v] of fb) { const e = fi[i]; if (!e) continue; (serie[e] = serie[e] || new Array(n).fill(null))[Math.round((b * 1000 - t0) / BIN)] = v; }
-  const states = { 'sensor.fbh_kreise': { attributes: { kreise: K } } };
+  try { const r = await fetch(GIST_V + '?t=' + Date.now(), { cache: 'no-store' }); WEB.d = (await r.json()).fh; } catch (e) { setTimeout(lade, 30000); return; }
+  const d = WEB.d; if (!d || !d.fc || !d.t0) return; webOhneNamen();
+  const K = d.k || [], t0 = d.t0 * 1000, serie = {}; let n = 0;
+  FI.forEach((e, i) => { const l = d.fc[i]; if (Array.isArray(l)) { serie[e] = l; n = Math.max(n, l.length); } });
+  if (!n) return;
+  const tage = (d.ta || []).map((t) => ({ ...t, kr: (t.kr || []).map((r) => [r[0], null, r[1], null, r[2]]) }));
+  const states = { 'sensor.fbh_kreise': { attributes: { kreise: K } }, 'sensor.fbh_abgleich': { attributes: { tage, lauf: d.lf || {} } },
+    'binary_sensor.fbh_messfenster': { state: (d.mf || [])[0], attributes: { grund: (d.mf || [])[1] } } };
+  for (const e in (d.s || {})) states[e] = { state: String(d.s[e]) };
   for (const e in serie) { const s = serie[e]; let l = null; for (let i = s.length - 1; i >= 0; i--) if (s[i] !== null) { l = s[i]; break; } states[e] = { state: String(l) }; }
   WEB.h = { states }; const da = K.filter((k) => serie[k.e]), reihen = {}; for (const k of da) reihen[k.e] = serie[k.e];
   const ref = new Array(n).fill(null);
@@ -96,6 +111,7 @@ async function ladeWeb() {
     pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), geladen: Date.now() };
   zeichne();
 }
+function webHoehe(px) { try { const fr = window.frameElement; if (fr && Math.abs(fr.offsetHeight - px) > 2) fr.style.height = px + 'px'; } catch (e) {} }
 
 async function lade() {
   let inHA = false; try { inHA = parent !== window && !!parent.document.querySelector('home-assistant'); } catch (e) {}
@@ -202,7 +218,7 @@ function zeichne() {
   const W = document.body.clientWidth, schmal = W < 560, breit = W >= 880;
   const KOPF = 26, ACHSE = 18, LEG = 18, LW = schmal ? 58 : 64;
   const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'], inHA = !!hassEcht();
-  const hy = inHA ? hydro(h, K) : null;
+  const hy = inHA || WEB.h ? hydro(h, K) : null;   // 22.10.2026: Website rechnet Hydraulik mit
   // rechte Spalten (Desktop A): RL jetzt · Spreizung · Röhrchen · Leiste · %
   const C = schmal ? null : breit ? { rl: 76, sp: 92, ro: 104, bar: 150, p: 46 } : { rl: 70, sp: 86, ro: 100, bar: 0, p: 46 };
   const RW = schmal ? (hy ? 58 : 44) : (hy ? C.rl + C.sp + C.ro + C.bar + C.p + 14 : 78);
@@ -304,6 +320,7 @@ function zeichne() {
   geo = { X0, X1, von, bis, zl, plan, ACHSE, yEnde: y, schmal };
   zeichneLeiste(W);
   if (inHA) { fussZeile(h, hy, schmal); karteAnpassen(KOPF + FH + 40 + $('fuss').offsetHeight + 4); }
+  else if (WEB.h) { fussZeile(h, hy, schmal); webHoehe(KOPF + FH + 40 + $('fuss').offsetHeight + 4); }
 }
 
 function zeichneLeiste(W) {
