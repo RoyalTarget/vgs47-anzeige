@@ -1779,6 +1779,9 @@ function zeigeFrueher(v) {
     if (!el._c) el.setConfig(cfg); el.hass = h; }
   const t = $("frueher_tab"); if (t && fv.md && t.__md !== fv.md) { t.__md = fv.md; t.innerHTML = mdHtml(fv.md); }
   const fw = (v && v.fw) || {};
+  const hk = { states: { "sensor.web_texte_warme": { state: "", attributes: { kpi: fw.kpi, punkte: fw.punkte } } } };
+  for (const [id, teil] of [["kz_kacheln", "kacheln"], ["kz_faktor", "faktor"], ["kz_punkte", "punkte"]]) { const el = $(id); if (!el || !el.setConfig || !(teil === "punkte" ? fw.punkte : fw.kpi)) continue;
+    if (!el._c) el.setConfig({ teil }); el.hass = hk; }
   for (const [id, md] of [["gas_tab", fw.gas], ["az_tab", fw.az], ["bwwp_tab", fw.bwwp]]) { const el = $(id); if (el && md && el.__md !== md) { el.__md = md; el.innerHTML = mdHtml(md); } } }
 
 let VERLAUF = null, VERLAUF_T = 0;
