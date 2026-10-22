@@ -145,7 +145,7 @@ function zeigeFluss(s) {
       "sensor.keller_miner_lufter_power", "sensor.bitaxe_leistung"]), "Keller"],
     ["Fernseher", "tv", summe(s, ["sensor.tv_sony_power", "sensor.tv_yoga_leistung"]),
       [w("sensor.tv_sony_power") > 20 ? "WZ" : "", w("sensor.tv_yoga_leistung") > 20 ? "Yoga ≈" : ""].filter(Boolean).join(" + ")],
-    ["Emils Schreibtisch", "emil", w("sensor.emils_schreibtisch_leistung"), ""],
+    ["Kinderzimmer PC", "emil", w("sensor.emils_schreibtisch_leistung"), ""],
     ["Küchengeräte", "kgeraete", summe(s, ["sensor.kueche_wasserkocher_leistung", "sensor.kueche_airfryer_leistung", "sensor.kueche_thermomix_leistung"]),
       [["Wasserkocher", "sensor.kueche_wasserkocher_leistung"], ["Airfryer", "sensor.kueche_airfryer_leistung"], ["Thermomix", "sensor.kueche_thermomix_leistung"]]
         .filter(([, e]) => w(e) > 10).map(([n]) => n).join(" + ")],
@@ -258,7 +258,7 @@ function zeigeZaehler(s) {
 const MODUS = { off: ["Aus", ""], heat: ["Heizen", "heat"], cool: ["Kühlen", "cool"], heat_cool: ["Auto", "an"],
   dry: ["Entfeuchten", "an"], fan_only: ["Lüften", "an"] };
 function zeigeKlima(s, a) {
-  const g = [["Wintergarten", "wintergarten"], ["Emil", "emil"], ["Dachspitz", "dachspitz"]];
+  const g = [["Wintergarten", "wintergarten"], ["Kinderzimmer", "emil"], ["Dachspitz", "dachspitz"]];
   $("klima").innerHTML = g.map(([n, k]) => {
     const e = `climate.${k}_room_temperature`, at = a[e] || {};
     const [txt, cls] = MODUS[s[e]] || [s[e] ?? "–", ""];
@@ -300,7 +300,7 @@ function zeigeTabellen(s, k, lp, gh) {
   const G = [
     ["🔥 Heizen", [["Wärmepumpe", "sensor.cmi_wp_leistung_elektrisch", "sensor.wp_strom_heute", "sensor.wp_strom_monat", "2026-09-22T17:14"],
       ["Klima Wintergarten", "sensor.klima_wintergarten_leistung_geschatzt", "sensor.klima_wintergarten_heute", "sensor.klima_wintergarten_monat", null],
-      ["Klima Emil", "sensor.klima_emil_leistung_geschatzt", "sensor.klima_emil_heute", "sensor.klima_emil_monat", null],
+      ["Klima Kinderzimmer", "sensor.klima_emil_leistung_geschatzt", "sensor.klima_emil_heute", "sensor.klima_emil_monat", null],
       ["Klima Dachspitz", "sensor.klima_dachspitz_leistung_geschatzt", "sensor.klima_dachspitz_heute", "sensor.klima_dachspitz_monat", null]]],
     ["🚿 Warmwasser", [["BWWP", "sensor.keller_bwwp_shelly_leistung", "sensor.keller_bwwp_shelly_bwwp_energie_heute", "sensor.bwwp_energie_monat", "2026-09-22T17:14"],
       ["↳ Verdichter", "sensor.bwwp_verdichter_leistung", "sensor.bwwp_verdichter_energie_heute", "verdichter", "2026-09-22T17:14", "teil"],
@@ -332,7 +332,7 @@ function zeigeTabellen(s, k, lp, gh) {
       // 20.10.2026: TV Yoga (Toshiba, 275 W gemessen, an = Apple TV Yogazimmer wach)
       ["TV Yoga", "sensor.tv_yoga_leistung", "sensor.tv_yoga_energie_heute", "sensor.tv_yoga_energie_monat", "2026-10-20T13:15"],
       // 20.10.2026: Emils Schreibtisch (Shelly Plug M Gen3, PC/MacBook)
-      ["Emils Schreibtisch", "sensor.emils_schreibtisch_leistung", "sensor.emil_schreibtisch_energie_heute", "sensor.emil_schreibtisch_energie_monat", "2026-10-20T08:42"],
+      ["Kinderzimmer PC", "sensor.emils_schreibtisch_leistung", "sensor.emil_schreibtisch_energie_heute", "sensor.emil_schreibtisch_energie_monat", "2026-10-20T08:42"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
       ["💡 Licht", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
@@ -537,7 +537,7 @@ function zeigePV(s) {
     h = kopf(col, kw(e) + " kW gehen ins Netz", soc >= 90 && akku > 50 ? `Akku fast voll (${zahl(soc, 0)} %), lädt noch ${kw(akku)} kW` : "");
     const G = [["🧺 Waschmaschine", "binary_sensor.waschmaschine_lauft", 2200], ["🍽️ Spülmaschine", "binary_sensor.spulmaschine_lauft", 2000],
       ["🌀 Trockner", "binary_sensor.trockner_lauft", 1000], ["❄️ Klima Wintergarten", "climate.wintergarten_room_temperature", 500],
-      ["❄️ Klima Emil", "climate.emil_room_temperature", 500], ["❄️ Klima Dachspitz", "climate.dachspitz_room_temperature", 500]];
+      ["❄️ Klima Kinderzimmer", "climate.emil_room_temperature", 500], ["❄️ Klima Dachspitz", "climate.dachspitz_room_temperature", 500]];
     const l = G.filter(([, ent, wt]) => s[ent] === "off" && wt <= u + 300).map(([n, , wt]) => `${n} <span class="grau">~${kw(wt)} kW</span>`);
     h += l.length ? `<div style="margin-top:8px"><b>Jetzt einschalten:</b><br>${l.join("<br>")}</div>` : `<div class="grau" style="margin-top:8px">Alle passenden Geräte laufen schon.</div>`;
   } else if (pv < 30) {
