@@ -255,3 +255,14 @@ vgs-schwellen-card { display: block; --primary-text-color: var(--text); --second
   .tbz .et i{grid-area:p;font-size:11px;white-space:nowrap}.tbz .et b{grid-area:b;font-size:15px;white-space:nowrap}
   .tbz .lg{display:none}.tbz .kz{display:inline}
 }
+
+/* 22.10.2026: Früher ↔ heute (Torten + Tabelle aus HA-Markdown) */
+.ringe { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+vgs-ring-card { display: block; --primary-text-color: var(--text); --secondary-text-color: var(--leise); }
+.md-tab table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+.md-tab th, .md-tab td { padding: 6px; border-bottom: 1px solid var(--rand); vertical-align: top; }
+.md-tab th { color: var(--leise); font-weight: 500; }
+.md-tab sub { vertical-align: baseline; font-size: 11px; color: var(--leise); }
+.md-tab p { margin: .5em 0; line-height: 1.45; }
+@media (max-width: 500px) { .md-tab table { font-size: 12.5px; } .md-tab th, .md-tab td { padding: 5px 3px; } }
+.md-tab small { font-size: 11px; color: var(--leise); line-height: 1.45; }
