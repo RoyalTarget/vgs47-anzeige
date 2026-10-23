@@ -64,7 +64,9 @@ function zeigeSchema(s, sk) {
     if (sl.entity === "sensor.wp_leistung_elektrisch_gesamt") { unit = "W"; dec = 0; }
     const txt = v === null ? "—" : zahl(v, dec) + (unit ? " " + unit : "");
     // 23.10.2026: WP-Geräusch nur zeigen, wenn der Verdichter läuft (0 = steht)
-    if (sl.id === "schall") { $("slot_" + sl.id).textContent = v > 0 ? sl.prefix + txt : ""; continue; }
+    // Farbe wie sensor.wp_schall_stufe: grün ≥ 5 dB unter Grenzwert (nachts 35, tags 50), orange bis Grenzwert, rot darüber
+    if (sl.id === "schall") { const el = $("slot_" + sl.id), h = new Date().getHours(), gw = h >= 22 || h < 6 ? 35 : 50;
+      el.textContent = v > 0 ? txt : ""; el.style.color = v <= gw - 5 ? "#22c55e" : v <= gw ? "#f59e0b" : "#ef4444"; continue; }
     $("slot_" + sl.id).textContent = (sl.prefix || "") + txt;
   }
   overlays.forEach((ov, i) => { $("ov_" + i).hidden = !ov.conds.every((c) => bedingung(c, s)); });
