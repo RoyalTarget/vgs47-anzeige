@@ -1796,7 +1796,8 @@ function zeigeSchall(s, v) {
     html += `<p><b>Letzte Nacht</b> (${tg(l[0])} 22–6 Uhr): gegenüber höchstens <b>${dz(l[1])} dB(A)</b>, typisch ${dz(l[2])} · WP lief ${zahl(l[4] / 60, 1)} h · über 35 dB(A): <b>${l[3]} min</b><br>`
       + `<span style="color:var(--leise)">Seit ${tg(n[0][0])} (${n.length} Nächte): lauteste Minute ${dz(mx)} dB(A), Minuten über 35 dB(A) zusammen ${u35}. Zum Vergleich: Flüstern ≈ 30 dB(A).</span></p>`;
     // Säulen: lauteste Minute je Nacht, Linie = typisch, rote Linie = Grenzwert nachts 35
-    const W = 600, H = 190, L = 28, R = 6, T = 10, B = 24, y0 = 10, y1 = 40, bw = (W - L - R) / n.length;
+    // Breite = echte Kartenbreite (max. 760 px) → Schrift bleibt 1:1, statt am Desktop riesig / am iPhone winzig skaliert
+    const W = Math.round(Math.max(300, Math.min(760, box.clientWidth || 600))), H = 190, L = 28, R = 6, T = 10, B = 24, y0 = 10, y1 = 40, bw = (W - L - R) / n.length;
     const Y = (x) => T + (y1 - Math.max(y0, Math.min(y1, x))) / (y1 - y0) * (H - T - B);
     let sv = "";
     for (const y of [10, 20, 30, 40]) sv += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--rand)"/><text x="${L - 4}" y="${Y(y) + 4}" text-anchor="end">${y}</text>`;
@@ -1805,7 +1806,7 @@ function zeigeSchall(s, v) {
       if (i % Math.ceil(n.length / 8) === 0) sv += `<text x="${(xl + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${tg(x[0])}</text>`; });
     sv += `<polyline points="${n.map((x, i) => `${(L + i * bw + bw / 2).toFixed(1)},${Y(x[2]).toFixed(1)}`).join(" ")}" fill="none" stroke="#1d4ed8" stroke-width="3" style="pointer-events:none"/>`;
     sv += `<line x1="${L}" x2="${W - R}" y1="${Y(35)}" y2="${Y(35)}" stroke="#ef4444" stroke-width="2"/><text x="${W - R}" y="${Y(35) - 4}" text-anchor="end" fill="#ef4444">Grenzwert nachts 35</text>`;
-    html += `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:320px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
+    html += `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
       + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#38bdf8">■</span> lauteste Minute je Nacht (Häuser gegenüber) · <span style="color:#1d4ed8">━</span> typisch · <span style="color:#ef4444">━</span> Grenzwert nachts</p>`;
   }
   const kn = Object.keys(ws.k || {}).length;
