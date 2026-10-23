@@ -79,7 +79,7 @@
  {
   "id": "wp_vl",
   "left": 10.0,
-  "top": 25.53,
+  "top": 24.33,
   "anchor": "middle",
   "color": "#ef4444",
   "prefix": "",
@@ -90,7 +90,7 @@
  {
   "id": "wp_rl",
   "left": 10.0,
-  "top": 29.33,
+  "top": 27.73,
   "anchor": "middle",
   "color": "#3b82f6",
   "prefix": "",
@@ -101,7 +101,7 @@
  {
   "id": "durchfl",
   "left": 10.0,
-  "top": 33.13,
+  "top": 31.13,
   "anchor": "middle",
   "color": "#e5e7eb",
   "prefix": "",
@@ -112,7 +112,7 @@
  {
   "id": "schall",
   "left": 10.0,
-  "top": 36.93,
+  "top": 34.53,
   "anchor": "middle",
   "color": "#9ca3af",
   "prefix": "",
