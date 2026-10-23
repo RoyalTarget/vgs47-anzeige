@@ -63,6 +63,8 @@ function zeigeSchema(s, sk) {
     // elektrische WP-Leistung kommt in W
     if (sl.entity === "sensor.wp_leistung_elektrisch_gesamt") { unit = "W"; dec = 0; }
     const txt = v === null ? "—" : zahl(v, dec) + (unit ? " " + unit : "");
+    // 23.10.2026: WP-Geräusch nur zeigen, wenn der Verdichter läuft (0 = steht)
+    if (sl.id === "schall") { $("slot_" + sl.id).textContent = v > 0 ? sl.prefix + txt : ""; continue; }
     $("slot_" + sl.id).textContent = (sl.prefix || "") + txt;
   }
   overlays.forEach((ov, i) => { $("ov_" + i).hidden = !ov.conds.every((c) => bedingung(c, s)); });
