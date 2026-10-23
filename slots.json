@@ -115,7 +115,7 @@
   "top": 36.93,
   "anchor": "middle",
   "color": "#9ca3af",
-  "prefix": "🔊 ",
+  "prefix": "",
   "entity": "sensor.wp_schall_gegenueber",
   "unit": "dB(A)",
   "dec": 0
