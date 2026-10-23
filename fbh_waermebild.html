@@ -164,7 +164,8 @@ const RAEUME = [
 // Daikin nur ganze Grad + Innengerät oben an der Wand → „≈“. Farbe gegen Wunschtemp. (RAEUME): grün ≥ Soll − 0,5, sonst orange.
 const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'Wohnen + WiGa', 'WZ-Mitte': 'Wohnen + WiGa', 'Yoga': 'Yoga', 'OG-Flur': 'Flur OG',
   'WC EG': 'WC', 'Flur EG': 'Flur EG', 'Emils Zimmer': 'Emils Zimmer', 'Lesezimmer': 'Lesezimmer', 'Gästezimmer': 'Gästezimmer' };
-const RAUM_T = { 'Wohnen + WiGa': [['sensor.cmi_t_raum', 'WZ'], ['sensor.wintergarten_climatecontrol_raumtemperatur', 'WiGa Daikin', 1]],
+// 23.10.2026 (Nutzer): WiGa-Daikin raus – Fühler im Innengerät misst die eigene Warmluft (+4…6 K gegen H&T A WiGa-Ende)
+const RAUM_T = { 'Wohnen + WiGa': [['sensor.cmi_t_raum', 'WZ']],
   'Emils Zimmer': [['sensor.emil_climatecontrol_raumtemperatur', 'Daikin', 1]] };
 function raumTemps(h, name) { const l = [];
   for (const x of ['a', 'b', 'c']) { const o = h?.states['input_select.ht_' + x + '_standort']?.state; if (HT_ORT[o] !== name) continue;
