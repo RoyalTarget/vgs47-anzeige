@@ -1048,7 +1048,7 @@ function zeigeWpFenster(d, v) {
     links: { e: "kW", dec: 1, max: () => 3.5 },   // 18.10.2026 (Nutzer): fest 3,5 kW – sonst skaliert eine WP-Heizstabspitze (~11 kW) aus den 14 Tagen alles klein
     rechts: { e: "kWh", max: () => Math.max(4, ...WPF.kum.map((p) => p[1] || 0)) },
     daten: ({ X, YL, x0, x1 }) => { let g = "";
-      for (const n of ["ll", "wp", "bw"]) { const p = WPF.kw[n].filter(([t]) => t >= x0 - 18e5 && t <= x1 + 9e5); if (!p.length) continue;
+      for (const n of ["ll", "wp", "bw"]) { const p = WPF.kw[n].filter(([t, w]) => w > 0.005 && t >= x0 - 18e5 && t <= x1 + 9e5); /* 23.10.2026: Stillstand ohne Nulllinie */ if (!p.length) continue;
         let dd = "", offen = false;
         for (let i = 0; i < p.length; i++) { const [t, w] = p[i], nx = i + 1 < p.length ? p[i + 1][0] : t + 9e5, lueck = i > 0 && t - p[i - 1][0] > 9e5 * 1.5;
           if (!offen || lueck) { if (offen) dd += `L${X(p[i - 1][0] + 9e5).toFixed(1)} ${YL(0)}Z`; dd += `M${X(t).toFixed(1)} ${YL(0)}`; offen = true; }
