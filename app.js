@@ -66,7 +66,8 @@ function zeigeSchema(s, sk) {
     // 23.10.2026: WP-Geräusch nur zeigen, wenn der Verdichter läuft (0 = steht)
     // Farbe wie sensor.wp_schall_stufe: grün ≥ 5 dB unter Grenzwert (nachts 35, tags 50), orange bis Grenzwert, rot darüber
     if (sl.id === "schall") { const el = $("slot_" + sl.id), h = new Date().getHours(), gw = h >= 22 || h < 6 ? 35 : 50;
-      el.textContent = v > 0 ? txt : ""; el.style.color = v <= gw - 5 ? "#22c55e" : v <= gw ? "#f59e0b" : "#ef4444"; continue; }
+      el.textContent = v > 0 ? txt : ""; el.style.color = v <= gw - 5 ? "#22c55e" : v <= gw ? "#f59e0b" : "#ef4444";
+      if (v > 0) { el.setAttribute("data-tip", schallTip(v, num(s, "sensor.wp_schall_messungen") || 0)); el.style.cursor = "help"; } else el.removeAttribute("data-tip"); continue; }
     $("slot_" + sl.id).textContent = (sl.prefix || "") + txt;
   }
   overlays.forEach((ov, i) => { $("ov_" + i).hidden = !ov.conds.every((c) => bedingung(c, s)); });
@@ -1776,6 +1777,15 @@ function mdHtml(md) {   // nur was die HA-Vorlage benutzt: Pipe-Tabelle, **fett*
 function tabHtml(t, a, frei) {
   const z = (c, tag) => c.map((x, i) => `<${tag} style="text-align:${a[i] || "left"}">${frei(x)}</${tag}>`).join("");
   return `<table><tr>${z(t.kopf, "th")}</tr>${t.rows.map((r) => `<tr>${z(r, "td")}</tr>`).join("")}</table>`; }
+// Tooltip WP-Geräusch (23.10.2026, Nutzer: ein plakativer Wert = gegenüber, alles andere hier) – andere Orte aus demselben Wert:
+// 3 m frei +7,5 dB (K0 3 statt 6), Schallleistung +25 dB, Haustür 3,5 m +9,1 dB, Schlafzimmer 14 m −2,9 dB
+function schallTip(g, mz) {
+  const h = new Date().getHours(), dz = (x) => zahl(x, 0), l = (t) => `<span style="color:#9ca3af">${t}</span>`;
+  return `<b>Geräusch der Wärmepumpe</b><br>Häuser gegenüber · 10 m: <b>${dz(g)} dB(A)</b> ${l(`(Grenze ${h >= 22 || h < 6 ? "nachts 35" : "tags 50"})`)}<br>`
+    + `in 3 m, frei aufgestellt: ${dz(g + 7.5)} dB(A) ${l("(Datenblatt nachts 32)")}<br>Schallleistung (EN 12102): ${dz(g + 25)} dB(A) ${l("(Datenblatt 52 · Förder-Grenze 55)")}<br>`
+    + `Haustür Nachbarhaus · 3,5 m: ${dz(g + 9.1)} dB(A) ${l("(zählt nicht)")}<br>Schlafzimmer Nachbarhaus · 14 m: &lt; ${dz(g - 2.9)} dB(A)<br>`
+    + l(`Geschätzt aus Verdichterleistung + Herstellertabelle${mz > 0 ? ` · ${dz(mz)} eigene Messungen` : ""}. Maßgeblich (TA Lärm): vor dem nächsten Wohn-/Schlafraumfenster.`); }
+
 // WP-Geräusch (23.10.2026, Nutzer: „Fakten pro WP“): jetzt (aus sensor.wp_schall_gegenueber, andere Orte per −20·log(Abstand)),
 // Nächte 22–6 Uhr als Säulen (verlauf.json ws.n = [Datum, max, typisch, Minuten > 35, Laufzeit]), Messstand. Keine Hausnummern/Namen.
 function zeigeSchall(s, v) {
