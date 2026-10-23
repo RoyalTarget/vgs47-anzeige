@@ -110,6 +110,17 @@
   "dec": 0
  },
  {
+  "id": "schall",
+  "left": 10.0,
+  "top": 36.93,
+  "anchor": "middle",
+  "color": "#9ca3af",
+  "prefix": "🔊 ",
+  "entity": "sensor.wp_schall_gegenueber",
+  "unit": "dB(A)",
+  "dec": 0
+ },
+ {
   "id": "puf_o",
   "left": 28.75,
   "top": 20.97,
