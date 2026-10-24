@@ -278,11 +278,13 @@ function zeigeKlima(s, a) {
 function zeigeWasser(s) {
   const zv = num(s, "sensor.wasserzahler_stadtwerke"), hv = num(s, "sensor.wasser_heute_liter");
   const alarm = s["sensor.syr_connect_245124253_getala"];
-  const ventil = { open: "Geöffnet", closed: "Geschlossen", opening: "Öffnet", closing: "Schließt" }[s["valve.syr_connect_245124253_getab"]] ?? "–";
+  // 24.10.2026: sensor.syr_ventil (aus getvlv) – valve.…_getab zeigte beim automatischen Leckschutz „offen“
+  const vz = s["sensor.syr_ventil"];
+  const ventil = { offen: "Geöffnet", zu: "Geschlossen", "öffnet": "Öffnet", "schließt": "Schließt" }[vz] ?? "–";
   const k = (n, z, farbe) => `<div class="kachel"><div class="name">${n}</div><div class="zahl"${farbe ? ` style="color:${farbe}"` : ""}>${z}</div></div>`;
   $("wasser").innerHTML = k("Heute", hv === null ? "–" : zahl(hv, 0) + " L")
     + (alarm === "no_alarm" ? k("Alarm", "Kein Alarm", "var(--gruen)") : k("Alarm", alarm ?? "–", "var(--vl)"))
-    + k("Ventil", ventil);
+    + k("Ventil", ventil, vz === "zu" || vz === "schließt" ? "var(--vl)" : "");
 }
 
 // ---------- Großverbraucher & PV je Fläche ----------
