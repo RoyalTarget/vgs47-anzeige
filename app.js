@@ -368,7 +368,7 @@ function zeigeTabellen(s, k, lp, gh) {
   const zelle = (v, n = 2, e) => v === null ? "–" : `${zahl(v, n)}<span class="eur">${eur(e ?? v * preis)}</span>`;
   const jahr = (a, e) => a === null ? "–" : `${zahl(a * 365, 0)}<span class="eur">${zahl((e ?? a * preis) * 365, 0)} €</span>`;
   // 20.10.2026 (Nutzer): Infrastruktur-Zeilen zeigen, was drinsteckt (Helferwerte live, alle geschätzt) – wie Dashboard
-  const tw = (e, an = true) => an ? Math.round(num(s, e) ?? 0) + "" : "0&nbsp;(aus)";
+  const tw = (e, an = true) => an ? Math.round(num(s, e) ?? 0) + "&nbsp;W" : "0&nbsp;W&nbsp;(aus)";   // 25.10.2026: „W“ dazu (Nutzer: „Kameras 12“ las sich wie 12 Kameras)
   const infT = (n, e, an) => n + "&nbsp;" + tw(e, an);
   const wpStill = (num(s, "sensor.wp_leistung_elektrisch_gesamt") ?? 0) < 50, hkAn = s["binary_sensor.cmi_hk_pumpe"] === "on", zpAn = s["binary_sensor.cmi_zirkulationspumpe"] === "on";
   const TEILE = {
@@ -377,7 +377,7 @@ function zeigeTabellen(s, k, lp, gh) {
       infT("Kellerlüfter", "input_number.ht_luefter_w"), infT("WP-Standby", "input_number.ht_wp_standby_w", wpStill), infT("HK-Pumpe", "input_number.ht_hk_pumpe_w", hkAn),
       infT("Stellantriebe", "input_number.ht_stellantriebe_w", hkAn), infT("Zirkulation", "input_number.ht_zirk_w", zpAn)].join(" · "),
     "Router & Netzwerk": [infT("FRITZ!Box + Repeater", "input_number.router_w"), infT("Pi", "input_number.pi_w"), infT("Switch", "input_number.switch_keller_w"), infT("Daikin-Hub", "input_number.daikin_hub_w")].join(" · "),
-    "Smart Home": [infT("Kameras", "input_number.sh_kameras_w"), infT("HomeBase", "input_number.sh_homebase_w"), "HomePods/Apple TV&nbsp;" + Math.round((num(s, "input_number.sh_apple_w") ?? 0) + ((num(s, "sensor.tv_sony_power") ?? 0) > 20 ? (num(s, "input_number.sh_tv_aktiv_w") ?? 0) : 0)) + ((num(s, "sensor.tv_sony_power") ?? 0) > 20 ? "&nbsp;(TV an)" : ""),
+    "Smart Home": [infT("Kameras", "input_number.sh_kameras_w"), infT("HomeBase", "input_number.sh_homebase_w"), "HomePods/Apple TV&nbsp;" + Math.round((num(s, "input_number.sh_apple_w") ?? 0) + ((num(s, "sensor.tv_sony_power") ?? 0) > 20 ? (num(s, "input_number.sh_tv_aktiv_w") ?? 0) : 0)) + "&nbsp;W" + ((num(s, "sensor.tv_sony_power") ?? 0) > 20 ? "&nbsp;(TV an)" : ""),
       infT("Stecker-Eigenverbrauch", "input_number.sh_stecker_w"), infT("Roomba", "input_number.sh_roomba_w")].join(" · ") };
   const zeile = (cls, n, p, h, m, av, eh, em, ea) => `<tr class="${cls}"><td>${n}${TEILE[n] ? `<br><sub style="color:#9ca3af">${TEILE[n]}</sub>` : ""}</td><td>${w0(p)}</td><td>${zelle(h, 2, eh)}</td><td>${zelle(m, 2, em)}</td><td>${zelle(av, 2, ea)}</td><td>${jahr(av, ea)}</td></tr>`;
   let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>Jahr ≈</th></tr>";
