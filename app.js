@@ -68,6 +68,9 @@ function zeigeSchema(s, sk) {
     if (sl.id === "schall") { const el = $("slot_" + sl.id), h = new Date().getHours(), gw = h >= 22 || h < 6 ? 35 : 50;
       el.textContent = v > 0 ? txt : ""; el.style.color = v <= gw - 5 ? "#22c55e" : v <= gw ? "#f59e0b" : "#ef4444";
       if (v > 0) { el.setAttribute("data-tip", schallTip(v, num(s, "sensor.wp_schall_messungen") || 0)); el.style.cursor = "help"; } else el.removeAttribute("data-tip"); continue; }
+    // 25.10.2026: RL Emil – Shelly RL OG 2 hängt an der Thermostat-Phase; ohne Wert = stromlos = Stellantriebe (NC) zu
+    if (v === null && (sl.entity === "sensor.rl_og_5" || sl.entity === "sensor.rl_og_6")) { const el = $("slot_" + sl.id); el.textContent = "zu"; el.style.color = "#9ca3af"; continue; }
+    if (sl.entity === "sensor.rl_og_5" || sl.entity === "sensor.rl_og_6") $("slot_" + sl.id).style.color = sl.color;
     $("slot_" + sl.id).textContent = (sl.prefix || "") + txt;
   }
   overlays.forEach((ov, i) => { $("ov_" + i).hidden = !ov.conds.every((c) => bedingung(c, s)); });
