@@ -9,6 +9,8 @@ const $ = (id) => document.getElementById(id);
 const zahl = (v, dec) => Number(v).toLocaleString("de-DE", { minimumFractionDigits: dec, maximumFractionDigits: dec });
 const zeitpunkt = (t) => new Date(String(t).replace(/(\.\d{3})\d+/, "$1")).getTime();   // Safari kennt keine Mikrosekunden
 const num = (s, e) => { const v = parseFloat(s[e]); return Number.isFinite(v) ? v : null; };
+// Kalendertage statt fester 24 h (26.10.2026: Zeitumstellung 25.10. = 25-h-Tag, Mitternacht/Tageskopf lagen 1 h daneben)
+const tagPlus = (t, n) => { const d = new Date(t); d.setDate(d.getDate() + n); return d.getTime(); };
 function watt(v) {
   if (v === null) return "–";
   return Math.abs(v) >= 1000 ? zahl(v / 1000, 2) + " kW" : zahl(v, 0) + " W";
@@ -615,7 +617,7 @@ function zeigeWasserGrafik(d) {
   {
     const [W, schmal] = breite("wheute"), H = 200, L = 40, R = W - 10, T = 12, B = H - 26;
     $("wheute").setAttribute("viewBox", `0 0 ${W} ${H}`);
-    const t0 = new Date(); t0.setHours(0, 0, 0, 0); const x0 = t0.getTime(), x1 = x0 + 864e5;
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0); const x0 = t0.getTime(), x1 = tagPlus(x0, 1);
     const X = (t) => L + (t - x0) / (x1 - x0) * (R - L);
     const z = (d.zp || []).map((p) => { const m = /^(\d+)\.(\d+)\. (\d+):(\d+)/.exec(p[0] || ""); if (!m) return null;
       return [new Date(j, m[2] - 1, m[1], m[3], m[4]).getTime() + (p[1] || 0) * 3e4, p]; }).filter((e) => e && e[0] >= x0 && e[0] < x1);
@@ -675,7 +677,7 @@ const fwNice = (m, n) => { const roh = Math.max(m, 1e-9) / n, p = Math.pow(10, M
 function fensterZeichnen(id) {
   const c = FW[id], svgEl = $(id); if (!c || !svgEl) return;
   const W = Math.max(Math.round(svgEl.getBoundingClientRect().width) || 1000, 300), schmal = W < 600;
-  const t0 = new Date(); t0.setHours(0, 0, 0, 0); const h0 = t0.getTime(), lo = h0 - c.zurueck * 864e5, hi = h0 + (c.vor + 1) * 864e5;
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0); const h0 = t0.getTime(), lo = tagPlus(h0, -c.zurueck), hi = tagPlus(h0, c.vor + 1);
   const sd = schmal ? c.stdSchmal : c.std, std = [h0 + sd[0] * 864e5, h0 + sd[1] * 864e5];
   let [x0, x1] = c.win && !c.win.std ? [c.win.von, c.win.bis] : std;
   const w = Math.min(Math.max(x1 - x0, 6 * 36e5), hi - lo); x1 = x0 + w; if (x0 < lo) { x0 = lo; x1 = lo + w; } if (x1 > hi) { x1 = hi; x0 = hi - w; }
@@ -694,7 +696,7 @@ function fensterZeichnen(id) {
   svg += `<text x="${L - 6}" y="${T - 14}" fill="#9ca3af" font-size="10" text-anchor="end">${c.links.e}</text><text x="${R + 4}" y="${T - 14}" fill="#9ca3af" font-size="10">${c.rechts.e}</text>`;
   // Mitternacht hinter den Daten, Daten im Plotbereich beschnitten
   const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
-  for (let v = mn.getTime(); v < x1; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 64}" y2="${B}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.7"/>`;
+  for (let v = mn.getTime(); v < x1; v = tagPlus(v, 1)) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 64}" y2="${B}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.7"/>`;
   if (jetzt > x0 && jetzt < x1) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T}" y2="${B}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
   svg += `<defs><clipPath id="${id}_clip"><rect x="${L}" y="${T - 12}" width="${R - L}" height="${B - T + 12}"/></clipPath></defs>`;
   svg += `<g clip-path="url(#${id}_clip)">${c.daten({ X, YL, YR, x0, x1, T, B, schmal })}</g>` + (c.oben ? c.oben({ X, YL, YR, x0, x1, T, B, schmal, L, R }) : "");
@@ -704,20 +706,20 @@ function fensterZeichnen(id) {
   for (let v = st.getTime(); v <= x1; v += sh * 36e5) { const h = new Date(v).getHours(); if (sh >= 24 || h === 0) continue;
     svg += `<text x="${X(v)}" y="${B + 16}" fill="#9ca3af" font-size="11" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
   const WT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-  for (let a0 = mn.getTime() - 864e5; a0 < x1; a0 += 864e5) { const a = Math.max(a0, x0), b = Math.min(a0 + 864e5, x1), bw = X(b) - X(a);
+  for (let a0 = tagPlus(mn.getTime(), -1); a0 < x1; a0 = tagPlus(a0, 1)) { const a = Math.max(a0, x0), b = Math.min(tagPlus(a0, 1), x1), bw = X(b) - X(a);
     if (bw < 46) continue; const dt = new Date(a0 + 432e5), xm = (X(a) + X(b)) / 2, heute = a0 === h0;
     svg += `<text x="${xm}" y="${T - 52}" fill="${heute ? "#fff" : "#e5e7eb"}" font-size="12" font-weight="700" text-anchor="middle">${bw >= 90 ? WT[dt.getDay()] + " " : ""}${dt.getDate()}.${dt.getMonth() + 1}.</text>`;
     const k = c.kopf(a0, bw); if (k) svg += `<text x="${xm}" y="${T - 37}" fill="#9ca3af" font-size="11" text-anchor="middle">${k}</text>`;
-    if (bw >= 70) svg += `<text x="${X(a0 + 864e5 > x1 ? x1 : a0 + 864e5) - (a0 + 864e5 > x1 ? 2 : 0)}" y="${B + 16}" fill="#9ca3af" font-size="11" text-anchor="${a0 + 864e5 > x1 ? "end" : "middle"}"></text>`; }
+    if (bw >= 70) svg += `<text x="${X(tagPlus(a0, 1) > x1 ? x1 : tagPlus(a0, 1)) - (tagPlus(a0, 1) > x1 ? 2 : 0)}" y="${B + 16}" fill="#9ca3af" font-size="11" text-anchor="${tagPlus(a0, 1) > x1 ? "end" : "middle"}"></text>`; }
   svgEl.innerHTML = svg;
   kreuz(svgEl, { L, R, T: T - 10, B, x0, x1, html: (t) => c.tip(t, { x0, x1 }) });
   // Leiste
   let u = $(id + "_ueb");
   if (!u) { u = document.createElementNS("http://www.w3.org/2000/svg", "svg"); u.id = id + "_ueb"; u.setAttribute("class", "zeitleiste zl-ueb"); svgEl.after(u); }
-  const tage = []; for (let t = lo; t < hi; t += 864e5) tage.push(t);
+  const tage = []; for (let t = lo; t < hi; t = tagPlus(t, 1)) tage.push(t);
   const st2 = tage.map((t) => c.leiste(t) || []), mx = Math.max(1e-9, ...st2.map((l) => l.reduce((x, e) => x + (e.v > 0 ? e.v : 0), 0)));
   leiste(u, { lo, hi, a: x0, b: x1, minw: 6 * 36e5, UH: 34,
-    inhalt: (UX, UW, UH) => tage.map((t, i) => { const x = UX(t) + 1.5, bw = Math.max(UX(t + 864e5) - UX(t) - 3, 1), dt = new Date(t); let sum = 0, g = "";
+    inhalt: (UX, UW, UH) => tage.map((t, i) => { const x = UX(t) + 1.5, bw = Math.max(UX(tagPlus(t, 1)) - UX(t) - 3, 1), dt = new Date(t); let sum = 0, g = "";
       for (const e of st2[i]) { if (!(e.v > 0)) continue; const hh = (UH - 4) * e.v / mx; g += `<rect x="${x}" y="${UH + 1 - (sum + hh)}" width="${bw}" height="${Math.max(hh, 0.5)}" fill="${e.farbe}"/>`; sum += hh; }
       if (UW > 700 || dt.getDate() % 2 === 0) g += `<text x="${x + bw / 2}" y="${UH + 15}" fill="${t === h0 ? "#e5e7eb" : "#9ca3af"}" font-size="10" text-anchor="middle"${t === h0 ? ' font-weight="700"' : ""}>${UW > 900 ? WT[dt.getDay()] + " " : ""}${dt.getDate()}.</text>`;
       return g; }).join("") + (jetzt < hi ? `<line x1="${UX(jetzt)}" x2="${UX(jetzt)}" y1="1" y2="${UH + 3}" stroke="#e5e7eb" stroke-width="1.5"/>` : ""),
@@ -800,7 +802,7 @@ function fwTorte(id, cc) {
 // Tage zwischen von und bis (lokale Mitternacht), mit Anteil des Tages im Bereich
 function fwTage(von, bis) { const l = [], d = new Date(von), jetzt = Date.now(); d.setHours(0, 0, 0, 0);
   // Anteil bezogen auf den schon vergangenen Teil des Tages (heute stehen in den Tageswerten nur die bisherigen Stunden)
-  for (let t = d.getTime(); t < bis; t += 864e5) { const a = Math.max(t, von), b = Math.min(t + 864e5, bis), voll = Math.min(t + 864e5, jetzt) - t;
+  for (let t = d.getTime(); t < bis; t = tagPlus(t, 1)) { const a = Math.max(t, von), b = Math.min(tagPlus(t, 1), bis), voll = Math.min(tagPlus(t, 1), jetzt) - t;
     if (b > a) l.push([fwKey(t), a, b, Math.min((b - a) / Math.max(voll, 6e4), 1)]); }
   return l; }
 const WF_ART = [["Dusche", "Dusche", "#ef4444", 1, "a_dusche"], ["Badewanne?", "Badewanne", "#f97316", 1, "a_badewanne"], ["Abspülen / Becken?", "Abspülen", "#fb7185", 1, "a_abspuelen"],
@@ -896,7 +898,7 @@ function wasserFensterDaten(d, v) {
   const s = d.s || {}, jetzt = Date.now(), jahr = new Date().getFullYear(), mn = (t) => { const x = new Date(t); x.setHours(0, 0, 0, 0); return x.getTime(); };
   // Tage: gesamt aus Zählerstand am Tagesende (heute live), warm/Duschen aus BWWP-Tageswerten (heute live)
   const tage = {}, stand = {}; for (const [k, vv] of d.wd || []) stand[k] = vv;
-  for (let t = mn(jetzt) - 14 * 864e5; t <= mn(jetzt); t += 864e5) { const k = fwKey(t), kv = fwKey(t - 864e5 + 36e5 * 2 - 36e5 * 2);
+  for (let t = tagPlus(mn(jetzt), -14); t <= mn(jetzt); t = tagPlus(t, 1)) { const k = fwKey(t), kv = fwKey(t - 864e5 + 36e5 * 2 - 36e5 * 2);
     const vk = fwKey(mn(t) - 1); let v1 = stand[k]; if (k === fwKey(jetzt)) v1 = num(s, "sensor.syr_connect_245124253_getvol") ?? v1;
     if (v1 !== undefined && stand[vk] !== undefined) tage[k] = { ges: Math.max(Math.round((v1 - stand[vk]) * 1000), 0) }; }
   for (const [k, wl, n] of d.bt || []) if (tage[k]) { tage[k].warm = wl; tage[k].dusch = n; }
@@ -1037,9 +1039,9 @@ function wpFensterDaten(d, v, s, k) {
   const kum = [], ende = [], alle = []; for (const n of ["wp", "bw", "ll"]) for (const [t, p] of kw[n]) alle.push([t, n, p]);
   alle.sort((a, b) => a[0] - b[0]); let tag = null, sum = 0, letzt = null;
   for (const [t, n, p] of alle) { const m = mn(t), kk = fwKey(t), i = integ[kk] || {}, tg = tage[kk] || {};
-    if (m !== tag) { if (tag !== null) { kum.push([tag + 864e5 - 1, sum], [tag + 864e5 - 0.5, null]); ende.push([tag + 864e5 - 1, sum]); } tag = m; sum = 0; kum.push([m, 0]); }
+    if (m !== tag) { if (tag !== null) { const tn = tagPlus(tag, 1); kum.push([tn - 1, sum], [tn - 0.5, null]); ende.push([tn - 1, sum]); } tag = m; sum = 0; kum.push([m, 0]); }
     const f = n === "ll" ? 1 : (i[n] > 0.05 && tg[n] > 0 ? tg[n] / i[n] : 1); sum += p * 0.25 * f; letzt = Math.min(t + 9e5, jetzt); kum.push([letzt, sum]); }
-  if (tag !== null) { if (tag + 864e5 <= jetzt) ende.push([tag + 864e5 - 1, sum]); else ende.push([letzt, sum]); }
+  if (tag !== null) { const tn = tagPlus(tag, 1); if (tn <= jetzt) ende.push([tn - 1, sum]); else ende.push([letzt, sum]); }
   return { kw, tage, kum, ende };
 }
 function zeigeWpFenster(d, v) {
@@ -1225,8 +1227,8 @@ function zlAchse(x0, ende, L, R, T, y2, schmal, X, tg) {
   for (let v = t.getTime(); sh < 24 && v <= ende; v += schritt) { const h = new Date(v).getHours();
     svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${y2 - 4}" y2="${y2 + 2}" stroke="#6b7280"/><text x="${X(v)}" y="${y2 + 18}" fill="#9ca3af" font-size="${schmal ? 11 : 12}" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
   const mn = new Date(x0); mn.setHours(24, 0, 0, 0);
-  for (let v = mn.getTime(); v < ende; v += 864e5) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 26}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
-  for (let t0 = mn.getTime() - 864e5; t0 < ende; t0 += 864e5) { const a = Math.max(t0, x0), b = Math.min(t0 + 864e5, ende);
+  for (let v = mn.getTime(); v < ende; v = tagPlus(v, 1)) svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${T - 26}" y2="${y2}" stroke="#e5e7eb" stroke-width="1.2" opacity="0.8"/>`;
+  for (let t0 = tagPlus(mn.getTime(), -1); t0 < ende; t0 = tagPlus(t0, 1)) { const a = Math.max(t0, x0), b = Math.min(tagPlus(t0, 1), ende);
     if (X(b) - X(a) >= 70) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 30}" fill="#e5e7eb" font-size="12" font-weight="700" text-anchor="middle">${tg(t0 + 432e5)}</text>`;
     else if (X(b) - X(a) >= 22) svg += `<text x="${(X(a) + X(b)) / 2}" y="${T - 30}" fill="#e5e7eb" font-size="11" font-weight="700" text-anchor="middle">${new Date(t0 + 432e5).getDate()}.</text>`; }
   if (ende >= jetzt - 6e4) svg += `<line x1="${X(jetzt)}" x2="${X(jetzt)}" y1="${T - 4}" y2="${y2}" stroke="#9ca3af" stroke-dasharray="4 4"/>`;
@@ -1372,7 +1374,7 @@ function zeichneZL(id) {
     let g = `<rect x="8" y="2" width="${UW - 16}" height="${UH}" fill="#27272a" rx="3"/>`;
     Q.forEach(([, codes, farben], i) => codes.forEach((c, k) => { for (const [a, b] of zlSeg[c] || []) { if (b < u0) continue;
       g += `<rect x="${UX(Math.max(a, u0))}" y="${5 + i * 6}" width="${Math.max(UX(b) - UX(Math.max(a, u0)), 1)}" height="4" fill="${farben[k]}"/>`; } }));
-    for (let v = new Date(u0).setHours(24, 0, 0, 0); v < jetzt; v += 864e5) { const dt = new Date(v);
+    for (let v = new Date(u0).setHours(24, 0, 0, 0); v < jetzt; v = tagPlus(v, 1)) { const dt = new Date(v);
       g += `<line x1="${UX(v)}" x2="${UX(v)}" y1="2" y2="${UH + 2}" stroke="#52525b"/>`;
       if (!schmal || dt.getDate() % 2 === 0) g += `<text x="${UX(v + 432e5)}" y="${UH + 15}" fill="#9ca3af" font-size="10" text-anchor="middle">${dt.getDate()}.${dt.getMonth() + 1}.</text>`; }
     g += `<rect x="${UX(x0)}" y="1" width="${UX(ende) - UX(x0)}" height="${UH + 2}" fill="#e5e7eb" fill-opacity="0.12" stroke="#e5e7eb" stroke-width="1.5" rx="3"/>`;
@@ -1480,7 +1482,7 @@ function zeichneHK() {
     inhalt: (UX, UW, UH) => { let g = "";
       for (const [t, pv, akku, netz, , , , , dur] of hkDaten) { const s = pv + akku + netz; if (s <= 20) continue; const x = UX(t), w = Math.max(UX(t + dur) - x, 0.8); let y = UH + 1;
         for (const [k, v] of [["pv", pv], ["akku", akku], ["netz", netz]]) { const dy = v / s * (UH - 4); if (dy > 0.2) g += `<rect x="${x.toFixed(1)}" y="${(y - dy).toFixed(1)}" width="${w.toFixed(1)}" height="${dy.toFixed(1)}" fill="${HK_F[k]}"/>`; y -= dy; } }
-      for (let v = new Date(lo).setHours(24, 0, 0, 0); v < jetzt; v += 864e5) { const dt = new Date(v);
+      for (let v = new Date(lo).setHours(24, 0, 0, 0); v < jetzt; v = tagPlus(v, 1)) { const dt = new Date(v);
         g += `<line x1="${UX(v)}" x2="${UX(v)}" y1="2" y2="${UH + 2}" stroke="#18181b" stroke-width="1"/>`;
         if (UW > 600 || dt.getDate() % 2 === 0) g += `<text x="${UX(v + 432e5)}" y="${UH + 15}" fill="#9ca3af" font-size="10" text-anchor="middle">${dt.getDate()}.${dt.getMonth() + 1}.</text>`; }
       return g; },
@@ -1508,7 +1510,7 @@ function zeigePrognose(d) {
   window.__progD = d;
   const W = 1000, H = 330, L = 44, R = 956, T = 12, B = 290;
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
-  const LO = t0.getTime() - 4 * 864e5, HI = t0.getTime() + 8 * 864e5, FEN = 5 * 864e5;
+  const LO = tagPlus(t0.getTime(), -4), HI = tagPlus(t0.getTime(), 8), FEN = 5 * 864e5;
   if (!window.__progWin) window.__progWin = { std: true, von: 0, breite: FEN };
   // Breite variabel (Griffe am Rahmen der Tagesleiste, 30.09.2026): 12 h … ganzer Bereich
   // 08.10.2026 (Nutzer, wie Dashboard): iPhone hochkant Standard heute + morgen, sonst 5 Tage
@@ -1537,9 +1539,9 @@ function zeigePrognose(d) {
     + `<text x="${R + 6}" y="${T - 2}" fill="#9ca3af" font-size="11">%</text>`;
   const tage = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
   { const m0 = new Date(x0); m0.setHours(0, 0, 0, 0);
-    for (let t = m0.getTime(); t <= x1; t += 864e5) {
+    for (let t = m0.getTime(); t <= x1; t = tagPlus(t, 1)) {
       if (t >= x0) svg += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${B}" stroke="#4b5563"/>`;
-      const a = Math.max(t, x0), b = Math.min(t + 864e5, x1), dt = new Date(t);
+      const a = Math.max(t, x0), b = Math.min(tagPlus(t, 1), x1), dt = new Date(t);
       if (X(b) - X(a) > 60) svg += `<text x="${(X(a) + X(b)) / 2}" y="${B + 22}" fill="${t === t0.getTime() ? '#e5e7eb' : '#9ca3af'}" font-size="13" ${t === t0.getTime() ? 'font-weight="700"' : ''} text-anchor="middle">${tage[dt.getDay()]} ${dt.getDate()}.${dt.getMonth() + 1}.</text>`;
     } }
   let g = ""; const KZ = [], KZt = (arr) => arr.filter((p) => p[1] !== null && p[1] !== undefined);
@@ -1604,7 +1606,7 @@ function zeigePrognose(d) {
     const key = (t) => { const dt = new Date(t); return dt.getFullYear() * 1e4 + (dt.getMonth() + 1) * 100 + dt.getDate(); };
     const pvI = tg(pi, 1, 1), vbI = tg(pi, 2, 1), pvP = tg(pr, 1, 0.001), vbP = tg(d.ve || [], 1, 0.001);
     const UW = 1000, UH = 34, U = (t) => 8 + (t - LO) / (HI - LO) * (UW - 16), heute = t0.getTime();
-    const tl = []; for (let t = LO; t < HI; t += 864e5) tl.push(t);
+    const tl = []; for (let t = LO; t < HI; t = tagPlus(t, 1)) tl.push(t);
     const pvW = (t) => { const k = key(t), a = pvI[k] ?? 0, p = pvP[k] ?? 0; return t < heute ? [a, 0] : t === heute ? [a, Math.max(p - a, 0)] : [0, p]; };
     const vbW = (t) => { const k = key(t); return t < heute ? vbI[k] : (vbP[k] ?? vbI[k]); };
     let mx = 10; tl.forEach((t) => { const [a, b] = pvW(t); mx = Math.max(mx, a + b, vbW(t) || 0); });
@@ -1624,7 +1626,7 @@ function zeigePrognose(d) {
       // Griffe (30.09.2026): Rand des Rahmens ziehen = schmaler/breiter (zoomen), im Rahmen ziehen = verschieben, daneben tippen = springen
       let gm = null; const MINW = 12 * 36e5;
       const lage = (ev) => { const r = ub.getBoundingClientRect(), tt0 = new Date(); tt0.setHours(0, 0, 0, 0);
-        const lo = tt0.getTime() - 4 * 864e5, hi = tt0.getTime() + 8 * 864e5, [a, b] = window.__progX;
+        const lo = tagPlus(tt0.getTime(), -4), hi = tagPlus(tt0.getTime(), 8), [a, b] = window.__progX;
         const zt = (x) => lo + ((x - r.left) / r.width * 1000 - 8) / (1000 - 16) * (hi - lo), xt = (t) => r.left + (8 + (t - lo) / (hi - lo) * (1000 - 16)) / 1000 * r.width;
         return { t: zt(ev.clientX), a, b, xa: xt(a), xb: xt(b), tol: ev.pointerType === "touch" ? 18 : 8 }; };
       const setze = (von, bis) => { window.__progWin = { std: false, von, breite: bis - von };
