@@ -326,6 +326,8 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Wasserkocher", "sensor.kueche_wasserkocher_leistung", "sensor.wasserkocher_energie_heute", "sensor.wasserkocher_energie_monat", "2026-10-20T11:08"],
       ["Airfryer", "sensor.kueche_airfryer_leistung", "sensor.airfryer_energie_heute", "sensor.airfryer_energie_monat", "2026-10-20T12:45"],
       ["Thermomix", "sensor.kueche_thermomix_leistung", "sensor.thermomix_energie_heute", "sensor.thermomix_energie_monat", "2026-10-20T12:45"],
+      // 26.10.2026: Staubsauger = Schätzung aus dem Rest (wie Dashboard); Leistung jetzt steckt in Kochen/Backen → „–“
+      ["Staubsauger", "binary_sensor.staubsauger_lauft_geschatzt", "sensor.staubsauger_energie_heute", "sensor.staubsauger_energie_monat", "2026-10-19T00:00"],
       ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
       ["Kühlschrank Garage", "sensor.garage_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_garage_energie_heute", "sensor.kuhlschrank_garage_energie_monat", "2026-09-24T17:59"]]],
     // 20.10.2026 (Nutzer): Haustechnik → „Infrastruktur“ (läuft immer, nicht abschaltbar) inkl. Router & Netzwerk + Smart Home.
