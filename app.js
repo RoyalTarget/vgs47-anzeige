@@ -1020,7 +1020,7 @@ function zeigeWasserFenster(d, v) {
         return fwBox(`<b>${F(gb.t)}</b><br><span style="color:#22c55e">●</span> <b>🌱 Garten</b> · ${Math.round(gb.l)} l<br>${gb.was || ""}${gb.est ? '<br><span style="color:#9ca3af;font-size:11px">geschätzt aus der Tagessumme (vor der Eve-Messung)</span>' : ""}`);
       if (!b || Math.abs(b.t - t) > (x1 - x0) * 0.01) { const y = wertBei(WF.kum.filter((p) => p[1] != null), t, 36e5 * 6); return y == null ? "" : fwBox(`${F(t)}<br>seit 0:00: <b>${Math.round(y)} l</b>`); }
       const col = b.warm === true ? "#ef4444" : b.warm === false ? "#3b82f6" : "#9ca3af", art = b.warm === true ? "warm" : b.warm === false ? "kalt" : "warm/kalt unbekannt";
-      return fwBox(`<b>${F(b.t)}</b> · ${b.p.dauer_min || "?"} min<br><span style="color:${col}">●</span> <b>${b.art || art}</b> · ${b.l} l ${b.art ? art : ""}${b.p.max_lh ? " · max " + b.p.max_lh + " l/h" : ""}`
+      return fwBox(`<b>${F(b.t)}</b> · ${b.p.dauer_min || "?"} min<br><span style="color:${col}">●</span> <b>${(b.art || art).replace("WC?", "WC")}</b> · ${b.l} l ${b.art ? art : ""}${b.p.max_lh ? " · max " + b.p.max_lh + " l/h" : ""}`
         + (b.warm === true ? `<br>davon ≈ ${Math.round(wfHeiss(b))} l heiß ab Speicher, ${Math.round(b.l - wfHeiss(b))} l kalt zugemischt` : "")
         + (b.nach ? '<br><span style="color:#9ca3af;font-size:11px">aus SYR-Verlauf nachträglich bestimmt</span>' : "")); } });
   fensterZeichnen("wf");
