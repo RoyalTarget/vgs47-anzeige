@@ -384,7 +384,11 @@ function zeigeTabellen(s, k, lp, gh) {
     "Smart Home": [infT("Kameras", "input_number.sh_kameras_w"), infT("HomeBase", "input_number.sh_homebase_w"), "HomePods/Apple TV&nbsp;" + Math.round((num(s, "input_number.sh_apple_w") ?? 0) + ((num(s, "sensor.tv_sony_power") ?? 0) > 20 ? (num(s, "input_number.sh_tv_aktiv_w") ?? 0) : 0)) + "&nbsp;W" + ((num(s, "sensor.tv_sony_power") ?? 0) > 20 ? "&nbsp;(TV an)" : ""),
       infT("Stecker-Eigenverbrauch", "input_number.sh_stecker_w"), infT("Roomba", "input_number.sh_roomba_w")].join(" · ") };
   // 27.10.2026 (Nutzer): jetzt-Leistung der Geräte grün, wenn ≥ 5 W (wie Dashboard)
-  const zeile = (cls, n, p, h, m, av, eh, em, ea) => `<tr class="${cls}"><td>${n}${TEILE[n] ? ` <span data-tip="${escH(TEILE[n].replace(/&nbsp;/g, "\u00a0"))}" style="cursor:help;color:#9ca3af">ⓘ</span>` : ""}</td><td>${/gruppe|haus|pvabzug|netz/.test(cls) ? w0(p) : `<span style="color:${p !== null && p >= 5 ? "#4ade80" : "#9ca3af"}">${w0(p)}</span>`}</td><td>${zelle(h, 2, eh)}</td><td>${zelle(m, 2, em)}</td><td>${zelle(av, 2, ea)}</td><td>${jahr(av, ea)}</td></tr>`;
+  // 28.10.2026 (Nutzer): Sicherung im Tooltip (verlauf.json sg = sensor.sicherungen, Master Elektro/Hauptverteilung.md) – wie Dashboard
+  const SG = (VERLAUF && VERLAUF.sg) || { g: {}, k: {} };
+  const tipp = (n) => { const k = SG.g[n], si = k && k[1] !== "f" ? `Sicherung ${k[0]} ${SG.k[k[0]] || ""}${k[1] === "b" ? " (nur laut Beschriftung)" : ""}` : "";
+    return [TEILE[n] ? TEILE[n].replace(/&nbsp;/g, "\u00a0") : "", si].filter(Boolean).join(" · "); };
+  const zeile = (cls, n, p, h, m, av, eh, em, ea) => `<tr class="${cls}"><td>${n}${tipp(n) ? ` <span data-tip="${escH(tipp(n))}" style="cursor:help;color:#9ca3af">ⓘ</span>` : ""}</td><td>${/gruppe|haus|pvabzug|netz/.test(cls) ? w0(p) : `<span style="color:${p !== null && p >= 5 ? "#4ade80" : "#9ca3af"}">${w0(p)}</span>`}</td><td>${zelle(h, 2, eh)}</td><td>${zelle(m, 2, em)}</td><td>${zelle(av, 2, ea)}</td><td>${jahr(av, ea)}</td></tr>`;
   let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>Jahr ≈</th></tr>";
   let sp = 0, sh = 0, sa = 0; const gruppen = [];
   for (const [gn, items] of G) {
