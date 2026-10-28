@@ -386,7 +386,7 @@ function zeigeTabellen(s, k, lp, gh) {
   // 27.10.2026 (Nutzer): jetzt-Leistung der Geräte grün, wenn ≥ 5 W (wie Dashboard)
   // 28.10.2026 (Nutzer): Sicherung im Tooltip (verlauf.json sg = sensor.sicherungen, Master Elektro/Hauptverteilung.md) – wie Dashboard
   const SG = (VERLAUF && VERLAUF.sg) || { g: {}, k: {} };
-  const tipp = (n) => { const k = SG.g[n], si = k && k[1] !== "f" ? `Sicherung ${k[0]} ${SG.k[k[0]] || ""}${k[1] === "b" ? " (nur laut Beschriftung)" : ""}` : "";
+  const tipp = (n) => { const k = SG.g[n], si = k && k[1] !== "f" ? `Sicherung ${k[0]} ${SG.k[k[0]] || ""}${k[1] === "b" ? " (nur laut Beschriftung)" : k[1] === "n" ? " (laut Nutzer, nicht getestet)" : ""}` : "";
     return [TEILE[n] ? TEILE[n].replace(/&nbsp;/g, "\u00a0") : "", si].filter(Boolean).join(" · "); };
   const zeile = (cls, n, p, h, m, av, eh, em, ea) => `<tr class="${cls}"><td>${n}${tipp(n) ? ` <span data-tip="${escH(tipp(n))}" style="cursor:help;color:#9ca3af">ⓘ</span>` : ""}</td><td>${/gruppe|haus|pvabzug|netz/.test(cls) ? w0(p) : `<span style="color:${p !== null && p >= 5 ? "#4ade80" : "#9ca3af"}">${w0(p)}</span>`}</td><td>${zelle(h, 2, eh)}</td><td>${zelle(m, 2, em)}</td><td>${zelle(av, 2, ea)}</td><td>${jahr(av, ea)}</td></tr>`;
   let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>Jahr ≈</th></tr>";
