@@ -165,7 +165,9 @@ const RAEUME = [
 const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'Wohnen + WiGa', 'WZ-Mitte': 'Wohnen + WiGa', 'Yoga': 'Yoga', 'OG-Flur': 'Flur OG',
   'WC EG': 'WC', 'Flur EG': 'Flur EG', 'Emils Zimmer': 'Emils Zimmer', 'Lesezimmer': 'Lesezimmer', 'Gästezimmer': 'Gästezimmer' };
 // 23.10.2026 (Nutzer): WiGa-Daikin raus – Fühler im Innengerät misst die eigene Warmluft (+4…6 K gegen H&T A WiGa-Ende)
-const RAUM_T = { 'Wohnen + WiGa': [['sensor.cmi_t_raum', 'WZ']],
+// 29.10.2026: feste H&T WZ (an der Thermostat-Stelle) + Flur EG; CMI-Raumfühler daneben als Vergleich
+const RAUM_T = { 'Wohnen + WiGa': [['sensor.ht_wohnzimmer_temperatur', 'H&T WZ'], ['sensor.cmi_t_raum', 'CMI']],
+  'Flur EG': [['sensor.ht_flur_eg_temperatur', 'H&T']],
   'Emils Zimmer': [['sensor.emil_climatecontrol_raumtemperatur', 'Daikin', 1]] };
 function raumTemps(h, name) { const l = [];
   for (const x of ['a', 'b', 'c']) { const o = h?.states['input_select.ht_' + x + '_standort']?.state; if (HT_ORT[o] !== name) continue;
