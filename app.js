@@ -379,7 +379,7 @@ function zeigeTabellen(s, k, lp, gh) {
     "Victron-Anlage": "MultiPlus-Eigenverbrauch + Akku-Nachladen · nur Netzbezug sichtbar",
     "Heizungstechnik": [infT("Regelung", "input_number.ht_regelung_w"), infT("Daikin-Standby", "input_number.ht_daikin_w"), infT("SYR/Wolf-Link/Leisten", "input_number.ht_sonst_w"),
       infT("Kellerlüfter", "input_number.ht_luefter_w"), infT("WP-Standby", "input_number.ht_wp_standby_w", wpStill), infT("HK-Pumpe", "input_number.ht_hk_pumpe_w", hkAn),
-      infT("Stellantriebe", "input_number.ht_stellantriebe_w", hkAn), infT("Zirkulation", "input_number.ht_zirk_w", zpAn)].join(" · "),
+      infT("Stellantriebe", "input_number.ht_stellantriebe_w"), infT("Zirkulation", "input_number.ht_zirk_w", zpAn)].join(" · "),
     "Router & Netzwerk": [infT("FRITZ!Box + Repeater", "input_number.router_w"), infT("Pi", "input_number.pi_w"), infT("Switch", "input_number.switch_keller_w"), infT("Daikin-Hub", "input_number.daikin_hub_w")].join(" · "),
     "Smart Home": [infT("Kameras", "input_number.sh_kameras_w"), infT("HomeBase", "input_number.sh_homebase_w"), "HomePods/Apple TV&nbsp;" + Math.round((num(s, "input_number.sh_apple_w") ?? 0) + ((num(s, "sensor.tv_sony_power") ?? 0) > 20 ? (num(s, "input_number.sh_tv_aktiv_w") ?? 0) : 0)) + "&nbsp;W" + ((num(s, "sensor.tv_sony_power") ?? 0) > 20 ? "&nbsp;(TV an)" : ""),
       infT("Stecker-Eigenverbrauch", "input_number.sh_stecker_w"), infT("Roomba", "input_number.sh_roomba_w")].join(" · ") };
