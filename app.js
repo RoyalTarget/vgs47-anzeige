@@ -1771,7 +1771,8 @@ function zeigeKueche() {
   const neu = !el.hass;
   const hs = { states: st, config: { latitude: 48.14, longitude: 11.58 }, callWS };
   el.hass = hs;
-  const ee = $("kueche_energie"); if (ee) ee.hass = hs;   // 21.10.2026: Teil „Energie jetzt“ in der Batterie-Spalte (hass hat keinen Getter)
+  const ee = $("kueche_energie"); if (ee) ee.hass = hs;
+  const hv = $("hv"); if (hv && KUECHE.hv && customElements.get("vgs-hv-card")) hv.daten = KUECHE.hv;   // 01.11.2026: Hauptverteilung live (Schnappschuss je Minute)   // 21.10.2026: Teil „Energie jetzt“ in der Batterie-Spalte (hass hat keinen Getter)
   if (!neu && el._kT !== KUECHE.t) { el._kT = KUECHE.t; el._statZeit = 0; try { el._ladeStat(); el._ladeTemp(); } catch (e) {} }
   el._kT = KUECHE.t;
 }
