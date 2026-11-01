@@ -350,19 +350,26 @@ function zeigeTabellen(s, k, lp, gh) {
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
       ["💡 Licht", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
+  // 01.11.2026 (Nutzer): Ø/Tag + Jahr aus ALLEN Daten seit Messbeginn, 30 Tage = echte Summe der letzten 30 Tage (verlauf.json vj = sensor.verbrauch_jahr,
+  // je Zähler [Ø/Tag, 30 T, 30 T geschätzt, Jahr, Tage]); WP-Jahr wetterbereinigt (Gradtage) – wie Dashboard. Vorher Monat + Vormonat → fiel am 1. weg.
+  const VJ = (VERLAUF && VERLAUF.vj && VERLAUF.vj.w) || {}, VW = (VERLAUF && VERLAUF.vj && VERLAUF.vj.wp) || {};
+  const vjv = (h) => VJ[h === "sensor.wp_strom_heute" ? "wp_stromzahler" : String(h).replace("sensor.", "")] || null;
+  const _hv = VJ.hausverbrauch_heute || null, _nv = VJ.netzbezug_monat || null, _vv = VJ.netz_an_victron_heute || [0, 0, 1, 0, 0], _wv = VJ.wp_stromzahler || [0, 0, 1, 0, 0];
+  const wpk = _wv[3] - _wv[0] * 365;
   const GL_ZEILEN = ["Kühlschrank", "Kühlschrank Garage", "Victron-Anlage", "Heizungstechnik", "Router & Netzwerk", "Smart Home"];
   // „echt bezahlt“ / „ohne PV“ (01.10.2026, wie im Dashboard): € je Gerät = kWh × Preis × Netzanteil des Geräts (Payload gh aus
   // sensor.geraete_herkunft: {h|m: {Leistungs-Entität: [kWh, davon Netz]}}); Ø/Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses
   const echt = gvModus() === "echt", GH = (gh && gh.h) || {}, GM = (gh && gh.m) || {};
   const hp0 = num(s, "sensor.hausverbrauch"), hh0 = kv("sensor.hausverbrauch_heute"), hm0 = kv("sensor.hausverbrauch_monat");
-  const haStart = "2026-09-22T15:00", ha0 = avg(hm0, lp["sensor.hausverbrauch_monat"] || 0, haStart);
+  const haStart = "2026-09-22T15:00", ha0 = _hv ? _hv[0] : null;
   const np = Math.max(num(s, "sensor.em_540_netzmessgeraet_leistung") ?? 0, 0);
   // 19.10.2026: Haus gesamt = Victron-Lasten + Victron-Anlage (Zeile in Sonstiges) → Rest = Haus − Geräte bleibt wie vorher
-  const vp = hp0 === null ? null : Math.max(np - hp0, 0), vh = kv("sensor.netz_an_victron_heute") ?? 0, vm = kv("sensor.netz_an_victron_monat") ?? 0, va = avg(vm, 0, "2026-10-01T00:00") ?? 0;
+  const vp = hp0 === null ? null : Math.max(np - hp0, 0), vh = kv("sensor.netz_an_victron_heute") ?? 0, vm = kv("sensor.netz_an_victron_monat") ?? 0, va = _vv[0];
   const plus = (a, b) => (a === null ? null : a + b);
   const hp = plus(hp0, vp ?? 0), hh = plus(hh0, vh), hm = plus(hm0, vm), ha = plus(ha0, va);
   const nh = Math.max((num(s, "sensor.em_540_netzmessgeraet_verbrauch") ?? 0) - (num(s, "input_number.em540_bezug_mitternacht") ?? 0), 0);
-  const nm = kv("sensor.netzbezug_monat"), na = avg(nm, lp["sensor.netzbezug_monat"] || 0, haStart);
+  const nm = kv("sensor.netzbezug_monat"), na = _nv ? _nv[0] : null, n30 = _nv ? _nv[1] : null;
+  const h30 = _hv ? _hv[1] + _vv[1] : null, hj = _hv ? _hv[3] + _vv[3] + wpk : null;
   const fh = hh > 0.05 ? Math.min(nh / hh, 1) : 0.5, fm = hm > 0.05 && nm !== null ? Math.min(nm / hm, 1) : 0.5, fa = ha > 0.05 && na !== null ? Math.min(na / ha, 1) : 0.5;
   const mTage = (jetztMs - ms.getTime()) / 864e5;
   const ant = (dd, key, fb) => { const x = dd[key]; return x && x[0] > 0.005 ? x[1] / x[0] : fb; };
@@ -370,7 +377,8 @@ function zeigeTabellen(s, k, lp, gh) {
   const w0 = (v) => (v === null ? "–" : zahl(v, 0) + " W");
   const eur = (v) => zahl(v, 2) + " €";
   const zelle = (v, n = 2, e) => v === null ? "–" : `${zahl(v, n)}<span class="eur">${eur(e ?? v * preis)}</span>`;
-  const jahr = (a, e) => a === null ? "–" : `${zahl(a * 365, 0)}<span class="eur">${zahl((e ?? a * preis) * 365, 0)} €</span>`;
+  const jahr = (a, e, x = "") => a === null || a === undefined ? "–" : `${zahl(a, 0)}<span class="eur">${zahl(e ?? a * preis, 0)} €${x}</span>`;
+  const z30 = (v, e, g) => v === null || v === undefined ? "–" : `${g ? "≈\u00a0" : ""}${zahl(v, 1)}<span class="eur">${eur(e ?? v * preis)}</span>`;
   // 20.10.2026 (Nutzer): Infrastruktur-Zeilen zeigen, was drinsteckt (Helferwerte live, alle geschätzt) – wie Dashboard
   const tw = (e, an = true) => an ? Math.round(num(s, e) ?? 0) + "&nbsp;W" : "0&nbsp;W&nbsp;(aus)";   // 25.10.2026: „W“ dazu (Nutzer: „Kameras 12“ las sich wie 12 Kameras)
   const infT = (n, e, an) => n + "&nbsp;" + tw(e, an);
@@ -388,48 +396,50 @@ function zeigeTabellen(s, k, lp, gh) {
   const SG = (VERLAUF && VERLAUF.sg) || { g: {}, k: {} };
   const tipp = (n) => { const k = SG.g[n], si = k && k[1] !== "f" ? `Sicherung ${k[0]} ${SG.k[k[0]] || ""}${k[1] === "b" ? " (nur laut Beschriftung)" : k[1] === "n" ? " (laut Nutzer, nicht getestet)" : ""}` : "";
     return [TEILE[n] ? TEILE[n].replace(/&nbsp;/g, "\u00a0") : "", si].filter(Boolean).join(" · "); };
-  const zeile = (cls, n, p, h, m, av, eh, em, ea) => `<tr class="${cls}"><td>${n}${tipp(n) ? ` <span data-tip="${escH(tipp(n))}" style="cursor:help;color:#9ca3af">ⓘ</span>` : ""}</td><td>${/gruppe|haus|pvabzug|netz/.test(cls) ? w0(p) : `<span style="color:${p !== null && p >= 5 ? "#4ade80" : "#9ca3af"}">${w0(p)}</span>`}</td><td>${zelle(h, 2, eh)}</td><td>${zelle(m, 2, em)}</td><td>${zelle(av, 2, ea)}</td><td>${jahr(av, ea)}</td></tr>`;
-  let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>Jahr ≈</th></tr>";
-  let sp = 0, sh = 0, sa = 0; const gruppen = [];
+  const zeile = (cls, n, p, h, m, av, eh, em, ea, a30, e30, g30, aj, ej) => `<tr class="${cls}"><td>${n}${tipp(n) ? ` <span data-tip="${escH(tipp(n))}" style="cursor:help;color:#9ca3af">ⓘ</span>` : ""}</td><td>${/gruppe|haus|pvabzug|netz/.test(cls) ? w0(p) : `<span style="color:${p !== null && p >= 5 ? "#4ade80" : "#9ca3af"}">${w0(p)}</span>`}</td><td>${zelle(h, 2, eh)}</td><td>${zelle(m, 2, em)}</td><td>${zelle(av, 2, ea)}</td><td>${z30(a30, e30, g30)}</td><td>${jahr(aj, ej, n === "Wärmepumpe" && VW.wb ? " · wetterber." : "")}</td></tr>`;
+  let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>30 Tage</th><th>Jahr ≈</th></tr>";
+  let sp = 0, sh = 0, sa = 0, s30 = 0, sj = 0; const gruppen = [];
   for (const [gn, items] of G) {
-    let gp = 0, gh = 0, gm = 0, ga = 0, geh = 0, gem = 0, gea = 0, zeilen = "";
+    let gp = 0, gh = 0, gm = 0, ga = 0, geh = 0, gem = 0, gea = 0, g30 = 0, gg30 = false, gj = 0, ge30 = 0, gej = 0, zeilen = "";
     for (const [n, p, h, m, st, cls] of items) {
       let mv, l;
       if (m === "verdichter") { const b = kv("sensor.bwwp_energie_monat"), z = kv("sensor.bwwp_heizstab_energie_monat");
         mv = b === null || z === null ? null : Math.max(b - z, 0); l = (lp["sensor.bwwp_energie_monat"] || 0) - (lp["sensor.bwwp_heizstab_energie_monat"] || 0);
       } else { mv = kv(m); l = lp[m] || 0; }
-      const pv = p === "victron" ? vp : p === "sensor.cmi_wp_leistung_elektrisch" ? num(s, "sensor.wp_leistung_elektrisch_gesamt") : num(s, p), hv = kv(h), av = avg(mv, l, st), [ah, am, aa] = p === "victron" ? [1, 1, 1] : anteile(p);
-      const eh = (hv ?? 0) * preis * ah, em = (mv ?? 0) * preis * am, ea = (av ?? 0) * preis * aa;
-      if (!cls) { gp += pv ?? 0; gh += hv ?? 0; gm += mv ?? 0; ga += av ?? 0; geh += eh; gem += em; gea += ea; }
+      const pv = p === "victron" ? vp : p === "sensor.cmi_wp_leistung_elektrisch" ? num(s, "sensor.wp_leistung_elektrisch_gesamt") : num(s, p), hv = kv(h), vj = vjv(h), av = vj ? vj[0] : null, a30 = vj ? vj[1] : null, f30 = vj ? vj[2] === 1 : false, aj = vj ? vj[3] : null, [ah, am, aa] = p === "victron" ? [1, 1, 1] : anteile(p);
+      const eh = (hv ?? 0) * preis * ah, em = (mv ?? 0) * preis * am, ea = (av ?? 0) * preis * aa, e30 = (a30 ?? 0) * preis * aa, ej = (aj ?? 0) * preis * aa;
+      if (!cls) { gp += pv ?? 0; gh += hv ?? 0; gm += mv ?? 0; ga += av ?? 0; geh += eh; gem += em; gea += ea; g30 += a30 ?? 0; gg30 = gg30 || f30; gj += aj ?? 0; ge30 += e30; gej += ej; }
       // 19.10.2026 (Nutzer): Grundlast-Anteile grau hinterlegt (wie Dashboard)
-      zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : "") + (GL_ZEILEN.includes(n) ? " gl" : ""), n, pv, hv, mv, av, eh, em, ea);
+      zeilen += zeile((cls || "") + (cls && cls.includes("hz") && s["binary_sensor.bwwp_heizstab"] === "on" ? " an" : "") + (GL_ZEILEN.includes(n) ? " gl" : ""), n, pv, hv, mv, av, eh, em, ea, a30, e30, f30, aj, ej);
     }
-    gruppen.push([gn, gp, gh, gm, ga, zeilen, geh, gem, gea]); sp += gp; sh += gh; sa += ga;
+    gruppen.push([gn, gp, gh, gm, ga, zeilen, geh, gem, gea, g30, gg30, gj, ge30, gej]); sp += gp; sh += gh; sa += ga; s30 += g30; sj += gj;
   }
-  const ra = ha === null ? null : Math.max(ha - sa, 0), rh = hh === null ? null : Math.max(hh - sh, 0);
+  const ra = ha === null ? null : Math.max(ha - sa, 0), r30 = h30 === null ? null : Math.max(h30 - s30, 0), rj = hj === null ? null : Math.max(hj - sj, 0), rh = hh === null ? null : Math.max(hh - sh, 0);
   const rm = ra === null ? null : ra * (jetztMs - Math.max(ms.getTime(), new Date(haStart).getTime())) / 864e5;
   // 14.10.2026: Kochen/Backen steckt im Rest (ungemessen) → live abziehen (kWh-Spalten: Rest = Haus − Geräte)
   const rp0 = num(s, "sensor.rest_ungemessen"), rp = rp0 === null ? null : Math.max(rp0 - (num(s, "sensor.kochen_leistung") ?? 0) - (num(s, "sensor.licht_ungemessen") ?? 0), 0), [rah, ram, raa] = anteile("sensor.rest_ungemessen");
-  const reh = (rh ?? 0) * preis * rah, rem = (rm ?? 0) * preis * ram, rea = (ra ?? 0) * preis * raa;
-  for (const [gn, gp, gh, gm, ga, zeilen, geh, gem, gea] of gruppen) {
+  const reh = (rh ?? 0) * preis * rah, rem = (rm ?? 0) * preis * ram, rea = (ra ?? 0) * preis * raa, re30 = (r30 ?? 0) * preis * raa, rej = (rj ?? 0) * preis * raa;
+  for (const [gn, gp, gh, gm, ga, zeilen, geh, gem, gea, g30, gg30, gj, ge30, gej] of gruppen) {
     const x = gn.includes("Sonstiges");
-    html += zeile("gruppe", gn, gp + (x ? rp ?? 0 : 0), gh + (x ? rh ?? 0 : 0), gm + (x ? rm ?? 0 : 0), ga + (x ? ra ?? 0 : 0), geh + (x ? reh : 0), gem + (x ? rem : 0), gea + (x ? rea : 0)) + zeilen
-      + (x ? zeile("gl", "Rest (ungemessen)", rp, rh, rm, ra, reh, rem, rea) : "");
+    html += zeile("gruppe", gn, gp + (x ? rp ?? 0 : 0), gh + (x ? rh ?? 0 : 0), gm + (x ? rm ?? 0 : 0), ga + (x ? ra ?? 0 : 0), geh + (x ? reh : 0), gem + (x ? rem : 0), gea + (x ? rea : 0),
+      g30 + (x ? r30 ?? 0 : 0), ge30 + (x ? re30 : 0), gg30, gj + (x ? rj ?? 0 : 0), gej + (x ? rej : 0)) + zeilen
+      + (x ? zeile("gl", "Rest (ungemessen)", rp, rh, rm, ra, reh, rem, rea, r30, re30, false, rj, rej) : "");
   }
   // Bilanz (01.10.2026; 19.10.2026 Victron-Anlage steht unter Sonstiges, Haus gesamt enthält sie): Haus gesamt − PV/Akku = aus dem Netz
   const neg = (v) => (v === null ? null : -v);
   const gg = (h, n) => (h === null || n === null ? null : Math.max(h - n, 0));
-  html += zeile("haus", "Haus gesamt verbraucht<span class=\"eur\">inkl. Victron-Anlage · € = Wert, wenn alles aus dem Netz käme</span>", hp, hh, hm, ha)
+  const ga30 = gg(h30, n30), gaj = gg(ha, na) === null ? null : gg(ha, na) * 365, nj = hj === null || gaj === null ? null : Math.max(hj - gaj, 0);
+  html += zeile("haus", "Haus gesamt verbraucht<span class=\"eur\">inkl. Victron-Anlage · € = Wert, wenn alles aus dem Netz käme</span>", hp, hh, hm, ha, undefined, undefined, undefined, h30, undefined, false, hj)
     + zeile("pvabzug", "− davon aus PV/Akku<span class=\"eur\">gratis = gespart</span>", hp === null ? null : Math.max(hp - np, 0),
-      neg(gg(hh, nh)), neg(gg(hm, nm)), neg(gg(ha, na)))
-    + zeile("netz", "= aus dem Netz bezogen<span class=\"eur\">das wird bezahlt</span>", np, nh, nm, na);
+      neg(gg(hh, nh)), neg(gg(hm, nm)), neg(gg(ha, na)), undefined, undefined, undefined, neg(ga30), undefined, false, neg(gaj))
+    + zeile("netz", "= aus dem Netz bezogen<span class=\"eur\">das wird bezahlt</span>", np, nh, nm, na, undefined, undefined, undefined, n30, undefined, false, nj);
   $("gross").innerHTML = html;
   // Grundlast (19.10.2026, Nutzer): Info-Zeile grau unter der Tabelle (immer an, nicht abschaltbar; steckt schon in den Zeilen oben)
   const glw = num(s, "sensor.grundlast"), glk = glw === null ? null : Math.round(glw * 8.76 / 10) * 10;
   const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ≈ ${zahl(glw, 0)} W</b> · ≈ ${zahl(glk, 0)} kWh/Jahr ≈ ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Victron-Anlage, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben (grau hinterlegt) – nicht addieren</small></div>`;
   $("gross_fuss").innerHTML = glHtml + (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
       : `kWh · € = ohne PV: kWh × ${zahl(preis * 100, 2)} ct je Gerät, als käme alles aus dem Netz`)
-    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Block Infrastechnik; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag nur über Tage mit Messung · Jahr ≈ = Ø/Tag × 365 – Heizen ist saisonal · ≈ geschätzt`;
+    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Block Infrastechnik; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag = alle Tage seit Messbeginn des Geräts${_hv ? ` (Haus seit ${zahl(_hv[4], 0)} Tagen)` : ""} · 30 Tage = echte Summe der letzten 30 Tage, „≈“ = noch keine 30 Tage gemessen → Ø × 30 · Jahr ≈ = Ø/Tag × 365, Wärmepumpe wetterbereinigt über Gradtage${VW.mt ? ` (${VW.mt} Messtage mit ${VW.gt} Gradtagen → Normaljahr 3.438; linear wären es ${zahl(VW.lin || 0, 0)} kWh)` : ""}, Haus und Netz enthalten diese Bereinigung; PV/Akku-Anteil aus den bisherigen Tagen (fast nur Herbst) → Netz-Jahr eher zu hoch · ≈ geschätzt`;
   const um = $("gv_um");
   if (um && !um.__an) { um.__an = true;
     um.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (!b) return;
