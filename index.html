@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Haustechnik</title>
-<link rel="stylesheet" href="style.css?v=202610221343">
+<link rel="stylesheet" href="style.css?v=202611011200">
 </head>
 <body>
 <header>
@@ -147,11 +147,17 @@
     <section>
       <h2>Energie jetzt</h2>
       <!-- 21.10.2026 (Nutzer): „Energie jetzt“ + Last je Phase aus der Küchenkarte (Teil-Modus) statt Phasen-Kacheln -->
-      <vgs-kueche-card id="kueche_energie" class="wachsen" teil="energie" ohne-tuer></vgs-kueche-card>
+      <vgs-kueche-card id="kueche_energie" class="wachsen" teil="energie" ohne-tuer ohne-phasen></vgs-kueche-card>
     </section>
   </div>
 
 
+
+  <!-- 01.11.2026 (Nutzer): Hauptverteilung live wie im Dashboard (Übersicht vor PV-Anlage 3D), Daten kueche.json „hv“ (sensor.hv_live) -->
+  <section>
+    <h2>⚡ Hauptverteilung live</h2>
+    <div class="karte" style="padding:4px"><vgs-hv-card id="hv"></vgs-hv-card></div>
+  </section>
 
   <section>
     <h2>PV-Anlage 3D</h2>
@@ -257,7 +263,8 @@
 <script src="lib/vgs_zaehler.js?v=202610061700"></script>
 <script src="lib/vgs_kennzahlen.js?v=202610250104"></script>
 <script src="lib/vgs_ring.js?v=202610221238"></script>
-<script src="lib/vgs_kueche.js?v=202610301500"></script>
-<script src="app.js?v=202611011106"></script>
+<script src="lib/vgs_kueche.js?v=202611011159"></script>
+<script src="lib/vgs_hv.js?v=202611011159"></script>
+<script src="app.js?v=202611011200"></script>
 </body>
 </html>
