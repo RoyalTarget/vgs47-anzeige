@@ -285,3 +285,5 @@ html { scroll-behavior: smooth; }
 .kat-titel { font-size: 22px; font-weight: 600; color: var(--k); margin: 6px 0 2px; }
 .kat-hinweis { font-size: 13px; color: var(--leise); line-height: 1.5; margin: 6px 0 0; }
 @media (max-width: 500px) { .sprung { gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .sprung::-webkit-scrollbar { display: none; } .sprung a { font-size: 13px; padding: 4px 10px; } .detail-titel { font-size: 22px; } .kat-titel { font-size: 20px; } }
+
+vgs-hv-card { display: block; --primary-text-color: var(--text); --secondary-text-color: var(--leise); --divider-color: var(--rand); }   /* 01.11.2026 Hauptverteilung live */
