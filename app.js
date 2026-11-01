@@ -154,7 +154,7 @@ function zeigeFluss(s) {
     ["Miner", "miner", summe(s, ["sensor.smart_switch_23022384462303510d0248e1e9bb5091_power", "sensor.keller_iceriver_miner_power",
       "sensor.keller_miner_lufter_power", "sensor.bitaxe_leistung"]), "Keller"],
     ["Fernseher", "tv", summe(s, ["sensor.tv_sony_power", "sensor.tv_yoga_leistung"]),
-      [w("sensor.tv_sony_power") > 20 ? "WZ" : "", w("sensor.tv_yoga_leistung") > 20 ? "Yoga ≈" : ""].filter(Boolean).join(" + ")],
+      [w("sensor.tv_sony_power") > 20 ? "WZ" : "", w("sensor.tv_yoga_leistung") > 20 ? "Yoga " : ""].filter(Boolean).join(" + ")],
     ["Kinderzimmer PC", "emil", w("sensor.emils_schreibtisch_leistung"), ""],
     ["Küchengeräte", "kgeraete", summe(s, ["sensor.kueche_wasserkocher_leistung", "sensor.kueche_airfryer_leistung", "sensor.kueche_thermomix_leistung"]),
       [["Wasserkocher", "sensor.kueche_wasserkocher_leistung"], ["Airfryer", "sensor.kueche_airfryer_leistung"], ["Thermomix", "sensor.kueche_thermomix_leistung"]]
@@ -378,7 +378,7 @@ function zeigeTabellen(s, k, lp, gh) {
   const eur = (v) => zahl(v, 2) + " €";
   const zelle = (v, n = 2, e) => v === null ? "–" : `${zahl(v, n)}<span class="eur">${eur(e ?? v * preis)}</span>`;
   const jahr = (a, e, x = "") => a === null || a === undefined ? "–" : `${zahl(a, 0)}<span class="eur">${zahl(e ?? a * preis, 0)} €${x}</span>`;
-  const z30 = (v, e, g) => v === null || v === undefined ? "–" : `${g ? "≈\u00a0" : ""}${zahl(v, 1)}<span class="eur">${eur(e ?? v * preis)}</span>`;
+  const z30 = (v, e, g) => v === null || v === undefined ? "–" : `${g ? "" : ""}${zahl(v, 1)}<span class="eur">${eur(e ?? v * preis)}</span>`;
   // 20.10.2026 (Nutzer): Infrastruktur-Zeilen zeigen, was drinsteckt (Helferwerte live, alle geschätzt) – wie Dashboard
   const tw = (e, an = true) => an ? Math.round(num(s, e) ?? 0) + "&nbsp;W" : "0&nbsp;W&nbsp;(aus)";   // 25.10.2026: „W“ dazu (Nutzer: „Kameras 12“ las sich wie 12 Kameras)
   const infT = (n, e, an) => n + "&nbsp;" + tw(e, an);
@@ -397,7 +397,7 @@ function zeigeTabellen(s, k, lp, gh) {
   const tipp = (n) => { const k = SG.g[n], si = k && k[1] !== "f" ? `Sicherung ${k[0]} ${SG.k[k[0]] || ""}${k[1] === "b" ? " (nur laut Beschriftung)" : k[1] === "n" ? " (laut Nutzer, nicht getestet)" : ""}` : "";
     return [TEILE[n] ? TEILE[n].replace(/&nbsp;/g, "\u00a0") : "", si].filter(Boolean).join(" · "); };
   const zeile = (cls, n, p, h, m, av, eh, em, ea, a30, e30, g30, aj, ej) => `<tr class="${cls}"><td>${n}${tipp(n) ? ` <span data-tip="${escH(tipp(n))}" style="cursor:help;color:#9ca3af">ⓘ</span>` : ""}</td><td>${/gruppe|haus|pvabzug|netz/.test(cls) ? w0(p) : `<span style="color:${p !== null && p >= 5 ? "#4ade80" : "#9ca3af"}">${w0(p)}</span>`}</td><td>${zelle(h, 2, eh)}</td><td>${zelle(m, 2, em)}</td><td>${zelle(av, 2, ea)}</td><td>${z30(a30, e30, g30)}</td><td>${jahr(aj, ej, n === "Wärmepumpe" && VW.wb ? " · wetterber." : "")}</td></tr>`;
-  let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>30 Tage</th><th>Jahr ≈</th></tr>";
+  let html = "<tr><th></th><th>jetzt</th><th>heute</th><th>Monat</th><th>Ø/Tag</th><th>30 Tage</th><th>Jahr </th></tr>";
   let sp = 0, sh = 0, sa = 0, s30 = 0, sj = 0; const gruppen = [];
   for (const [gn, items] of G) {
     let gp = 0, gh = 0, gm = 0, ga = 0, geh = 0, gem = 0, gea = 0, g30 = 0, gg30 = false, gj = 0, ge30 = 0, gej = 0, zeilen = "";
@@ -436,10 +436,10 @@ function zeigeTabellen(s, k, lp, gh) {
   $("gross").innerHTML = html;
   // Grundlast (19.10.2026, Nutzer): Info-Zeile grau unter der Tabelle (immer an, nicht abschaltbar; steckt schon in den Zeilen oben)
   const glw = num(s, "sensor.grundlast"), glk = glw === null ? null : Math.round(glw * 8.76 / 10) * 10;
-  const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ≈ ${zahl(glw, 0)} W</b> · ≈ ${zahl(glk, 0)} kWh/Jahr ≈ ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Victron-Anlage, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben (grau hinterlegt) – nicht addieren</small></div>`;
+  const glHtml = glw === null ? "" : `<div class="grundlast">🌙 <b>Grundlast ${zahl(glw, 0)} W</b> · ${zahl(glk, 0)} kWh/Jahr · ${zahl(glk * preis, 0)} €<br><small>immer an, nicht abschaltbar: Kühlschränke, Netzwerk, Victron-Anlage, Pumpen, Regelung, Pi, Standby (ohne Wärmepumpen, Miner, Licht, Kochen) · Mittel nachts 0–5 Uhr · steckt schon in den Zeilen oben (grau hinterlegt) – nicht addieren</small></div>`;
   $("gross_fuss").innerHTML = glHtml + (echt ? `kWh · € = echt bezahlt: nur der Anteil, der beim Lauf aus dem Netz kam (minütlich je Gerät, Akku zählt als PV; ab 01.10.2026 gemessen; Ø/Tag und Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses = ${zahl(fa * 100, 0)} %), × ${zahl(preis * 100, 2)} ct`
       : `kWh · € = ohne PV: kWh × ${zahl(preis * 100, 2)} ct je Gerät, als käme alles aus dem Netz`)
-    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Block Infrastechnik; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag = alle Tage seit Messbeginn des Geräts${_hv ? ` (Haus seit ${zahl(_hv[4], 0)} Tagen)` : ""} · 30 Tage = echte Summe der letzten 30 Tage, „≈“ = noch keine 30 Tage gemessen → Ø × 30 · Jahr ≈ = Ø/Tag × 365, Wärmepumpe wetterbereinigt über Gradtage${VW.mt ? ` (${VW.mt} Messtage mit ${VW.gt} Gradtagen → Normaljahr 3.438; linear wären es ${zahl(VW.lin || 0, 0)} kWh)` : ""}, Haus und Netz enthalten diese Bereinigung; PV/Akku-Anteil aus den bisherigen Tagen (fast nur Herbst) → Netz-Jahr eher zu hoch · ≈ geschätzt`;
+    + ` · Bilanz unten: Haus gesamt (inkl. Victron-Anlage = Netzbezug über dem Hausverbrauch: Wechselrichter-Eigenverbrauch, Akku-Nachladen; ab 01.10.2026, Block Infrastechnik; was die Anlage aus dem Akku zieht, ist nicht sichtbar) − PV/Akku = aus dem Netz · Ø/Tag = alle Tage seit Messbeginn des Geräts${_hv ? ` (Haus seit ${zahl(_hv[4], 0)} Tagen)` : ""} · 30 Tage = echte Summe der letzten 30 Tage, bei weniger Messtagen Ø × 30 · Jahr = Ø/Tag × 365, Wärmepumpe wetterbereinigt über Gradtage${VW.mt ? ` (${VW.mt} Messtage mit ${VW.gt} Gradtagen → Normaljahr 3.438; linear wären es ${zahl(VW.lin || 0, 0)} kWh)` : ""}, Haus und Netz enthalten diese Bereinigung; PV/Akku-Anteil aus den bisherigen Tagen (fast nur Herbst) → Netz-Jahr eher zu hoch`;
   const um = $("gv_um");
   if (um && !um.__an) { um.__an = true;
     um.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (!b) return;
@@ -573,7 +573,7 @@ function zeigePV(s) {
     h = bez > 150 ? kopf("#60a5fa", "🌙 Keine Sonne – Strom aus dem Netz", `Netz ${kw(bez)} kW · ${soctxt}`)
       : kopf("#60a5fa", "🌙 Keine Sonne – Haus läuft aus dem Akku", `Akku gibt ${kw(ent)} kW · ${soctxt}` + (res > 0 ? `, Reserve ${zahl(res, 0)} %` : ""));
   } else if (bez > 150 && akku > 100 && res > 0 && soc <= res + 3) h = kopf("#60a5fa", "🔋 Akku an der Reserve – PV lädt ihn, Haus aus dem Netz",
-      `PV ${kw(pv)} kW · +${kw(akku)} kW in den Akku · Netz ${kw(bez)} kW · ${soctxt} – der Victron gibt erst ab ≈ ${zahl(res + 3, 0)} % wieder Strom ans Haus`);
+      `PV ${kw(pv)} kW · +${kw(akku)} kW in den Akku · Netz ${kw(bez)} kW · ${soctxt} – der Victron gibt erst ab ${zahl(res + 3, 0)} % wieder Strom ans Haus`);
   else if (bez > 150) h = kopf("#f59e0b", "⛅ PV reicht nicht – Rest aus dem Netz", `PV ${kw(pv)} kW · Netz ${kw(bez)} kW · ${soctxt}`);
   else if (ent > 100) h = kopf("#f59e0b", "⛅ PV reicht nicht – Rest aus dem Akku", `PV ${kw(pv)} kW · Akku gibt ${kw(ent)} kW · ${soctxt}`);
   else if (akku > 100 && soc < 97) h = kopf("#22c55e", "🔋 Sonne lädt den Akku", `+${kw(akku)} kW in den Akku · ${soctxt} – ins Netz geht erst etwas, wenn er voll ist`);
@@ -595,8 +595,8 @@ function netzHeute(s, bez, e, akku, ent, soc) {
     g += `<line x1="30" x2="38" y1="${y}" y2="${y}" stroke="#d4d4d8" stroke-width="1.5"/><text x="25" y="${y + 4}" font-size="11" fill="#a1a1aa" text-anchor="end">${m}</text>`;
   g += `<line x1="26" x2="58" y1="${c}" y2="${c}" stroke="#fafafa" stroke-width="2.5"/><text x="22" y="${c + 4}" font-size="12" font-weight="700" fill="#fafafa" text-anchor="end">0</text>`;
   const txt = (y, t, sz, col, w = 400) => `<text x="90" y="${y}" font-size="${sz}" font-weight="${w}" fill="${col}">${t}</text>`;
-  g += txt(40, "▲ Netzbezug heute", 15, "#a1a1aa") + txt(74, zahl(bz, 1) + " kWh", 30, farbe(bz), 700) + txt(96, "≈ " + zahl(bz * pb, 2) + " € Kosten", 16, "#d4d4d8")
-    + txt(130, "▼ Einspeisung heute", 15, "#a1a1aa") + txt(164, zahl(ez, 1) + " kWh", 30, farbe(ez), 700) + txt(186, "≈ " + zahl(ez * pe, 2) + " € Vergütung", 16, "#d4d4d8");
+  g += txt(40, "▲ Netzbezug heute", 15, "#a1a1aa") + txt(74, zahl(bz, 1) + " kWh", 30, farbe(bz), 700) + txt(96, "" + zahl(bz * pb, 2) + " € Kosten", 16, "#d4d4d8")
+    + txt(130, "▼ Einspeisung heute", 15, "#a1a1aa") + txt(164, zahl(ez, 1) + " kWh", 30, farbe(ez), 700) + txt(186, "" + zahl(ez * pe, 2) + " € Vergütung", 16, "#d4d4d8");
   // Lage-Symbol
   const cx = 380; let lage, sc, cap;
   if (bez > 150) [lage, sc, cap] = ["netz", "#f97316", "aus dem Netz"];
@@ -1026,7 +1026,7 @@ function zeigeWasserFenster(d, v) {
         else if (x.warm != null) s += `<br><span style="color:#ef4444">●</span> warm ${x.warm} l (${ges ? Math.round(x.warm / ges * 100) : 0} %) · <span style="color:#3b82f6">●</span> kalt ${Math.max(ges - x.warm, 0)} l`;
         const ar = Object.entries(x.arten || {}).filter(([a]) => WF_IC[a]).sort((a, b) => b[1].l - a[1].l);
         if (ar.length) s += "<br>" + ar.map(([a, vv]) => `${WF_IC[a]} ${a.replace("?", "")} ${/maschine/.test(a) ? vv.n + (vv.n === 1 ? " Füllung" : " Füllungen") : vv.n + "×"} · ${vv.l} l`).join("<br>");
-        const gk = wfGK(k); if (gk && (gk.g >= 1 || gk.k >= 1 || gk.s >= 1)) s += `<br><span style="color:#22c55e">●</span> 🌱 Garten ${Math.round(gk.g)} l · <span style="color:#0ea5e9">●</span> Küche kalt ≈ ${Math.round(gk.k)} l${gk.s ? ` · <span style="color:#a78bfa">●</span> Spülmaschine ≈ ${Math.round(gk.s)} l` : ""}<br>mit Küche kalt ≈ <b>${Math.round(ges + gk.g + gk.k + (gk.s || 0))} l</b>`;
+        const gk = wfGK(k); if (gk && (gk.g >= 1 || gk.k >= 1 || gk.s >= 1)) s += `<br><span style="color:#22c55e">●</span> 🌱 Garten ${Math.round(gk.g)} l · <span style="color:#0ea5e9">●</span> Küche kalt ${Math.round(gk.k)} l${gk.s ? ` · <span style="color:#a78bfa">●</span> Spülmaschine ${Math.round(gk.s)} l` : ""}<br>mit Küche kalt <b>${Math.round(ges + gk.g + gk.k + (gk.s || 0))} l</b>`;
         return fwBox(s); }
       let gb = null; for (const e of WF.gev) if (!gb || Math.abs(e.t - t) < Math.abs(gb.t - t)) gb = e;   // Garten (08.10.2026)
       let b = null; for (const e of WF.ev) if (!b || Math.abs(e.t - t) < Math.abs(b.t - t)) b = e;
@@ -1035,7 +1035,7 @@ function zeigeWasserFenster(d, v) {
       if (!b || Math.abs(b.t - t) > (x1 - x0) * 0.01) { const y = wertBei(WF.kum.filter((p) => p[1] != null), t, 36e5 * 6); return y == null ? "" : fwBox(`${F(t)}<br>seit 0:00: <b>${Math.round(y)} l</b>`); }
       const col = b.warm === true ? "#ef4444" : b.warm === false ? "#3b82f6" : "#9ca3af", art = b.warm === true ? "warm" : b.warm === false ? "kalt" : "warm/kalt unbekannt";
       return fwBox(`<b>${F(b.t)}</b> · ${b.p.dauer_min || "?"} min<br><span style="color:${col}">●</span> <b>${(b.art || art).replace("WC?", "WC")}</b> · ${b.l} l ${b.art ? art : ""}${b.p.max_lh ? " · max " + b.p.max_lh + " l/h" : ""}`
-        + (b.warm === true ? `<br>davon ≈ ${Math.round(wfHeiss(b))} l heiß ab Speicher, ${Math.round(b.l - wfHeiss(b))} l kalt zugemischt` : "")
+        + (b.warm === true ? `<br>davon ${Math.round(wfHeiss(b))} l heiß ab Speicher, ${Math.round(b.l - wfHeiss(b))} l kalt zugemischt` : "")
         + (b.nach ? '<br><span style="color:#9ca3af;font-size:11px">aus SYR-Verlauf nachträglich bestimmt</span>' : "")); } });
   fensterZeichnen("wf");
 }
@@ -1170,7 +1170,7 @@ const zlKurz = (c, a) => { if (c !== 'wp' && c !== 'bw') return ''; const r = zl
 // LLWP (18.10.2026, Nutzer): kein Lauf-Protokoll → kWh wie im Dashboard aus der Leistung (15-min-Mittel WPF.kw.ll, anteilig je Überlappung)
 const zlLlwp = (a, b, lauf) => { const pts = (WPF && WPF.kw && WPF.kw.ll) || []; if (!pts.length) return '';
   let e = 0; for (const [t, p] of pts) { const ov = Math.min(t + 9e5, b) - Math.max(t, a); if (ov > 0) e += p * ov / 36e5; }
-  return e > 0.05 ? (lauf ? 'bisher ≈ ' : '≈ ') + e.toFixed(1).replace('.', ',') + ' kWh' : ''; };
+  return e > 0.05 ? (lauf ? 'bisher ' : '') + e.toFixed(1).replace('.', ',') + ' kWh' : ''; };
 // Kurzfazit zum Wärmebild (03.10.2026): d.ft = Markdown-Text aus sensor.fbh_kurzfazit (**fett**, <small>, Absätze)
 function zeigeFazit(d) {
   const el = $("fbh_fazit"); if (!el) return; const t = d.ft || "";
@@ -1518,7 +1518,7 @@ function zeigePrognose(d) {
   let hinweis = "⛅ Morgen mittelmäßig – große Verbraucher in die Mittagsstunden legen.";
   if (m >= 18) hinweis = `☀️ <b>Morgen sonnig</b> – Wäsche, Trockner & Spülmaschine am besten mittags (Spitze ${spitze}).`;
   else if (m < 8) hinweis = `☁️ <b>Morgen wenig Sonne</b> – große Verbraucher lieber heute laufen lassen${rest >= 5 ? " (heute noch " + f(rest) + " kWh)" : ""}.`;
-  $("progtext").innerHTML = `<table class="tab"><tr><th></th><th>PV erwartet</th><th>davon noch</th><th>bisher</th><th>Verbrauch ≈</th></tr>`
+  $("progtext").innerHTML = `<table class="tab"><tr><th></th><th>PV erwartet</th><th>davon noch</th><th>bisher</th><th>Verbrauch </th></tr>`
     + `<tr><td><b>Heute</b></td><td><b>${f(pz.heute)} kWh</b></td><td>${f(pz.rest)}</td><td>${f(pz.ist)}</td><td>${f(pz.vb_heute, 0)}</td></tr>`
     + `<tr><td><b>Morgen</b></td><td><b>${f(pz.morgen)} kWh</b></td><td></td><td></td><td>${f(pz.vb_morgen, 0)}</td></tr></table>`
     + `<p class="hinweis">${hinweis}</p>`;
@@ -1782,7 +1782,7 @@ function zeigeKueche() {
 // Tabelle = in HA fertig gerendertes Markdown (sensor.frueher_heute_vergleich, Attribut md → verlauf.json fv.md) → hier nur Tabelle/Fett/Absätze umsetzen.
 const RING_F = { title: "früher", entity: "sensor.frueher_heute_vergleich", unter: "Gas + Strom",
   segments: [{ attr: "frueher_haus", name: "Hausstrom", color: "#fbbf24" }, { attr: "frueher_ww", name: "Warmwasser", color: "#60a5fa" }, { attr: "frueher_heiz", name: "Heizung", color: "#ef4444" }] };
-const RING_H = { title: "heute ≈", entity: "sensor.frueher_heute_vergleich",
+const RING_H = { title: "heute ", entity: "sensor.frueher_heute_vergleich",
   segments: [{ attr: "haus_h", name: "Hausstrom", color: "#fbbf24" }, { attr: "ww_h", name: "Warmwasser", color: "#60a5fa" }, { attr: "heiz_h", name: "Heizung", color: "#ef4444" }],
   pv: { attr: ["haus_pv", "ww_pv", "heiz_pv"], netz: ["haus_netz", "ww_netz", "heiz_netz"] } };
 function mdHtml(md) {   // nur was die HA-Vorlage benutzt: Pipe-Tabelle, **fett**, <br>, <sub>, <font color>, &nbsp;, Absätze
@@ -1829,7 +1829,7 @@ function zeigeSchall(s, v) {
     const l = n[n.length - 1], tg = (d) => d.slice(8, 10) + "." + d.slice(5, 7) + ".";
     const mx = Math.max(...n.map((x) => x[1])), u35 = n.reduce((a, x) => a + x[3], 0);
     html += `<p><b>Letzte Nacht</b> (${tg(l[0])} 22–6 Uhr): gegenüber höchstens <b>${dz(l[1])} dB(A)</b>, typisch ${dz(l[2])} · WP lief ${zahl(l[4] / 60, 1)} h · über 35 dB(A): <b>${l[3]} min</b><br>`
-      + `<span style="color:var(--leise)">Seit ${tg(n[0][0])} (${n.length} Nächte): lauteste Minute ${dz(mx)} dB(A), Minuten über 35 dB(A) zusammen ${u35}. Zum Vergleich: Flüstern ≈ 30 dB(A).</span></p>`;
+      + `<span style="color:var(--leise)">Seit ${tg(n[0][0])} (${n.length} Nächte): lauteste Minute ${dz(mx)} dB(A), Minuten über 35 dB(A) zusammen ${u35}. Zum Vergleich: Flüstern 30 dB(A).</span></p>`;
     // Säulen: lauteste Minute je Nacht, Linie = typisch, rote Linie = Grenzwert nachts 35
     // Breite = echte Kartenbreite (max. 760 px) → Schrift bleibt 1:1, statt am Desktop riesig / am iPhone winzig skaliert
     const W = Math.round(Math.max(300, Math.min(760, box.clientWidth || 600))), H = 190, L = 28, R = 6, T = 10, B = 24, y0 = 10, y1 = 40, bw = (W - L - R) / n.length;
