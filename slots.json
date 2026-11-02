@@ -26,7 +26,7 @@
   "left": 2.5,
   "top": 53.65,
   "anchor": "start",
-  "color": "#e5e7eb",
+  "color": "#facc15",
   "prefix": "therm. ",
   "entity": "sensor.wp_leistung_thermisch_gesamt",
   "unit": "kW",
@@ -143,6 +143,17 @@
   "dec": 1
  },
  {
+  "id": "puf_b",
+  "left": 28.75,
+  "top": 43.01,
+  "anchor": "middle",
+  "color": "#9ca3af",
+  "prefix": "",
+  "entity": "sensor.puffer_bilanz_15_min",
+  "unit": "kW",
+  "dec": 2
+ },
+ {
   "id": "druck",
   "left": 41.67,
   "top": 71.73,
@@ -191,7 +202,7 @@
   "left": 63.33,
   "top": 22.19,
   "anchor": "middle",
-  "color": "#e5e7eb",
+  "color": "#facc15",
   "prefix": "",
   "entity": "sensor.hk_leistung",
   "unit": "kW",
