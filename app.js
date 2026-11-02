@@ -70,6 +70,11 @@ function zeigeSchema(s, sk) {
     if (sl.id === "schall") { const el = $("slot_" + sl.id), h = new Date().getHours(), gw = h >= 22 || h < 6 ? 35 : 50;
       el.textContent = v > 0 ? txt : ""; el.style.color = v <= gw - 5 ? "#22c55e" : v <= gw ? "#f59e0b" : "#ef4444";
       if (v > 0) { el.setAttribute("data-tip", schallTip(v, num(s, "sensor.wp_schall_messungen") || 0)); el.style.cursor = "help"; } else el.removeAttribute("data-tip"); continue; }
+    // 02.11.2026: Puffer-Bilanz (Ø 15 min, WP − Heizkreis): + grün = Puffer lädt, − orange = Puffer gibt ab, sonst grau
+    if (sl.id === "puf_b") { const el = $("slot_" + sl.id); el.textContent = v === null ? "" : (v >= 0.1 ? "+" : "") + txt;
+      el.style.color = v === null ? sl.color : v >= 0.1 ? "#22c55e" : v <= -0.1 ? "#f59e0b" : "#9ca3af";
+      el.setAttribute("data-tip", "Puffer-Bilanz, Mittel 15 min: WP-Ladekreis minus Heizkreis.<br>+ = Puffer wird geladen · − = Heizkreis holt Wärme aus dem Puffer");
+      el.style.cursor = "help"; continue; }
     // 25.10.2026: RL Emil – Shelly RL OG 2 hängt an der Thermostat-Phase; ohne Wert = stromlos = Stellantriebe (NC) zu
     if (v === null && (sl.entity === "sensor.rl_og_5" || sl.entity === "sensor.rl_og_6")) { const el = $("slot_" + sl.id); el.textContent = "zu"; el.style.color = "#9ca3af"; continue; }
     if (sl.entity === "sensor.rl_og_5" || sl.entity === "sensor.rl_og_6") $("slot_" + sl.id).style.color = sl.color;
