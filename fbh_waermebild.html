@@ -179,7 +179,7 @@ function raumTemps(h, name) { const l = [];
   return l; }
 function raumSegs(h, r) { const l = raumTemps(h, r.name); if (!l.length) return []; const segs = [];
   l.forEach((t, i) => { segs.push([(i ? ' · ' : '') + t.k + ' ', '#9ca3af'], [(t.g ? Math.round(t.v) : zahl(t.v)) + ' °C', t.v >= r.soll - 0.5 ? F_GR : F_OR]); });
-  segs.push([' / Soll ' + r.soll + ' °C', '#6b7280']); return segs; }
+  segs.push([' / Soll ' + String(r.soll).replace('.', ',') + ' °C', '#6b7280']); return segs; }
 function segsMalen(g, segs, x, y) { g.textAlign = 'left'; for (const [t, f] of segs) { g.fillStyle = f; g.fillText(t, x, y); x += g.measureText(t).width; } return x; }
 const F_OR = '#f97316', F_GR = '#22c55e', F_BL = '#60a5fa', F_NA = '#6b7280';
 let offen = null;   // iPhone: aufgeklappter Raum (Name)
