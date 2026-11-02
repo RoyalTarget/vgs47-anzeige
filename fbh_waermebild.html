@@ -157,16 +157,19 @@ const RAEUME = [
   ['Bad OG', 464, 24, ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand'], 24],
   ['Flur OG', null, 18, ['sensor.rl_og_flur'], 20],
   ['Emils Zimmer', 1068, 20, ['sensor.rl_og_5', 'sensor.rl_og_6'], 22],
-  ['Wohnen + WiGa', 3439, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22],
+  // 02.11.2026: WZ und WiGa getrennt (WZ 1/2 am Gira, WG I/A/W am Shelly nach H&T A). JOCO hat nur EINE Heizlast für beide →
+  // 6. Feld = gemeinsame Gruppe: Bedarf/Versorgung nur gemeinsam (Wunsch 22), „gibt ab“ je Teil.
+  ['Wohnen', 3439, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2'], 22.5, 'WZ + WiGa'],
+  ['WiGa', 3439, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22, 'WZ + WiGa'],
   ['WC', 154, 20, ['sensor.rl_wc'], 20],
   ['Flur EG', 783, 18, ['sensor.rl_flur'], 20]];
 // Raumtemperatur je Raum (19.10.2026, Nutzer): H&T nach Standort (input_select.ht_x_standort, wandert mit), feste Fühler je Raum.
-// Daikin nur ganze Grad + Innengerät oben an der Wand → „≈“. Farbe gegen Wunschtemp. (RAEUME): grün ≥ Soll − 0,5, sonst orange.
-const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'Wohnen + WiGa', 'WZ-Mitte': 'Wohnen + WiGa', 'Yoga': 'Yoga', 'OG-Flur': 'Flur OG',
+// Daikin nur ganze Grad (gerundet angezeigt, ohne „≈“ seit 01.11.2026). Farbe gegen Wunschtemp. (RAEUME): grün ≥ Soll − 0,5, sonst orange.
+const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'WiGa', 'WZ-Mitte': 'Wohnen', 'Yoga': 'Yoga', 'OG-Flur': 'Flur OG',
   'WC EG': 'WC', 'Flur EG': 'Flur EG', 'Emils Zimmer': 'Emils Zimmer', 'Lesezimmer': 'Lesezimmer', 'Gästezimmer': 'Gästezimmer' };
 // 23.10.2026 (Nutzer): WiGa-Daikin raus – Fühler im Innengerät misst die eigene Warmluft (+4…6 K gegen H&T A WiGa-Ende)
 // 29.10.2026: feste H&T WZ (an der Thermostat-Stelle) + Flur EG; CMI-Raumfühler daneben als Vergleich
-const RAUM_T = { 'Wohnen + WiGa': [['sensor.ht_wohnzimmer_temperatur', 'H&T WZ'], ['sensor.cmi_t_raum', 'CMI']],
+const RAUM_T = { 'Wohnen': [['sensor.ht_wohnzimmer_temperatur', 'H&T WZ'], ['sensor.cmi_t_raum', 'CMI']],
   'Flur EG': [['sensor.ht_flur_eg_temperatur', 'H&T']],
   'Emils Zimmer': [['sensor.emil_climatecontrol_raumtemperatur', 'Daikin', 1]] };
 function raumTemps(h, name) { const l = [];
@@ -175,7 +178,7 @@ function raumTemps(h, name) { const l = [];
   for (const [e, k, g] of (RAUM_T[name] || [])) { const v = parseFloat(h?.states[e]?.state); if (!isNaN(v)) l.push({ k, v, g }); }
   return l; }
 function raumSegs(h, r) { const l = raumTemps(h, r.name); if (!l.length) return []; const segs = [];
-  l.forEach((t, i) => { segs.push([(i ? ' · ' : '') + t.k + ' ', '#9ca3af'], [(t.g ? '≈ ' + Math.round(t.v) : zahl(t.v)) + ' °C', t.v >= r.soll - 0.5 ? F_GR : F_OR]); });
+  l.forEach((t, i) => { segs.push([(i ? ' · ' : '') + t.k + ' ', '#9ca3af'], [(t.g ? Math.round(t.v) : zahl(t.v)) + ' °C', t.v >= r.soll - 0.5 ? F_GR : F_OR]); });
   segs.push([' / Soll ' + r.soll + ' °C', '#6b7280']); return segs; }
 function segsMalen(g, segs, x, y) { g.textAlign = 'left'; for (const [t, f] of segs) { g.fillStyle = f; g.fillText(t, x, y); x += g.measureText(t).width; } return x; }
 const F_OR = '#f97316', F_GR = '#22c55e', F_BL = '#60a5fa', F_NA = '#6b7280';
@@ -188,15 +191,20 @@ function hydro(h, K) {
   const vlN = T.length ? T.reduce((s, t) => s + (+t.vl || 0), 0) / T.length : null;
   const au = T.length ? T.reduce((s, t) => s + (+t.au || 0), 0) / T.length : (parseFloat(h?.states['sensor.cmi_t_aussen']?.state) || 10);
   const raum = {}, liste = [];
-  for (const [name, last, norm, fu, soll] of RAEUME) {
+  for (const [name, last, norm, fu, soll, gem] of RAEUME) {
     let w = 0, ok = true; const ks = [];
     for (const k of K.filter((q) => fu.includes(q.e))) { const e = k.e; ks.push(k);
       const ww = typeof k.ist === 'number' && typeof sp[e] === 'number' ? k.ist * sp[e] * 69.78 : null; if (ww === null) ok = false; else w += ww; }
     const neu = ks.some((k) => k.ist_ab && sp[k.e] === null);
     const bed = typeof last === 'number' ? last * (soll - au) / (norm + 16) : null, p = !neu && bed && bed > 0 ? w / bed * 100 : null;
     const farbe = p === null ? F_NA : p < 70 ? F_OR : p > 140 ? F_BL : F_GR;
-    const r = { name, soll, w, ok, bed, p, farbe, neu, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
+    const r = { name, soll, w, ok, bed, p, farbe, neu, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
+  // gemeinsame Gruppen (WZ + WiGa): Bedarf einmal mit Wunsch 22, Versorgung = Summe gibt ab / Bedarf, gleiche Farbe für beide Teile
+  for (const gn of new Set(liste.filter((r) => r.gem).map((r) => r.gem))) { const tl = liste.filter((r) => r.gem === gn), q = RAEUME.find((x) => x[5] === gn);
+    const w = tl.reduce((a, r) => a + r.w, 0), ok = tl.every((r) => r.ok), neu = tl.some((r) => r.neu), bed = q[1] * (22 - au) / (q[2] + 16);
+    const p = !neu && bed > 0 ? w / bed * 100 : null, farbe = p === null ? F_NA : p < 70 ? F_OR : p > 140 ? F_BL : F_GR;
+    tl.forEach((r, i) => Object.assign(r, { bed: null, p, farbe, gemW: w, gemBed: bed, gemOk: ok, gemLetzter: i === tl.length - 1 })); }
   const L = T[T.length - 1], zu = L ? (L.kr || []).filter((r) => r[4]).map((r) => r[0]) : [];
   return { sp, au, vlN, raum, liste, nNacht: nMax, zu, letzte: L };
 }
@@ -269,7 +277,7 @@ function zeichne() {
         g.fillText('VL ' + (isNaN(vl) ? '–' : zahl(vl) + ' °C'), cx.rl, z.y + 7);
         if (hy.vlN !== null) g.fillText('VL Ø ' + zahl(hy.vlN) + ' °C', cx.sp, z.y + 7); }
       continue; }
-    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; const st = r.neu ? `Σ ${r.name} · Röhrchen neu eingestellt – Spreizung erst nach der nächsten Messnacht` : `Σ ${r.name} · gibt ab ≈ ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'} · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W`; g.fillText(st, 8, z.y + SH / 2);
+    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; const st = r.neu ? `Σ ${r.name} · Röhrchen neu eingestellt – Spreizung erst nach der nächsten Messnacht` : `Σ ${r.name} · gibt ab ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'}` + (r.gem ? (r.gemLetzter ? ` · ${r.gem} gibt ab ${Math.round(r.gemW)} W · Bedarf ${Math.round(r.gemBed)} W` : '') : ` · Bedarf ${r.bed === null ? '–' : Math.round(r.bed)} W`); g.fillText(st, 8, z.y + SH / 2);
       const sg = raumSegs(h, r); if (sg.length) segsMalen(g, [[' · Raum ', '#9ca3af'], ...sg], 8 + g.measureText(st).width, z.y + SH / 2);
       g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
     if (z.typ === 'p') { const r = z.r, x0 = 6, x1 = W - 6; g.fillStyle = '#26262b'; g.beginPath(); g.roundRect(x0, z.y + 2, x1 - x0, z.h - 6, 8); g.fill();
@@ -283,7 +291,7 @@ function zeichne() {
       { const sg = raumSegs(h, r); if (sg.length) { segsMalen(g, [['Raum ', '#d1d5db'], ...sg], x0 + 10, yy); yy += 15; } }
       g.textAlign = 'left'; g.fillStyle = '#9ca3af';
       const tip = r.neu ? 'Röhrchen neu eingestellt – Messnacht abwarten' : r.p === null ? 'keine Heizlast hinterlegt' : r.p > 140 ? 'viel Wasser, kaum abgekühlt → drosseln lohnt' : r.p < 70 ? 'wenig Wärme → nur handeln, wenn der Raum zu kühl ist' : 'passt (70–140 %)';
-      g.fillText(`gibt ab ≈ ${Math.round(r.w)} W · Bedarf ≈ ${r.bed === null ? '–' : Math.round(r.bed)} W · ${tip}`, x0 + 10, yy, x1 - x0 - 20); continue; }
+      g.fillText((r.gem ? `gibt ab ${Math.round(r.w)} W · ${r.gem} ${Math.round(r.gemW)} W · Bedarf ${r.gem} ${Math.round(r.gemBed)} W` : `gibt ab ${Math.round(r.w)} W · Bedarf ${r.bed === null ? '–' : Math.round(r.bed)} W`) + ` · ${tip}`, x0 + 10, yy, x1 - x0 - 20); continue; }
     if (z.typ !== 'k') continue;
     zl.push(z); const r = daten?.reihen[z.k.e], hy1 = z.h - 2, raum = hy?.raum[z.k.e];
     g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${schmal ? '' : (raum && raum.erster === z.k.e ? '600 ' : '')}11px system-ui, sans-serif`; g.textAlign = 'left';
