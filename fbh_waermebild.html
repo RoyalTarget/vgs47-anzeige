@@ -6,7 +6,7 @@
 <title>FBH Wärmebild</title>
 <!-- Fußbodenheizung: Rücklauf je Kreis als Wärmebild (30.09.2026). Zeilen = Kreise aus sensor.fbh_kreise (packages/fbh.yaml),
      Spalten = 10-min-Abschnitte. Modus „Abweichung“: Kreis-RL minus gemeinsamer RL an der PMG (blau = kälter = zu wenig
-     Durchfluss/langes Rohr, rot = wärmer = zu viel Durchfluss), grau = Heizkreispumpe aus. Modus „Temperatur“: 20–35 °C.
+     Durchfluss/langes Rohr, rot = wärmer = zu viel Durchfluss), grau = am Mittel ±0,4 K, schraffiert = Heizkreispumpe aus (seit 03.11.2026). Modus „Temperatur“: 20–35 °C.
      Daten live aus dem Elternfenster (HA-iframe, gleiche Herkunft): history/history_during_period, 14 Tage.
      Bedienung wie die übrigen Leisten: im Feld ziehen = blättern, Leiste unten: Rahmen ziehen = verschieben, gelbe Griffe =
      zoomen, daneben tippen = springen, Doppelklick/-tippen = Standard (48 h bis jetzt).
@@ -66,6 +66,13 @@ function skala(stops, v) { if (v <= stops[0][0]) return stops[0][1]; for (let i 
 const S_ABW = [[-3, hex('#2563eb')], [-1.5, hex('#60a5fa')], [-0.4, hex('#3f3f46')], [0.4, hex('#3f3f46')], [1.5, hex('#f87171')], [3, hex('#dc2626')]];
 const S_TEMP = [[20, hex('#1e3a8a')], [24, hex('#3b82f6')], [27, hex('#8b5cf6')], [30, hex('#c026d3')], [33, hex('#e11d48')], [35, hex('#f59e0b')]];
 const farbe = (v) => { const c = skala(modus === 'abw' ? S_ABW : S_TEMP, v); return `rgb(${c[0]},${c[1]},${c[2]})`; };
+// 03.11.2026 (Nutzer): „Pumpe aus“ schraffiert – vorher fast gleiches Grau wie „am Mittel ±0,4 K“ (#3f3f46) → verwechselbar
+const SCHRAFF = {};
+function schraffur(g) { const dpr = window.devicePixelRatio || 1; if (SCHRAFF[dpr]) return SCHRAFF[dpr];
+  const c = document.createElement('canvas'), n = Math.round(6 * dpr); c.width = c.height = n; const q = c.getContext('2d');
+  q.fillStyle = '#1f1f22'; q.fillRect(0, 0, n, n); q.strokeStyle = '#71717a'; q.lineWidth = 1.2 * dpr;
+  q.beginPath(); q.moveTo(0, n); q.lineTo(n, 0); q.moveTo(-n / 2, n / 2); q.lineTo(n / 2, -n / 2); q.moveTo(n / 2, n * 1.5); q.lineTo(n * 1.5, n / 2); q.stroke();
+  const m = g.createPattern(c, 'repeat'); try { m.setTransform(new DOMMatrix().scale(1 / dpr)); } catch (e) {} return (SCHRAFF[dpr] = m); }
 
 // ---------- Daten ----------
 async function ws(msg) { const h = hass(); if (!h) throw new Error('kein hass');
@@ -300,7 +307,7 @@ function zeichne() {
     let sa = 0, sn = 0;
     if (r) for (let i = iv; i < ib; i++) { const v = r[i]; if (v === null) continue; const an = (daten.pu[i] ?? 0) >= 0.5, rl = daten.ref[i];
       const xa = X(zeitAus(i)), xb = X(zeitAus(i + 1)); if (xb < X0 || xa > X1) continue;
-      let col; if (modus === 'abw') { if (!an || rl === null) col = '#2a2a2e'; else { col = farbe(v - rl); sa += v - rl; sn++; } }
+      let col; if (modus === 'abw') { if (!an) col = schraffur(g); else if (rl === null) col = '#2a2a2e'; else { col = farbe(v - rl); sa += v - rl; sn++; } }
       else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
       g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1; }
     const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
@@ -326,10 +333,14 @@ function zeichne() {
     for (const z of plan) if (z.typ === 'k') { g.beginPath(); g.moveTo(x, z.y); g.lineTo(x, z.y + z.h); g.stroke(); } }
   // Legende: Text – Farbbalken – Text
   const ly = y + 4; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
-  const tl = modus === 'abw' ? '−3 K kälter' : '20 °C', tr = modus === 'abw' ? '+3 K wärmer · grau = Pumpe aus' : '35 °C · blass = Pumpe aus';
-  g.fillText(tl, X0, ly + 7); const lx = X0 + g.measureText(tl).width + 6, lb = Math.max(60, Math.min(180, X1 - lx - g.measureText(tr).width - 12));
+  const tl = modus === 'abw' ? (schmal ? '−3 K' : '−3 K kälter') : '20 °C', tr = modus === 'abw' ? (schmal ? '+3 K · grau = Mittel' : '+3 K wärmer · grau = am Mittel (±0,4 K)') : '35 °C · blass = Pumpe aus';
+  g.fillText(tl, X0, ly + 7); const sw = modus === 'abw' ? 32 + g.measureText('Pumpe aus').width : 0;   // Platz für die Schraffur-Legende
+  const lx = X0 + g.measureText(tl).width + 6, lb = Math.max(60, Math.min(180, (sw ? W - 4 : X1) - lx - g.measureText(tr).width - 12 - sw));
   for (let i = 0; i < lb; i++) { const v = modus === 'abw' ? -3 + 6 * i / lb : 20 + 15 * i / lb; g.fillStyle = farbe(v); g.fillRect(lx + i, ly + 3, 1.2, 8); }
   g.fillStyle = '#9ca3af'; g.fillText(tr, lx + lb + 6, ly + 7);
+  if (modus === 'abw') { const sx = lx + lb + 6 + g.measureText(tr).width + 10, st = 'Pumpe aus';
+    if (sx + 22 + g.measureText(st).width <= W - 4) { g.fillStyle = schraffur(g); g.fillRect(sx, ly + 2, 16, 10); g.strokeStyle = '#52525b'; g.lineWidth = 1; g.strokeRect(sx + 0.5, ly + 2.5, 15, 9);
+      g.fillStyle = '#9ca3af'; g.fillText(st, sx + 22, ly + 7); } }
   geo = { X0, X1, von, bis, zl, plan, ACHSE, yEnde: y, schmal };
   zeichneLeiste(W);
   if (inHA) { fussZeile(h, hy, schmal); karteAnpassen(KOPF + FH + 40 + $('fuss').offsetHeight + 4); }
@@ -346,7 +357,7 @@ function zeichneLeiste(W) {
     for (let i = 0; i < daten.n; i += st) { let a = 0, n = 0, an = 0;
       for (let j = i; j < Math.min(i + st, daten.n); j++) { an += (daten.pu[j] ?? 0) >= 0.5 ? 1 : 0; const v = r[j]; if (v === null) continue;
         const d = modus === 'abw' ? (daten.ref[j] === null ? null : v - daten.ref[j]) : v; if (d !== null) { a += d; n++; } }
-      if (!n) continue; g.fillStyle = modus === 'abw' && an < st / 2 ? '#34343a' : farbe(a / n);
+      if (!n) continue; g.fillStyle = modus === 'abw' && an < st / 2 ? schraffur(g) : farbe(a / n);
       g.fillRect(U(daten.t0 + i * BIN), 5 + zi * zh, Math.max(U(daten.t0 + (i + st) * BIN) - U(daten.t0 + i * BIN), 1), Math.max(zh - 0.5, 1)); } });
   g.font = '10px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
   for (let t = new Date(lo).setHours(24, 0, 0, 0); t < hi; t += 864e5) { const d = new Date(t); g.strokeStyle = '#52525b'; g.beginPath(); g.moveTo(U(t) + 0.5, 2); g.lineTo(U(t) + 0.5, UH + 2); g.stroke();
