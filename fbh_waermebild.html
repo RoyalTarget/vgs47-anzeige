@@ -144,7 +144,9 @@ async function lade() {
   const pk = (id, bin) => (r[id] || []).map((x) => [(x.lu ?? x.last_updated) * 1000, bin ? (x.s === 'on' ? 1 : x.s === 'off' ? 0 : null) : parseFloat(x.s)])
     .filter((p) => bin ? p[1] !== null : !isNaN(p[1]));
   const reihen = {}; for (const k of da) reihen[k.e] = binne(pk(k.e), t0, n, BIN);
-  const zu = {}; for (const e of sw) zu[e] = binne(pk(e, true), t0, n, BIN, true);
+  // Schalter: unavailable/entfernt = Lücke (null bleibt drin), sonst trägt binne ein altes „off“ über die Lücke (30.10. Mini entfernt → WiGa fälschlich „zu“)
+  const pkS = (id) => (r[id] || []).map((x) => [(x.lu ?? x.last_updated) * 1000, x.s === 'on' ? 1 : x.s === 'off' ? 0 : null]);
+  const zu = {}; for (const e of sw) zu[e] = binne(pkS(e), t0, n, BIN, true);
   const ref = new Array(n).fill(null);   // Bezug: Mittel aller gemessenen Kreise (Anlegefühler messen systematisch tiefer als der PMG-Fühler); Kreise mit Ventil zu zählen nicht
   for (let i = 0; i < n; i++) { let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i], zr = zu[VENTIL[e]]; if (v !== null && !(zr && zr[i] !== null && zr[i] < 0.5)) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
   daten = { t0, n, K, reihen, ref, vl: binne(pk(VL), t0, n, BIN), rl: binne(pk(RLG), t0, n, BIN), pu: binne(pk(PU, true), t0, n, BIN, true), zu, geladen: jetzt };
