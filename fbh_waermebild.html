@@ -6,7 +6,7 @@
 <title>FBH Wärmebild</title>
 <!-- Fußbodenheizung: Rücklauf je Kreis als Wärmebild (30.09.2026). Zeilen = Kreise aus sensor.fbh_kreise (packages/fbh.yaml),
      Spalten = 10-min-Abschnitte. Modus „Abweichung“: Kreis-RL minus gemeinsamer RL an der PMG (blau = kälter = zu wenig
-     Durchfluss/langes Rohr, rot = wärmer = zu viel Durchfluss), grau = am Mittel ±0,4 K, schraffiert = Heizkreispumpe aus (seit 03.11.2026). Modus „Temperatur“: 20–35 °C.
+     Durchfluss/langes Rohr, rot = wärmer = zu viel Durchfluss), grau = am Mittel ±0,4 K, grün-schwarz schraffiert = Heizkreispumpe aus, gelb-schwarz = Ventil zu (2PM) (seit 03.11.2026). Modus „Temperatur“: 20–35 °C.
      Daten live aus dem Elternfenster (HA-iframe, gleiche Herkunft): history/history_during_period, 14 Tage.
      Bedienung wie die übrigen Leisten: im Feld ziehen = blättern, Leiste unten: Rahmen ziehen = verschieben, gelbe Griffe =
      zoomen, daneben tippen = springen, Doppelklick/-tippen = Standard (48 h bis jetzt).
@@ -74,14 +74,14 @@ const farbe = (v) => { const c = skala(modus === 'abw' ? S_ABW : S_TEMP, v); ret
 const SCHRAFF = {};
 function schraffur(g) { const dpr = window.devicePixelRatio || 1; if (SCHRAFF[dpr]) return SCHRAFF[dpr];
   const c = document.createElement('canvas'), n = Math.round(6 * dpr); c.width = c.height = n; const q = c.getContext('2d');
-  q.fillStyle = '#1f1f22'; q.fillRect(0, 0, n, n); q.strokeStyle = '#71717a'; q.lineWidth = 1.2 * dpr;
+  q.fillStyle = '#0b0b0c'; q.fillRect(0, 0, n, n); q.strokeStyle = '#22c55e'; q.lineWidth = 1.4 * dpr;   // 03.11.2026 (Nutzer): grün/schwarz
   q.beginPath(); q.moveTo(0, n); q.lineTo(n, 0); q.moveTo(-n / 2, n / 2); q.lineTo(n / 2, -n / 2); q.moveTo(n / 2, n * 1.5); q.lineTo(n * 1.5, n / 2); q.stroke();
   const m = g.createPattern(c, 'repeat'); try { m.setTransform(new DOMMatrix().scale(1 / dpr)); } catch (e) {} return (SCHRAFF[dpr] = m); }
 // Ventil zu (Shelly-Schalter aus): dunkel mit bernsteinfarbener Gegen-Schraffur – unterscheidbar von „Pumpe aus“
 const ZUMUST = {};
 function zuMuster(g) { const dpr = window.devicePixelRatio || 1; if (ZUMUST[dpr]) return ZUMUST[dpr];
   const c = document.createElement('canvas'), n = Math.round(6 * dpr); c.width = c.height = n; const q = c.getContext('2d');
-  q.fillStyle = '#1f1a12'; q.fillRect(0, 0, n, n); q.strokeStyle = '#d97706'; q.lineWidth = 1.2 * dpr;
+  q.fillStyle = '#0b0b0c'; q.fillRect(0, 0, n, n); q.strokeStyle = '#facc15'; q.lineWidth = 1.4 * dpr;   // 03.11.2026 (Nutzer): gelb/schwarz
   q.beginPath(); q.moveTo(0, 0); q.lineTo(n, n); q.moveTo(-n / 2, n / 2); q.lineTo(n / 2, n * 1.5); q.moveTo(n / 2, -n / 2); q.lineTo(n * 1.5, n / 2); q.stroke();
   const m = g.createPattern(c, 'repeat'); try { m.setTransform(new DOMMatrix().scale(1 / dpr)); } catch (e) {} return (ZUMUST[dpr] = m); }
 
