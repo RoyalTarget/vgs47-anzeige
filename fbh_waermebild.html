@@ -192,6 +192,7 @@ const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'WiGa', 'W
 // 29.10.2026: feste H&T WZ (an der Thermostat-Stelle) + Flur EG; CMI-Raumfühler daneben als Vergleich
 const RAUM_T = { 'Wohnen': [['sensor.ht_wohnzimmer_temperatur', 'H&T WZ'], ['sensor.cmi_t_raum', 'CMI']],
   'Flur EG': [['sensor.ht_flur_eg_temperatur', 'H&T']],
+  'Bad DG': [['sensor.ht_bad_dg_temperatur', 'H&T']],   // 04.11.2026: fester H&T Bad DG (Display + Helligkeit)
   'Emils Zimmer': [['sensor.emil_climatecontrol_raumtemperatur', 'Daikin', 1]],
   // 03.11.2026 (Nutzer): Daikin WiGa wieder anzeigen (nur Anzeige, nicht Regelung) – H&T A sitzt am kältesten Ort (Fenster/Stahlträger),
   // Daikin-Fühler sitzt oben im Innengerät (warm, +3…5 K bei Gerät aus) → beide zusammen geben die Spanne im Raum
