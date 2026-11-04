@@ -352,6 +352,8 @@ function zeigeTabellen(s, k, lp, gh) {
       ["TV Yoga", "sensor.tv_yoga_leistung", "sensor.tv_yoga_energie_heute", "sensor.tv_yoga_energie_monat", "2026-10-20T13:15"],
       // 20.10.2026: Emils Schreibtisch (Shelly Plug M Gen3, PC/MacBook)
       ["Kinderzimmer PC", "sensor.emils_schreibtisch_leistung", "sensor.emil_schreibtisch_energie_heute", "sensor.emil_schreibtisch_energie_monat", "2026-10-20T08:42"],
+      // 04.11.2026: Ladegeräte (gemessene, ladegeraete.yaml: Ladestation Lesezimmer an der Shelly-Leiste) – grau wie Grundlast
+      ["Ladegeräte", "sensor.ladegeraete_leistung", "sensor.ladegeraete_energie_heute", "sensor.ladegeraete_energie_monat", "2026-11-04T15:51"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
       ["💡 Licht", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
@@ -361,7 +363,7 @@ function zeigeTabellen(s, k, lp, gh) {
   const vjv = (h) => VJ[h === "sensor.wp_strom_heute" ? "wp_stromzahler" : String(h).replace("sensor.", "")] || null;
   const _hv = VJ.hausverbrauch_heute || null, _nv = VJ.netzbezug_monat || null, _vv = VJ.netz_an_victron_heute || [0, 0, 1, 0, 0], _wv = VJ.wp_stromzahler || [0, 0, 1, 0, 0];
   const wpk = _wv[3] - _wv[0] * 365;
-  const GL_ZEILEN = ["Kühlschrank", "Kühlschrank Garage", "Victron-Anlage", "Heizungstechnik", "Router & Netzwerk", "Smart Home"];
+  const GL_ZEILEN = ["Kühlschrank", "Kühlschrank Garage", "Victron-Anlage", "Heizungstechnik", "Router & Netzwerk", "Smart Home", "Ladegeräte"];
   // „echt bezahlt“ / „ohne PV“ (01.10.2026, wie im Dashboard): € je Gerät = kWh × Preis × Netzanteil des Geräts (Payload gh aus
   // sensor.geraete_herkunft: {h|m: {Leistungs-Entität: [kWh, davon Netz]}}); Ø/Jahr in den ersten 7 Monatstagen mit dem Ø-Netzanteil des Hauses
   const echt = gvModus() === "echt", GH = (gh && gh.h) || {}, GM = (gh && gh.m) || {};
