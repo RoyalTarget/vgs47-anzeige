@@ -161,8 +161,8 @@ function zeigeFluss(s) {
     ["Fernseher", "tv", summe(s, ["sensor.tv_sony_power", "sensor.tv_yoga_leistung"]),
       [w("sensor.tv_sony_power") > 20 ? "WZ" : "", w("sensor.tv_yoga_leistung") > 20 ? "Yoga " : ""].filter(Boolean).join(" + ")],
     ["Kinderzimmer PC", "emil", w("sensor.emils_schreibtisch_leistung"), ""],
-    ["Küchengeräte", "kgeraete", summe(s, ["sensor.kueche_wasserkocher_leistung", "sensor.kueche_airfryer_leistung", "sensor.kueche_thermomix_leistung"]),
-      [["Wasserkocher", "sensor.kueche_wasserkocher_leistung"], ["Airfryer", "sensor.kueche_airfryer_leistung"], ["Thermomix", "sensor.kueche_thermomix_leistung"]]
+    ["Küchengeräte", "kgeraete", summe(s, ["sensor.kueche_wasserkocher_leistung", "sensor.kueche_airfryer_leistung", "sensor.kueche_thermomix_leistung", "sensor.kueche_kaffeemaschine_power"]),
+      [["Wasserkocher", "sensor.kueche_wasserkocher_leistung"], ["Airfryer", "sensor.kueche_airfryer_leistung"], ["Thermomix", "sensor.kueche_thermomix_leistung"], ["Kaffee", "sensor.kueche_kaffeemaschine_power"]]
         .filter(([, e]) => w(e) > 10).map(([n]) => n).join(" + ")],
   ].sort((a, b) => b[2] - a[2]);
   const kreise = ind.slice(0, 4).filter((x) => x[2] >= 10);
@@ -331,6 +331,8 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Wasserkocher", "sensor.kueche_wasserkocher_leistung", "sensor.wasserkocher_energie_heute", "sensor.wasserkocher_energie_monat", "2026-10-20T11:08"],
       ["Airfryer", "sensor.kueche_airfryer_leistung", "sensor.airfryer_energie_heute", "sensor.airfryer_energie_monat", "2026-10-20T12:45"],
       ["Thermomix", "sensor.kueche_thermomix_leistung", "sensor.thermomix_energie_heute", "sensor.thermomix_energie_monat", "2026-10-20T12:45"],
+      // 04.11.2026: Kaffeemaschine an VOCOlinc VP3 (HomeKit, W), kWh per Integrations-Helfer
+      ["Kaffeemaschine", "sensor.kueche_kaffeemaschine_power", "sensor.kaffeemaschine_energie_heute", "sensor.kaffeemaschine_energie_monat", "2026-11-04T20:13"],
       // 26.10.2026: Staubsauger = Schätzung aus dem Rest (wie Dashboard); Leistung jetzt steckt in Kochen/Backen → „–“
       ["Staubsauger", "binary_sensor.staubsauger_lauft_geschatzt", "sensor.staubsauger_energie_heute", "sensor.staubsauger_energie_monat", "2026-10-19T00:00"],
       ["Kühlschrank", "sensor.kuche_kuhlschrank_shelly_leistung", "sensor.kuhlschrank_energie_heute", "sensor.kuhlschrank_energie_monat", "2026-09-24T12:34"],
