@@ -395,7 +395,7 @@ function zeigeTabellen(s, k, lp, gh) {
     "Heizungstechnik": [infT("Regelung", "input_number.ht_regelung_w"), infT("Daikin-Standby", "input_number.ht_daikin_w"), infT("SYR/Wolf-Link/Leisten", "input_number.ht_sonst_w"),
       infT("Kellerlüfter", "input_number.ht_luefter_w"), infT("WP-Standby", "input_number.ht_wp_standby_w", wpStill), infT("HK-Pumpe", "input_number.ht_hk_pumpe_w", hkAn),
       infT("Stellantriebe", "input_number.ht_stellantriebe_w"), infT("Zirkulation", "input_number.ht_zirk_w", zpAn)].join(" · "),
-    "Router & Netzwerk": [infT("FRITZ!Box WZ + Repeater", "input_number.router_w"), infT("Router LZ gemessen", "sensor.lesezimmer_router_leistung"), infT("Pi", "input_number.pi_w"), infT("Switch", "input_number.switch_keller_w"), infT("Daikin-Hub", "input_number.daikin_hub_w")].join(" · "),
+    "Router & Netzwerk": [infT("FRITZ!Box WZ", "input_number.router_w"), infT("Repeater Keller", "input_number.repeater_keller_w"), infT("Repeater Emil", "input_number.repeater_emil_w"), infT("Router LZ gemessen", "sensor.lesezimmer_router_leistung"), infT("Pi", "input_number.pi_w"), infT("Switch", "input_number.switch_keller_w"), infT("Daikin-Hub", "input_number.daikin_hub_w")].join(" · "),
     "Smart Home": [infT("Kameras", "input_number.sh_kameras_w"), infT("HomeBase", "input_number.sh_homebase_w"), infT("Apple TV Yoga + HomePod", "input_number.sh_apple_w"), infT("TV-Ecke WZ gemessen", "sensor.tv_ecke_ohne_sony"),
       infT("Stecker-Eigenverbrauch", "input_number.sh_stecker_w"), infT("Roomba", "input_number.sh_roomba_w")].join(" · ") };
   // 27.10.2026 (Nutzer): jetzt-Leistung der Geräte grün, wenn ≥ 5 W (wie Dashboard)
