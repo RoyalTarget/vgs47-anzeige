@@ -195,7 +195,8 @@ const RAUM_T = { 'Wohnen': [['sensor.ht_wohnzimmer_temperatur', 'H&T WZ'], ['sen
   'Emils Zimmer': [['sensor.emil_climatecontrol_raumtemperatur', 'Daikin', 1]],
   // 03.11.2026 (Nutzer): Daikin WiGa wieder anzeigen (nur Anzeige, nicht Regelung) – H&T A sitzt am kältesten Ort (Fenster/Stahlträger),
   // Daikin-Fühler sitzt oben im Innengerät (warm, +3…5 K bei Gerät aus) → beide zusammen geben die Spanne im Raum
-  'WiGa': [['sensor.wintergarten_climatecontrol_raumtemperatur', 'Daikin', 1]] };
+  // 04.11.2026 (Nutzer): fester H&T WiGa Mitte (Esstisch) – nur Anzeige
+  'WiGa': [['sensor.ht_wiga_mitte_temperatur', 'H&T Mitte'], ['sensor.wintergarten_climatecontrol_raumtemperatur', 'Daikin', 1]] };
 function raumTemps(h, name) { const l = [];
   for (const x of ['a', 'b', 'c']) { const o = h?.states['input_select.ht_' + x + '_standort']?.state; if (HT_ORT[o] !== name) continue;
     const v = parseFloat(h?.states['sensor.ht_' + x + '_temperatur']?.state); if (!isNaN(v)) l.push({ k: 'H&T ' + x.toUpperCase() + (o !== name ? ' ' + o : ''), v }); }
