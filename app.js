@@ -356,6 +356,8 @@ function zeigeTabellen(s, k, lp, gh) {
       ["Kinderzimmer PC", "sensor.emils_schreibtisch_leistung", "sensor.emil_schreibtisch_energie_heute", "sensor.emil_schreibtisch_energie_monat", "2026-10-20T08:42"],
       // 04.11.2026: Ladegeräte (gemessene, ladegeraete.yaml: Ladestation Lesezimmer an der Shelly-Leiste) – grau wie Grundlast
       ["Ladegeräte", "sensor.ladegeraete_leistung", "sensor.ladegeraete_energie_heute", "sensor.ladegeraete_energie_monat", "2026-11-04T15:51"],
+      // 04.11.2026: Föhn Bad DG an VOCOlinc VP3
+      ["Föhn Bad DG", "sensor.bad_dg_foehn_power", "sensor.foehn_energie_heute", "sensor.foehn_energie_monat", "2026-11-04T20:20"],
       // 15.10.2026: Licht = gemessene Lichter + ungemessene ≈ (licht_schaetzung.yaml); Startzeit = Template-Reload
       ["💡 Licht", "sensor.licht_leistung", "sensor.licht_energie_heute", "sensor.licht_energie_monat", "2026-10-01T00:00"]]]];
   const kv = (e) => (k[e] === undefined ? null : k[e]);
