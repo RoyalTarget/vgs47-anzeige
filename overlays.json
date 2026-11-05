@@ -363,6 +363,15 @@
   ]
  },
  {
+  "img": "wp_heizstab.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_heizstab",
+    "on"
+   ]
+  ]
+ },
+ {
   "img": "tank_fill_1.svg",
   "conds": [
    [
