@@ -38,6 +38,8 @@ footer { color: var(--leise); font-size: 12px; text-align: center; padding: 12px
 .wert.start { transform: translate(0, -75%); }
 .wert.middle { transform: translate(-50%, -75%); }
 .wert.end { transform: translate(-100%, -75%); }
+.wert.r80 { transform: translate(-100%, -80%); }   /* 06.11.2026 Schema D2: Wert rechtsbündig, Grundlinie = top */
+.wert.l80 { transform: translate(0, -80%); }
 
 .raster { display: grid; gap: 8px; }
 .drei { grid-template-columns: repeat(3, minmax(0, 1fr)); }
