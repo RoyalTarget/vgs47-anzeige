@@ -558,7 +558,7 @@
  {
   "id": "d2_azh",
   "left": 18.75,
-  "top": 50.76,
+  "top": 50.61,
   "anchor": "r80",
   "color": "#8b929b",
   "prefix": "heute ",
@@ -571,7 +571,7 @@
  {
   "id": "d2_stg",
   "left": 7.75,
-  "top": 55.02,
+  "top": 55.78,
   "anchor": "l80",
   "color": "#e5e7eb",
   "prefix": "",
@@ -579,7 +579,7 @@
   "unit": "",
   "dec": 0,
   "fs": 11,
-  "w": 700
+  "w": 600
  },
  {
   "id": "d2_w0",
