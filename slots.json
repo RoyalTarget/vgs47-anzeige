@@ -519,7 +519,7 @@
  {
   "id": "d2_wp_kw",
   "left": 8.17,
-  "top": 47.57,
+  "top": 46.81,
   "anchor": "r80",
   "color": "#facc15",
   "prefix": "",
@@ -545,7 +545,7 @@
  {
   "id": "d2_az",
   "left": 18.17,
-  "top": 46.66,
+  "top": 46.81,
   "anchor": "r80",
   "color": "#86efac",
   "prefix": "",
@@ -623,7 +623,7 @@
  {
   "id": "d2_w3",
   "left": 18.75,
-  "top": 69.6,
+  "top": 70.97,
   "anchor": "r80",
   "color": "#e5e7eb",
   "prefix": "",
@@ -636,7 +636,7 @@
  {
   "id": "d2_w4",
   "left": 18.75,
-  "top": 72.8,
+  "top": 74.16,
   "anchor": "r80",
   "color": "#e5e7eb",
   "prefix": "",
@@ -649,7 +649,7 @@
  {
   "id": "d2_w5",
   "left": 18.75,
-  "top": 75.99,
+  "top": 78.72,
   "anchor": "r80",
   "color": "#e5e7eb",
   "prefix": "",
@@ -662,7 +662,7 @@
  {
   "id": "d2_w6",
   "left": 18.75,
-  "top": 79.18,
+  "top": 81.91,
   "anchor": "r80",
   "color": "#e5e7eb",
   "prefix": "",
@@ -675,7 +675,7 @@
  {
   "id": "schall",
   "left": 18.75,
-  "top": 82.37,
+  "top": 85.11,
   "anchor": "r80",
   "color": "#9ca3af",
   "prefix": "",
