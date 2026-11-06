@@ -106,7 +106,9 @@ function binne(pkte, t0, n, bin, binaer) {
 const GIST_V = GIST.replace('data.json', 'verlauf.json');
 const FI = ['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden', 'sensor.rl_dg_3', 'sensor.rl_dg_4', 'sensor.rl_yoga', 'sensor.rl_og_bad', 'sensor.rl_og_bad_wand', 'sensor.rl_og_flur',
   'sensor.rl_og_5', 'sensor.rl_og_6', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5', 'sensor.rl_wc', 'sensor.rl_flur',
-  'sensor.cmi_hk_vorlauf', 'sensor.cmi_hk_ruecklauf', 'sensor.cmi_hk_durchfluss'];
+  'sensor.cmi_hk_vorlauf', 'sensor.cmi_hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen'];
+// 06.11.2026 (Nutzer „Website zeigt altes Wärmebild“): Ventile WZ/WiGa als 0/1-Statistik (ventil_statistik.yaml) → wie im Dashboard „Ventil zu“
+const WEB_ZU = { 'switch.wz_antriebe': 'sensor.wz_ventile_offen', 'switch.wiga_antriebe': 'sensor.wiga_ventile_offen' };
 function webOhneNamen() {
   for (const r of RAEUME) if (r[0] === 'Emils Zimmer') r[0] = 'Kinderzimmer';
   if (HT_ORT['Emils Zimmer']) { delete HT_ORT['Emils Zimmer']; HT_ORT['Kinderzimmer'] = 'Kinderzimmer'; }
@@ -123,12 +125,13 @@ async function ladeWeb() {
     'binary_sensor.fbh_messfenster': { state: (d.mf || [])[0], attributes: { grund: (d.mf || [])[1] } } };
   for (const e in (d.s || {})) states[e] = { state: String(d.s[e]) };
   for (const e in serie) { const s = serie[e]; let l = null; for (let i = s.length - 1; i >= 0; i--) if (s[i] !== null) { l = s[i]; break; } states[e] = { state: String(l) }; }
+  const zu = {}; for (const sw in WEB_ZU) { const z = serie[WEB_ZU[sw]]; if (z && z.some((v) => v !== null)) { zu[sw] = z; const l = states[WEB_ZU[sw]]; if (l && l.state !== 'null') states[sw] = { state: +l.state >= 0.5 ? 'on' : 'off' }; } }
   WEB.h = { states }; const da = K.filter((k) => serie[k.e]), reihen = {}; for (const k of da) reihen[k.e] = serie[k.e];
-  const ref = new Array(n).fill(null);
-  for (let i = 0; i < n; i++) { let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i]; if (v !== null) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
+  const ref = new Array(n).fill(null);   // wie in HA: Kreise mit Ventil zu zählen nicht zum Mittel
+  for (let i = 0; i < n; i++) { let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i], zr = zu[VENTIL[e]]; if (v !== null && !(zr && zr[i] !== null && zr[i] < 0.5)) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
   const q = serie['sensor.cmi_hk_durchfluss'] || new Array(n).fill(null);
   daten = { t0, n, K, reihen, ref, vl: serie[VL] || new Array(n).fill(null), rl: serie[RLG] || new Array(n).fill(null),
-    pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), geladen: Date.now() };
+    pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), zu, geladen: Date.now() };
   zeichne();
 }
 function webHoehe(px) { try { const fr = window.frameElement; if (fr && Math.abs(fr.offsetHeight - px) > 2) fr.style.height = px + 'px'; } catch (e) {} }
