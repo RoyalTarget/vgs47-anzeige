@@ -28,6 +28,9 @@ function baueSchema() {
     el.style.left = s.left + "%";
     el.style.top = s.top + "%";
     el.style.color = s.color;
+    // 06.11.2026 (Nutzer, Schema D2): eigene Schriftgröße (Schema-Einheiten, 16 = Standard) und Stärke je Feld
+    if (s.fs) el.style.fontSize = (s.fs * 1.3333 / 16).toFixed(4) + "cqw";
+    if (s.w) el.style.fontWeight = s.w;
     el.id = "slot_" + s.id;
     w.appendChild(el);
   }
@@ -70,6 +73,9 @@ function zeigeSchema(s, sk) {
     if (sl.id === "schall") { const el = $("slot_" + sl.id), h = new Date().getHours(), gw = h >= 22 || h < 6 ? 35 : 50;
       el.textContent = v > 0 ? txt : ""; el.style.color = v <= gw - 5 ? "#22c55e" : v <= gw ? "#f59e0b" : "#ef4444";
       if (v > 0) { el.setAttribute("data-tip", schallTip(v, num(s, "sensor.wp_schall_messungen") || 0)); el.style.cursor = "help"; } else el.removeAttribute("data-tip"); continue; }
+    // 06.11.2026: AZ-Plakette – Farbe nach Güte (grün ab 4, gelb 3–4, rot darunter), ohne Wert/Stillstand leer
+    if (sl.id === "d2_az") { const el = $("slot_" + sl.id); el.textContent = v !== null && v > 0.05 ? zahl(v, 2) : "";
+      el.style.color = v >= 4 ? "#86efac" : v >= 3 ? "#fde68a" : "#fca5a5"; continue; }
     // 02.11.2026: Puffer-Bilanz (Ø 15 min, WP − Heizkreis): + grün = Puffer lädt, − orange = Puffer gibt ab, sonst grau
     if (sl.id === "puf_b") { const el = $("slot_" + sl.id); el.textContent = v === null ? "" : (v >= 0.1 ? "+" : "") + txt;
       el.style.color = v === null ? sl.color : v >= 0.1 ? "#22c55e" : v <= -0.1 ? "#f59e0b" : "#9ca3af";
