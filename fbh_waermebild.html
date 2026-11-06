@@ -357,8 +357,8 @@ function zeichne() {
     g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${schmal ? '' : (raum && raum.erster === z.k.e ? '600 ' : '')}11px system-ui, sans-serif`; g.textAlign = 'left';
     g.fillText(z.k.k, 8, z.y + z.h / 2);
     { const zs = daten?.zuS?.[z.k.e], la = zs ? zs[daten.n - 2] || zs[daten.n - 1] : 0;   // letzter fertiger Abschnitt
-      const kz = VENTIL[z.k.e] ? (h?.states[VENTIL[z.k.e]]?.state === 'off' ? 'zu' : '') : la === 2 ? 'zu' : la === 1 ? 'zu?' : '';
-      if (kz) { const nx = 8 + g.measureText(z.k.k).width + 4; g.fillStyle = kz === 'zu' ? '#f59e0b' : 'rgba(250,204,21,.7)'; g.font = '600 10px system-ui, sans-serif';
+      const kz = VENTIL[z.k.e] ? (h?.states[VENTIL[z.k.e]]?.state === 'off' ? 'zu' : '') : la ? 'zu' : '';   // 06.11.2026 (Nutzer): ohne „?“, Schätzung erkennt man an der blassen Farbe + Legende
+      if (kz) { const nx = 8 + g.measureText(z.k.k).width + 4; g.fillStyle = la === 1 && !VENTIL[z.k.e] ? 'rgba(250,204,21,.7)' : '#f59e0b'; g.font = '600 10px system-ui, sans-serif';
         if (nx + g.measureText(kz).width <= X0 - 2) g.fillText(kz, nx, z.y + z.h / 2); } }
     if (!r) { g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, hy1); g.fillStyle = '#52525b'; g.textAlign = 'center'; g.fillText(daten ? 'noch kein Fühler' : '…', (X0 + X1) / 2, z.y + z.h / 2); }
     let sa = 0, sn = 0;
@@ -403,7 +403,7 @@ function zeichne() {
   if (daten?.zu && Object.keys(daten.zu).length) { const st = 'Ventil zu', sx0 = modus === 'abw' ? lx + lb + 6 + g.measureText(tr).width + 10 + 22 + g.measureText('Pumpe aus').width + 12 : lx + lb + 6 + g.measureText(tr).width + 12;
     if (sx0 + 22 + g.measureText(st).width <= W - 4) { g.fillStyle = zuMuster(g); g.fillRect(sx0, ly + 2, 16, 10); g.strokeStyle = '#52525b'; g.lineWidth = 1; g.strokeRect(sx0 + 0.5, ly + 2.5, 15, 9);
       g.fillStyle = '#9ca3af'; g.fillText(st, sx0 + 22, ly + 7);
-      const s2 = 'zu? (geschätzt)', sx2 = sx0 + 22 + g.measureText(st).width + 12;   // 06.11.2026
+      const s2 = 'zu (geschätzt)', sx2 = sx0 + 22 + g.measureText(st).width + 12;   // 06.11.2026
       if (sx2 + 22 + g.measureText(s2).width <= W - 4) { g.fillStyle = zuMusterS(g); g.fillRect(sx2, ly + 2, 16, 10); g.strokeStyle = '#52525b'; g.strokeRect(sx2 + 0.5, ly + 2.5, 15, 9);
         g.fillStyle = '#9ca3af'; g.fillText(s2, sx2 + 22, ly + 7); } } }
   geo = { X0, X1, von, bis, zl, plan, ACHSE, yEnde: y, schmal };
