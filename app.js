@@ -1059,6 +1059,13 @@ function wpFensterDaten(d, v, s, k) {
   const kw = { wp: [], bw: [], ll: [] };
   for (const [b, a, c, e] of (v && v.pw) || []) { const t = b * 900000;
     if (a != null) kw.wp.push([t, a / 100]); if (c != null) kw.bw.push([t, c / 100]); if (e != null) kw.ll.push([t, e / 100]); }
+  // 06.11.2026 (Nutzer): LLWP-Fläche je Stunde nachträglich auf die Daikin-Cloud skalieren (wie Dashboard) – Schätzung (Rest L2) nachts ca. 2× zu hoch.
+  // v.lh = [Stunde (Unix-s/3600), kWh×100] aus den Jahreszählern; Stunde erst ab H+1:45 sicher gemeldet, bis dahin letzter Faktor (sonst 1).
+  { const cl = new Map(((v && v.lh) || []).map(([h, c]) => [h * 36e5, c / 100])), eh = new Map(), fk = new Map(); let fl = null;
+    for (const [t, x] of kw.ll) { const H = Math.floor(t / 36e5) * 36e5; eh.set(H, (eh.get(H) || 0) + x / 4); }
+    for (const H of [...eh.keys()].sort((p, q) => p - q)) { const e = eh.get(H), c = cl.get(H);
+      if (e > 0.03 && c != null && jetzt >= H + 36e5 + 27e5) { fl = Math.min(Math.max(c / e, 0), 2); fk.set(H, fl); } }
+    kw.ll = kw.ll.map(([t, x]) => { const H = Math.floor(t / 36e5) * 36e5; return [t, x * (fk.has(H) ? fk.get(H) : (fl ?? 1))]; }); }
   const tage = {};
   for (const t of tagesListe(s, k, d.h)) { const x = tage[t.d] = { wp: t.teile[0] + t.teile[1], bw: t.teile[2] + t.teile[3], gwp: t.teile[0], gbw: t.teile[2], ll: 0 }; }   // PV/Netz-Aufteilung je Tag aus warmepumpen_tageswerte (auch 22.–25.09. vorhanden)
   // Integral je Tag (kWh) aus den 15-min-Mitteln; LLWP-Tageswert nur daraus
