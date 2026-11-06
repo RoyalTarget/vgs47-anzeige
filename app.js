@@ -781,7 +781,7 @@ const TL_K = ["a_dusche", "a_badewanne", "a_abspuelen", "a_warm_kurz", "a_wc", "
   "cmi_wp", "keller_bwwp_shelly_energie", "klima_betrieb_heute", "wp_strom_gratis_heute", "bwwp_strom_gratis_heute",
   "haus", "netz", "einsp", "akku_ent", "akku_lad", "g_waschmaschine", "g_trockner", "g_spulmaschine", "g_kuhlschrank", "g_kuhlschrank_garage",
   "g_entfeuchter", "g_nerdaxe", "g_iceriver", "g_tv_sony",
-  "h_pv", "h_akku", "h_netz", "ak_pv", "ak_netz", "g_kochen"];   // 14.10.2026: g_kochen = Kochen/Backen (Schätzung)   // 04.10.2026: haus_herkunft.yaml (Haus aus PV/Akku/Netz, Akku aus PV/Netz), ab 24.09.
+  "h_pv", "h_akku", "h_netz", "ak_pv", "ak_netz", "g_kochen", "llwp_sch", "llwp_sch_netz"];   // 06.11.2026: LLWP-Schätzung gesamt/Netz (llwp_herkunft.yaml) für die PV/Netz-Aufteilung   // 14.10.2026: g_kochen = Kochen/Backen (Schätzung)   // 04.10.2026: haus_herkunft.yaml (Haus aus PV/Akku/Netz, Akku aus PV/Netz), ab 24.09.
 function tlSetzen(v) { TL = {}; for (const r of (v && v.tl) || []) { if (!Array.isArray(r)) continue; const x = TL[r[0]] = {}; TL_K.forEach((k, i) => { if (r[i + 1] != null) x[k] = r[i + 1]; }); } }
 const fwBogen = (cx, cy, r0, r1, a0, a1) => { if (a1 - a0 >= 2 * Math.PI - 1e-6) a1 = a0 + 2 * Math.PI - 1e-4;
   const p = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)], g = a1 - a0 > Math.PI ? 1 : 0;
@@ -876,7 +876,8 @@ function wfTorteRechne(von, bis) {
 }
 function wpTorteRechne(von, bis) {
   // je Tag: ganze Tage aus den Tageswerten (WPF.tage, davor Langzeitstatistik), angeschnittene Tage anteilig nach der Leistungskurve
-  let wp = 0, bw = 0, ll = 0, gr = 0, unb = 0;
+  // 06.11.2026 (Nutzer: „grau ganz raus“): nur Teile mit PV/Netz-Aufteilung; LLWP-Anteil = Verhältnis der Schätzung (llwp_sch/_netz) auf die Cloud-kWh
+  let wp = 0, bw = 0, ll = 0, gr = 0, llg = 0;
   const integ = (n, a, b) => { let s = 0; for (const [t, p] of (WPF && WPF.kw[n]) || []) { const x = Math.max(t, a), y = Math.min(t + 9e5, b); if (y > x) s += p * (y - x) / 36e5; } return s; };
   for (const [k, a, b, anteil] of fwTage(von, bis)) {
     const tg = (WPF && WPF.tage[k]) || null, x = TL[k] || {};
@@ -885,12 +886,12 @@ function wpTorteRechne(von, bis) {
     let f = { wp: 1, bw: 1, ll: 1 };
     if (anteil < 0.999) { const t0 = new Date(a); t0.setHours(0, 0, 0, 0); const ganz = t0.getTime() + 864e5;
       for (const n of ["wp", "bw", "ll"]) { const g = integ(n, t0.getTime(), Math.min(ganz, Date.now())), s = integ(n, a, b); f[n] = g > 0.01 ? s / g : anteil; } }
-    wp += d.wp * f.wp; bw += d.bw * f.bw; ll += d.ll * f.ll;
-    if (d.gwp == null && d.gbw == null) unb += d.wp * f.wp + d.bw * f.bw; else gr += Math.min((d.gwp || 0) * f.wp + (d.gbw || 0) * f.bw, d.wp * f.wp + d.bw * f.bw); }
-  unb += ll; const rd = (v) => Math.round(v * 10) / 10;
-  return { ringe: [[{ n: "PV/Akku", v: rd(gr), f: "#22c55e" }, { n: "Netz", v: rd(Math.max(wp + bw + ll - gr - unb, 0)), f: "#ef4444" }, { n: "LLWP / ohne Aufteilung", v: rd(unb), f: "#6b7280" }],
+    if (d.gwp != null || d.gbw != null) { wp += d.wp * f.wp; bw += d.bw * f.bw; gr += Math.min((d.gwp || 0) * f.wp + (d.gbw || 0) * f.bw, d.wp * f.wp + d.bw * f.bw); }
+    const sch = x.llwp_sch || 0; if (sch > 0.01) { const v = d.ll * f.ll; ll += v; llg += v * Math.max(1 - (x.llwp_sch_netz || 0) / sch, 0); } }
+  const rd = (v) => Math.round(v * 10) / 10;
+  return { ringe: [[{ n: "PV/Akku", v: rd(gr + llg), f: "#22c55e" }, { n: "Netz", v: rd(Math.max(wp + bw - gr, 0) + ll - llg), f: "#ef4444" }],
     [{ n: "WP", v: rd(wp), f: "#3b82f6" }, { n: "BWWP", v: rd(bw), f: "#f87171" }, { n: "LLWP (Daikin)", v: rd(ll), f: "#facc15" }]],
-    hinweis: unb > 0.05 ? "grau = LLWP bzw. Tage ohne PV/Netz-Aufteilung" : "" };
+    hinweis: "" };
 }
 
 
