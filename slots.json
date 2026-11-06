@@ -582,6 +582,19 @@
   "w": 600
  },
  {
+  "id": "d2_voll",
+  "left": 18.75,
+  "top": 55.78,
+  "anchor": "r80",
+  "color": "#f59e0b",
+  "prefix": "",
+  "entity": "sensor.wp_vollast_minuten",
+  "unit": "",
+  "dec": 0,
+  "fs": 10,
+  "w": 600
+ },
+ {
   "id": "d2_w0",
   "left": 18.75,
   "top": 60.03,
