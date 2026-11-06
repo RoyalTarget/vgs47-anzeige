@@ -76,6 +76,8 @@ function zeigeSchema(s, sk) {
     // 06.11.2026: AZ-Plakette – Farbe nach Güte (grün ab 4, gelb 3–4, rot darunter), ohne Wert/Stillstand leer
     if (sl.id === "d2_az") { const el = $("slot_" + sl.id); el.textContent = v !== null && v > 0.05 ? zahl(v, 2) : "";
       el.style.color = v >= 4 ? "#86efac" : v >= 3 ? "#fde68a" : "#fca5a5"; continue; }
+    // 06.11.2026: Vollast-Timer – wie lange die WP schon am Anschlag fährt (sensor.wp_vollast_minuten, Stellgröße ≥ 69); sonst leer, dann zeigt overlays „70 = voll“
+    if (sl.id === "d2_voll") { const m = v === null ? 0 : Math.floor(v); $("slot_" + sl.id).textContent = m < 1 ? "" : m < 60 ? "seit " + m + " min" : "seit " + Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min"; continue; }
     // 02.11.2026: Puffer-Bilanz (Ø 15 min, WP − Heizkreis): + grün = Puffer lädt, − orange = Puffer gibt ab, sonst grau
     if (sl.id === "puf_b") { const el = $("slot_" + sl.id); el.textContent = v === null ? "" : (v >= 0.1 ? "+" : "") + txt;
       el.style.color = v === null ? sl.color : v >= 0.1 ? "#22c55e" : v <= -0.1 ? "#f59e0b" : "#9ca3af";
