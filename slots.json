@@ -543,6 +543,19 @@
   "w": 700
  },
  {
+  "id": "d2_hsoll",
+  "left": 69.83,
+  "top": 22.04,
+  "anchor": "r80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.cmi_hk_vorlauf_soll",
+  "unit": "°C",
+  "dec": 1,
+  "fs": 11,
+  "w": 600
+ },
+ {
   "id": "d2_az",
   "left": 18.17,
   "top": 46.81,
@@ -701,7 +714,7 @@
  {
   "id": "d2_h0",
   "left": 69.83,
-  "top": 22.8,
+  "top": 26.14,
   "anchor": "r80",
   "color": "#ef4444",
   "prefix": "",
@@ -714,7 +727,7 @@
  {
   "id": "d2_h1",
   "left": 69.83,
-  "top": 25.84,
+  "top": 29.18,
   "anchor": "r80",
   "color": "#3b82f6",
   "prefix": "",
@@ -727,7 +740,7 @@
  {
   "id": "d2_h2",
   "left": 69.83,
-  "top": 28.88,
+  "top": 32.22,
   "anchor": "r80",
   "color": "#e5e7eb",
   "prefix": "",
@@ -740,7 +753,7 @@
  {
   "id": "d2_mix",
   "left": 69.83,
-  "top": 34.19,
+  "top": 37.39,
   "anchor": "r80",
   "color": "#e5e7eb",
   "prefix": "",
