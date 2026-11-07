@@ -58,7 +58,7 @@ function schaetzeZu(d) {
   for (const e in d.reihen) { if (VENTIL[e]) continue; const r = d.reihen[e], z = new Array(d.n).fill(0);
     if (EMIL.includes(e)) { for (let i = 0; i < d.n; i++) if (r[i] === null && (d.pu[i] ?? 0) >= 0.5 && i < d.n - 1) z[i] = 2; out[e] = z; continue; }
     // Basis gleitend (±36 h, je Stunde neu): Pumpe/Kurve/Thermostate verschieben den üblichen Abstand eines Kreises
-    const ab = new Array(d.n).fill(null); for (let i = 0; i < d.n; i++) if (r[i] !== null && d.ref[i] !== null && (d.pu[i] ?? 0) >= 0.5) ab[i] = r[i] - d.ref[i];
+    const ab = new Array(d.n).fill(null); for (let i = 0; i < d.n; i++) if (r[i] !== null && d.ref[i] !== null && (d.pu[i] ?? 0) >= 0.5 && !d.refLuecke?.[i]) ab[i] = r[i] - d.ref[i];
     const hw = Math.round(36 * 36e5 / BIN), blk = Math.max(1, Math.round(36e5 / BIN)), bas = new Array(d.n).fill(null);
     for (let b0 = 0; b0 < d.n; b0 += blk) { const w = []; for (let j = Math.max(0, b0 - hw); j < Math.min(d.n, b0 + hw); j++) if (ab[j] !== null) w.push(ab[j]);
       if (w.length < 12) continue; w.sort((a, c) => a - c); const v = w[Math.floor(w.length * 0.75)]; for (let j = b0; j < Math.min(d.n, b0 + blk); j++) bas[j] = v; }
@@ -159,6 +159,9 @@ async function ladeWeb() {
   const q = serie['sensor.cmi_hk_durchfluss'] || new Array(n).fill(null);
   daten = { t0, n, K, reihen, ref, vl: serie[VL] || new Array(n).fill(null), rl: serie[RLG] || new Array(n).fill(null),
     pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), zu, geladen: Date.now() };
+  // 07.11.2026 (Nutzer „Website zeigt zu bei GZ/WC, Dashboard nicht“): Ventil-Statistik gibt es erst seit 06.11. abends → davor zählten die
+  // zugedrehten WZ/WiGa-Kreise ins Mittel, Bezug zu tief, Basis der übrigen Kreise falsch → Schein-„zu“. Ohne Ventilwert keine Schätzung.
+  daten.refLuecke = new Array(n).fill(false).map((_, i) => Object.values(WEB_ZU).some((e) => !serie[e] || serie[e][i] === null || serie[e][i] === undefined));
   daten.zuS = schaetzeZu(daten);
   zeichne();
 }
