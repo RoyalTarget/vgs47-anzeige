@@ -1879,7 +1879,7 @@ function zeigeSchall(s, v) {
   if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
 }
 
-function zeigeFrueher(v) {
+function zeigeFrueher(v, s = {}) {
   const fv = (v && v.fv) || {};
   const h = { states: { "sensor.frueher_heute_vergleich": { state: "", attributes: fv.a || {} } } };
   if (fv.a) for (const [id, cfg] of [["ring_frueher", RING_F], ["ring_heute", RING_H]]) { const el = $(id); if (!el || !el.setConfig) continue;
@@ -1887,8 +1887,9 @@ function zeigeFrueher(v) {
   const t = $("frueher_tab"); if (t && fv.md && t.__md !== fv.md) { t.__md = fv.md; t.innerHTML = mdHtml(fv.md); }
   const fw = (v && v.fw) || {};
   const hk = { states: { "sensor.web_texte_warme": { state: "", attributes: { kpi: fw.kpi, punkte: fw.punkte } } } };
-  for (const [id, teil] of [["kz_kacheln", "kacheln"], ["kz_faktor", "faktor"], ["kz_punkte", "punkte"]]) { const el = $(id); if (!el || !el.setConfig || !(teil === "punkte" ? fw.punkte : fw.kpi)) continue;
-    if (!el._c) el.setConfig({ teil }); el.hass = hk; }
+  for (const [id, teil] of [["kz_start", "start"], ["kz_kacheln", "kacheln"], ["kz_faktor", "faktor"], ["kz_punkte", "punkte"]]) { const el = $(id); if (!el || !el.setConfig || !(teil === "punkte" ? fw.punkte : fw.kpi)) continue;
+    if (!el._c) el.setConfig({ teil });
+    el.hass = teil === "start" ? { states: { ...hk.states, ...Object.fromEntries(["sensor.ht_wohnzimmer_temperatur", "sensor.cmi_t_aussen"].filter((e) => s[e] !== undefined && s[e] !== null).map((e) => [e, { state: String(s[e]) }])) } } : hk; }   // 12.11.2026: Startkachel zeigt Raum/außen live (data.json s)
   for (const [id, md] of [["gas_tab", fw.gas], ["az_tab", fw.az], ["bwwp_tab", fw.bwwp]]) { const el = $(id); if (el && md && el.__md !== md) { el.__md = md; el.innerHTML = mdHtml(md); } } }
 
 let VERLAUF = null, VERLAUF_T = 0;
@@ -1906,7 +1907,7 @@ async function holen() {
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
     try { zeigeWpFenster(d, VERLAUF); for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id); } catch (e) { console.warn("wpf", e); }   // Zeitleiste neu: LLWP-kWh brauchen WPF (18.10.2026)
     try { zeigeSchwellen(d, VERLAUF); } catch (e) { console.warn("schwellen", e); }
-    try { zeigeFrueher(VERLAUF); } catch (e) { console.warn("frueher", e); }
+    try { zeigeFrueher(VERLAUF, s); } catch (e) { console.warn("frueher", e); }
     try { zeigeSchall(s, VERLAUF); } catch (e) { console.warn("schall", e); }
     try { zeigeZaehler(s); } catch (e) { console.warn("zaehler", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
