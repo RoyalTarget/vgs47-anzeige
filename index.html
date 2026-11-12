@@ -29,11 +29,10 @@
   <div id="tb_zeile" class="tbz" hidden></div>
 
 
-  <!-- 22.10.2026 (Nutzer): „Auf einen Blick“ – Kacheln + „Aus 1 kWh Strom wird …“ (lib/vgs_kennzahlen.js, Daten verlauf.json fw.kpi) -->
+  <!-- 12.11.2026 (Nutzer, Variante A): „Auf einen Blick“ = Startkachel Wärme | Strom (lib/vgs_kennzahlen.js teil start, Daten verlauf.json fw.kpi); Kacheln + Flammen-Liste jetzt im Wärme-Bereich -->
   <section>
     <h2>Auf einen Blick</h2>
-    <vgs-kennzahlen-card id="kz_kacheln" class="kz-karte"></vgs-kennzahlen-card>
-    <vgs-kennzahlen-card id="kz_faktor" class="kz-karte"></vgs-kennzahlen-card>
+    <vgs-kennzahlen-card id="kz_start" class="kz-karte"></vgs-kennzahlen-card>
   </section>
   </div>
 
@@ -92,6 +91,12 @@
     </div>
   </section>
 
+
+  <section>
+    <h2>Wärme – Kennzahlen</h2>
+    <vgs-kennzahlen-card id="kz_kacheln" class="kz-karte"></vgs-kennzahlen-card>
+    <vgs-kennzahlen-card id="kz_faktor" class="kz-karte"></vgs-kennzahlen-card>
+  </section>
 
   <section>
     <h2>Wärmepumpe – Arbeitszahl je Außentemperatur</h2>
@@ -261,10 +266,10 @@
 <script src="lib/vgs_schwellen.js?v=202611061835"></script>
 <script src="lib/vgs_wann.js?v=202611011239"></script>
 <script src="lib/vgs_zaehler.js?v=202610061700"></script>
-<script src="lib/vgs_kennzahlen.js?v=202611041323"></script>
+<script src="lib/vgs_kennzahlen.js?v=202611120949"></script>
 <script src="lib/vgs_ring.js?v=202610221238"></script>
 <script src="lib/vgs_kueche.js?v=202611060928"></script>
 <script src="lib/vgs_hv.js?v=202611061730"></script>
-<script src="app.js?v=202611061900"></script>
+<script src="app.js?v=202611120949"></script>
 </body>
 </html>
