@@ -44,7 +44,7 @@
 <div id="tip"></div>
 <script>
 const $ = (id) => document.getElementById(id);
-const H48 = 48 * 36e5, TAGE = 14, VL = 'sensor.cmi_hk_vorlauf', RLG = 'sensor.cmi_hk_ruecklauf', PU = 'binary_sensor.cmi_hk_pumpe';
+const H48 = 48 * 36e5, TAGE = 14, VL = 'sensor.cmi_hk_vorlauf', RLG = 'sensor.hk_ruecklauf', PU = 'binary_sensor.cmi_hk_pumpe';
 // 03.11.2026 (Nutzer): WZ 1/2 + WG I/A/W hängen am Shelly 2PM (O1 WZ, O2 WiGa, Antriebe stromlos zu) → „Ventil zu“ exakt aus dem Schalter
 const VENTIL = { 'sensor.rl_wz_1': 'switch.wz_antriebe', 'sensor.rl_wz_2': 'switch.wz_antriebe', 'sensor.rl_wohnzimmer': 'switch.wiga_antriebe',
   'sensor.rl_wz_aussen': 'switch.wiga_antriebe', 'sensor.rl_wz_5': 'switch.wiga_antriebe' };
@@ -133,7 +133,7 @@ function binne(pkte, t0, n, bin, binaer) {
 const GIST_V = GIST.replace('data.json', 'verlauf.json');
 const FI = ['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden', 'sensor.rl_dg_3', 'sensor.rl_dg_4', 'sensor.rl_yoga', 'sensor.rl_og_bad', 'sensor.rl_og_bad_wand', 'sensor.rl_og_flur',
   'sensor.rl_og_5', 'sensor.rl_og_6', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5', 'sensor.rl_wc', 'sensor.rl_flur',
-  'sensor.cmi_hk_vorlauf', 'sensor.cmi_hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen'];
+  'sensor.cmi_hk_vorlauf', 'sensor.hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen'];
 // 06.11.2026 (Nutzer „Website zeigt altes Wärmebild“): Ventile WZ/WiGa als 0/1-Statistik (ventil_statistik.yaml) → wie im Dashboard „Ventil zu“
 const WEB_ZU = { 'switch.wz_antriebe': 'sensor.wz_ventile_offen', 'switch.wiga_antriebe': 'sensor.wiga_ventile_offen' };
 function webOhneNamen() {
@@ -358,11 +358,14 @@ function zeichne() {
     if (z.typ !== 'k') continue;
     zl.push(z); const r = daten?.reihen[z.k.e], hy1 = z.h - 2, raum = hy?.raum[z.k.e];
     g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${schmal ? '' : (raum && raum.erster === z.k.e ? '600 ' : '')}11px system-ui, sans-serif`; g.textAlign = 'left';
-    g.fillText(z.k.k, 8, z.y + z.h / 2);
     { const zs = daten?.zuS?.[z.k.e], la = zs ? zs[daten.n - 2] || zs[daten.n - 1] : 0;   // letzter fertiger Abschnitt
       const kz = VENTIL[z.k.e] ? (h?.states[VENTIL[z.k.e]]?.state === 'off' ? 'zu' : '') : la ? 'zu' : '';   // 06.11.2026 (Nutzer): ohne „?“, Schätzung erkennt man an der blassen Farbe + Legende
-      if (kz) { const nx = 8 + g.measureText(z.k.k).width + 4; g.fillStyle = la === 1 && !VENTIL[z.k.e] ? 'rgba(250,204,21,.7)' : '#f59e0b'; g.font = '600 10px system-ui, sans-serif';
-        if (nx + g.measureText(kz).width <= X0 - 2) g.fillText(kz, nx, z.y + z.h / 2); } }
+      // 12.11.2026 (Nutzer „zu fehlt bei WG W“): iPhone-Spalte 58 px, „WG W“ + „zu“ 0,4 px zu breit → „zu“ fehlte. Jetzt hat „zu“ Vorrang, der Name wird bei Bedarf gestaucht.
+      const fn = g.font; g.font = '600 10px system-ui, sans-serif'; const kw = kz ? g.measureText(kz).width : 0; g.font = fn;
+      const nmax = X0 - 10 - (kz ? kw + 3 : 0), nw = Math.min(g.measureText(z.k.k).width, nmax);
+      g.fillText(z.k.k, 8, z.y + z.h / 2, nmax);
+      if (kz) { g.fillStyle = la === 1 && !VENTIL[z.k.e] ? 'rgba(250,204,21,.7)' : '#f59e0b'; g.font = '600 10px system-ui, sans-serif';
+        g.fillText(kz, 8 + nw + 3, z.y + z.h / 2); } }
     if (!r) { g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, hy1); g.fillStyle = '#52525b'; g.textAlign = 'center'; g.fillText(daten ? 'noch kein Fühler' : '…', (X0 + X1) / 2, z.y + z.h / 2); }
     let sa = 0, sn = 0;
     if (r) for (let i = iv; i < ib; i++) { const v = r[i], zg = zuGesch(z.k.e, i); if (v === null && zg !== 2) continue; const an = (daten.pu[i] ?? 0) >= 0.5, rl = daten.ref[i];
