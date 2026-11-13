@@ -1886,12 +1886,13 @@ function zeigeWerHilft(v) {
   const wh = (v && v.wh) || {}, L = [...(wh.t || [])]; if (wh.h && wh.h.d) L.unshift(wh.h);
   const n = L.filter((x) => x && x.d).sort((a, b) => a.d < b.d ? -1 : 1).slice(-31);
   if (!n.length) { box.innerHTML = '<p style="color:var(--leise)">Noch keine Daten.</p>'; return; }
-  const W = Math.round(Math.max(300, Math.min(1400, box.clientWidth || 600))), H = 220, Lr = 34, R = 30, T = 10, B = 24, bw = (W - Lr - R) / n.length;
+  const W = Math.round(Math.max(300, Math.min(1400, box.clientWidth || 600))), H = 230, Lr = 34, R = 34, T = 20, B = 24, bw = (W - Lr - R) / n.length;
   const mx = Math.max(120, ...n.map((x) => (x.gr || 0) + (x.da || 0) + (x.dh || 0) + (x.hs || 0)));
   const top = Math.ceil(mx / 120) * 120, Y = (m) => T + (1 - m / top) * (H - T - B), Yt = (t) => T + (1 - (t + 8) / 20) * (H - T - B);
   const tg = (d) => d.slice(8, 10) + "." + d.slice(5, 7) + ".", hm = (m) => m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`;
   let sv = "";
-  for (let y = 0; y <= top; y += top / 4) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--rand)"/><text x="${Lr - 4}" y="${Y(y) + 4}" text-anchor="end">${y}</text>`;
+  for (let y = 0; y <= top; y += top / 4) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--rand)"/><text x="${Lr - 4}" y="${Y(y) + 4}" text-anchor="end">${y ? zahl(y / 60) + " h" : "0"}</text>`;
+    sv += `<text x="${Lr - 4}" y="9" text-anchor="end" style="font-size:10px">Dauer</text><text x="${W - R + 4}" y="9" style="font-size:10px">außen</text>`;   // 13.11.2026 Nutzer: Achsen klarer – Stunden statt Minuten + Achsentitel
   for (const t of [-8, 0, 12]) sv += `<text x="${W - R + 4}" y="${Yt(t) + 4}">${t}°</text>`;
   sv += `<line x1="${Lr}" x2="${W - R}" y1="${Yt(0)}" y2="${Yt(0)}" stroke="#60a5fa" stroke-dasharray="3 4" opacity=".6"/>`;
   n.forEach((x, i) => { const xl = Lr + i * bw; let y0 = Y(0);
@@ -1905,7 +1906,7 @@ function zeigeWerHilft(v) {
   sv += n.map((x, i) => x.ta == null ? "" : `<circle cx="${(Lr + i * bw + bw / 2).toFixed(1)}" cy="${Yt(x.ta).toFixed(1)}" r="2.6" fill="${x.ta < 0 ? "#60a5fa" : "#cbd5e1"}" style="pointer-events:none"/>`).join("");
   const sum = (k) => n.reduce((a, x) => a + (x[k] || 0), 0);
   const html = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
-    + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#3b82f6">■</span> WP am Anschlag · <span style="color:#eab308">■</span> Daikin (Regel) · <span style="color:#fde68a">■</span> Daikin (von Hand) · <span style="color:#ef4444">■</span> Heizstab Heizen · <span style="color:#cbd5e1">┅</span> außen Tiefstwert (rechts)</p>`
+    + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#3b82f6">■</span> WP am Anschlag · <span style="color:#eab308">■</span> Daikin (Regel) · <span style="color:#fde68a">■</span> Daikin (von Hand) · <span style="color:#ef4444">■</span> Heizstab Heizen · <span style="color:#cbd5e1">┅</span> außen Tiefstwert (rechte Achse, °C) · Säulen = Stunden je Tag</p>`
     + `<p style="color:var(--leise);font-size:12.5px">${n.length} Tage: WP am Anschlag ${hm(sum("gr"))} · Daikin ${hm(sum("da") + sum("dh"))} · Heizstab im Heizbetrieb ${hm(sum("hs"))}. Läuft die WP an ihrer Leistungsgrenze, springt die Daikin im Wintergarten ein – der Heizstab bleibt aus.</p>`;
   if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
 }
