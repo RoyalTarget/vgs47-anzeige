@@ -45,15 +45,7 @@
   <div class="kat" id="k_heizung" style="--k:#ef4444">
     <div class="kat-titel" role="heading" aria-level="2">🔥 Heizung</div>
 
-  <section>
-    <h2>Temperaturen</h2>
-    <div class="karte">
-      <svg id="tempkurve" viewBox="0 0 1000 300" class="progkurve" aria-label="Innen- und Außentemperatur mit Vorhersage"></svg>
-      <div class="prog-legende"><span class="l au">Außen</span><span class="l aup">Außen Prognose</span><span class="l in">Innen</span></div>
-    </div>
-  </section>
-
-
+  <!-- 13.11.2026 (Nutzer): Reihenfolge wie Reiter Heizung – erst alle Geräte, dann Grafiken WP → LLWP, Zahlen am Ende -->
   <section>
     <h2>Heizung</h2>
     <div class="karte schema-karte">
@@ -64,14 +56,10 @@
       </div>
     </div>
   </section>
-
-
   <section>
     <h2>Wann schaltet was?</h2>
     <div class="karte schwellen-karte"><vgs-schwellen-card id="schwellen"></vgs-schwellen-card></div>
   </section>
-
-
   <section>
     <h2>Wärmepumpen – Strom</h2>
     <div class="karte"><h3 style="margin:0 0 4px">Fläche = Leistung · Linie = kWh seit 0:00 · Kreis = Tagessumme (grün = PV/Akku, rot = Netz)</h3>
@@ -79,8 +67,6 @@
       <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP</span><span class="l" style="--c:#facc15">LLWP (Daikin)</span><span class="l" style="--c:#e5e7eb">kWh seit 0:00</span></div>
       <div class="zl-hinweis">Im Feld ziehen oder unten tippen/ziehen = blättern, Griffe = zoomen, Doppeltippen = Standard</div></div>
   </section>
-
-
   <section>
     <h2>Wärmequellen – wann lief was</h2>
     <div class="karte">
@@ -90,44 +76,55 @@
       <div class="prog-legende"><span class="l" style="--c:#3b82f6">WP</span><span class="l" style="--c:#f87171">BWWP Verdichter</span><span class="l" style="--c:#dc2626">BWWP + Heizstab</span><span class="l" style="--c:#facc15">LLWP</span></div>
     </div>
   </section>
-
-
   <section>
-    <h2>Wärme – Kennzahlen</h2>
-    <vgs-kennzahlen-card id="kz_kacheln" class="kz-karte"></vgs-kennzahlen-card>
-    <vgs-kennzahlen-card id="kz_faktor" class="kz-karte"></vgs-kennzahlen-card>
+    <h2>Temperaturen</h2>
+    <div class="karte">
+      <svg id="tempkurve" viewBox="0 0 1000 300" class="progkurve" aria-label="Innen- und Außentemperatur mit Vorhersage"></svg>
+      <div class="prog-legende"><span class="l au">Außen</span><span class="l aup">Außen Prognose</span><span class="l in">Innen</span></div>
+    </div>
   </section>
-
   <section>
     <h2>Wärmepumpe – Arbeitszahl je Außentemperatur</h2>
     <vgs-kennzahlen-card id="kz_punkte" class="kz-karte"></vgs-kennzahlen-card>
-    <div class="karte"><div id="az_tab" class="md-tab"></div></div>
   </section>
-
-  <!-- 23.10.2026 (Nutzer): WP-Geräusch – geschätzter Pegel aus der Verdichterleistung (packages/wp_schall.yaml), Daten data.json + verlauf.json ws -->
-  <section>
-    <h2>Wärmepumpe – Geräusch</h2>
-    <div class="karte"><div id="ws_box" class="md-tab"></div></div>
-  </section>
-
-
   <!-- 22.10.2026 (Nutzer): FBH-Wärmebild & Hydraulik wieder auf der Website (Daten verlauf.json fh) -->
   <section>
     <h2>Fußbodenheizung – Wärmebild &amp; Hydraulik</h2>
     <div class="karte" style="padding:0;overflow:hidden"><iframe src="fbh_waermebild.html?v=202611120856" title="Wärmebild Fußbodenheizung" class="fbhbild" loading="lazy"></iframe></div>
   </section>
-
-
+  <!-- 23.10.2026 (Nutzer): WP-Geräusch – geschätzter Pegel aus der Verdichterleistung (packages/wp_schall.yaml), Daten data.json + verlauf.json ws -->
+  <section>
+    <h2>Wärmepumpe – Geräusch</h2>
+    <div class="karte"><div id="ws_box" class="md-tab"></div></div>
+  </section>
+  <!-- 13.11.2026 (Nutzer): „Wer hilft der WP?“ je Tag (verlauf.json wh, app.js zeigeWerHilft) -->
+  <section>
+    <h2>Wer hilft der WP? · je Tag</h2>
+    <div class="karte"><div id="wh_box" class="md-tab"></div></div>
+  </section>
   <section>
     <h2>Klima</h2>
     <div id="klima" class="raster drei"></div>
   </section>
+  <section>
+    <h2>Wärme – Kennzahlen</h2>
+    <vgs-kennzahlen-card id="kz_kacheln" class="kz-karte"></vgs-kennzahlen-card>
+    <vgs-kennzahlen-card id="kz_faktor" class="kz-karte"></vgs-kennzahlen-card>
+  </section>
+  <section>
+    <h2>Wärmepumpe – Arbeitszahl (Tabelle)</h2>
+    <div class="karte"><div id="az_tab" class="md-tab"></div></div>
+  </section>
   </div>
-
-  <div class="kat" id="k_ww" style="--k:#60a5fa">
+<div class="kat" id="k_ww" style="--k:#60a5fa">
     <div class="kat-titel" role="heading" aria-level="2">🚿 Warmwasser</div>
 
 
+  <!-- 13.11.2026 (Nutzer): BWWP-Temperaturen 48 h mit Schaltschwellen (verlauf.json bw, app.js zeigeBwwpTemp) -->
+  <section>
+    <h2>Warmwasser – Speicher · 48 h</h2>
+    <div class="karte"><div id="bwt_box" class="md-tab"></div></div>
+  </section>
   <!-- 22.10.2026 (Nutzer): BWWP-Kennzahlen (web_texte.yaml bwwp_md → verlauf.json fw.bwwp) -->
   <section>
     <h2>Warmwasser – BWWP Kennzahlen</h2>
@@ -270,6 +267,6 @@
 <script src="lib/vgs_ring.js?v=202610221238"></script>
 <script src="lib/vgs_kueche.js?v=202611131424"></script>
 <script src="lib/vgs_hv.js?v=202611061730"></script>
-<script src="app.js?v=202611120949"></script>
+<script src="app.js?v=202611131643"></script>
 </body>
 </html>
