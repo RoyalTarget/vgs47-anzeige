@@ -1886,7 +1886,7 @@ function zeigeWerHilft(v) {
   const wh = (v && v.wh) || {}, L = [...(wh.t || [])]; if (wh.h && wh.h.d) L.unshift(wh.h);
   const n = L.filter((x) => x && x.d).sort((a, b) => a.d < b.d ? -1 : 1).slice(-31);
   if (!n.length) { box.innerHTML = '<p style="color:var(--leise)">Noch keine Daten.</p>'; return; }
-  const W = Math.round(Math.max(300, Math.min(900, box.clientWidth || 600))), H = 220, Lr = 34, R = 30, T = 10, B = 24, bw = (W - Lr - R) / n.length;
+  const W = Math.round(Math.max(300, Math.min(1400, box.clientWidth || 600))), H = 220, Lr = 34, R = 30, T = 10, B = 24, bw = (W - Lr - R) / n.length;
   const mx = Math.max(120, ...n.map((x) => (x.gr || 0) + (x.da || 0) + (x.dh || 0) + (x.hs || 0)));
   const top = Math.ceil(mx / 120) * 120, Y = (m) => T + (1 - m / top) * (H - T - B), Yt = (t) => T + (1 - (t + 8) / 20) * (H - T - B);
   const tg = (d) => d.slice(8, 10) + "." + d.slice(5, 7) + ".", hm = (m) => m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`;
@@ -1919,18 +1919,17 @@ function zeigeBwwpTemp(v) {
   const f = (e) => parseFloat(ss[e]);
   const sw = [[Number(g.start ?? 52), "BWWP an", "#60a5fa"], [f("input_number.uvr_ww_soll") + f("input_number.uvr_ww_diff_aus"), "WP-Ladung aus", "#fb923c"],
     [f("input_number.uvr_ww_soll") + f("input_number.uvr_ww_diff_ein"), "WP lädt nach", "#fb923c"], [f("input_number.bwwp_soll_et") - 1, "BWWP-Heizstab", "#ef4444"]].filter((x) => isFinite(x[0]));
-  const t1 = Date.now(), t0 = t1 - 48 * 3600e3, W = Math.round(Math.max(300, Math.min(900, box.clientWidth || 600))), H = 240, Lr = 30, R = 8, T = 10, B = 40;
+  const t1 = Date.now(), t0 = t1 - 48 * 3600e3, W = Math.round(Math.max(300, Math.min(1400, box.clientWidth || 600))), H = 240, Lr = 30, R = 8, T = 10, B = 40;
   const X = (t) => Lr + (t - t0) / (t1 - t0) * (W - Lr - R), lo = 25, hi = 60, Y = (c) => T + (1 - (Math.max(lo, Math.min(hi, c)) - lo) / (hi - lo)) * (H - T - B);
   let sv = "";
   for (const c of [30, 40, 50, 60]) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(c)}" y2="${Y(c)}" stroke="var(--rand)"/><text x="${Lr - 4}" y="${Y(c) + 4}" text-anchor="end">${c}°</text>`;
   // Bänder aus den Schaltwechseln
   const band = (e, c, y, h, op) => { let an = null, out = ""; const ev = bn.filter((x) => x[0] === e).map((x) => [x[1] * 1000, x[2]]);
-    const st = ev.length && ev[0][1] === 0 ? t0 : null; if (st) an = t0;
+    // erster Eintrag „aus“ heißt nicht „vorher an“ (HA schreibt nach Neustart „off“) → kein Band ab Fensterbeginn
     for (const [t, o] of ev) { if (o && an === null) an = Math.max(t, t0); if (!o && an !== null) { if (t > t0) out += `<rect x="${X(an).toFixed(1)}" y="${y}" width="${Math.max(1, X(t) - X(an)).toFixed(1)}" height="${h}" fill="${c}" opacity="${op}"/>`; an = null; } }
     if (an !== null) out += `<rect x="${X(an).toFixed(1)}" y="${y}" width="${Math.max(1, X(t1) - X(an)).toFixed(1)}" height="${h}" fill="${c}" opacity="${op}"/>`; return out; };
   sv += band("l", "#3b82f6", T, H - T - B, 0.22) + band("h", "#ef4444", T, H - T - B, 0.35) + band("b", "#f87171", H - B + 4, 6, 0.9);
-  sv += `<text x="${Lr - 4}" y="${H - B + 10}" text-anchor="end" style="font-size:9px">BWWP</text>`;
-  for (const [c, n, col] of sw) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(c)}" y2="${Y(c)}" stroke="${col}" stroke-dasharray="5 4" stroke-width="1.3"/><text x="${W - R - 2}" y="${Y(c) - 3}" text-anchor="end" fill="${col}" style="font-size:10px">${n} ${zahl(c, 0)}°</text>`;
+  for (const [c, n, col] of sw) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(c)}" y2="${Y(c)}" stroke="${col}" stroke-dasharray="5 4" stroke-width="1.3"/><text x="${W - R - 2}" y="${Y(c) - 3}" text-anchor="end" fill="${col}" style="font-size:10px;paint-order:stroke;stroke:#1c1d20;stroke-width:3px">${n} ${zahl(c, 0)}°</text>`;
   const linie = (k, col, w) => { let last = null, pts = []; for (const r of bt) { const val = r[k] ?? last; if (val == null) continue; last = val; const t = r[0] * 600e3 + 300e3; if (t < t0) continue; pts.push(`${X(t).toFixed(1)},${Y(val).toFixed(1)}`); }
     return `<polyline points="${pts.join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" style="pointer-events:none"/>`; };
   sv += linie(2, "#facc15", 1.6) + linie(1, "#ef4444", 2.6);
