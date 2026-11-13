@@ -1879,6 +1879,72 @@ function zeigeSchall(s, v) {
   if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
 }
 
+// 13.11.2026 (Nutzer): „Wer hilft der WP?“ je Tag – Minuten WP am Anschlag (blau), Daikin Regel (gelb) / von Hand (hellgelb),
+// WP-Heizstab im Heizbetrieb (rot), Außen-Tiefstwert als Linie (rechte Achse). Daten verlauf.json wh {h: heute, t: Tage} (waermehilfe.yaml).
+function zeigeWerHilft(v) {
+  const box = $("wh_box"); if (!box) return;
+  const wh = (v && v.wh) || {}, L = [...(wh.t || [])]; if (wh.h && wh.h.d) L.unshift(wh.h);
+  const n = L.filter((x) => x && x.d).sort((a, b) => a.d < b.d ? -1 : 1).slice(-31);
+  if (!n.length) { box.innerHTML = '<p style="color:var(--leise)">Noch keine Daten.</p>'; return; }
+  const W = Math.round(Math.max(300, Math.min(900, box.clientWidth || 600))), H = 220, Lr = 34, R = 30, T = 10, B = 24, bw = (W - Lr - R) / n.length;
+  const mx = Math.max(120, ...n.map((x) => (x.gr || 0) + (x.da || 0) + (x.dh || 0) + (x.hs || 0)));
+  const top = Math.ceil(mx / 120) * 120, Y = (m) => T + (1 - m / top) * (H - T - B), Yt = (t) => T + (1 - (t + 8) / 20) * (H - T - B);
+  const tg = (d) => d.slice(8, 10) + "." + d.slice(5, 7) + ".", hm = (m) => m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`;
+  let sv = "";
+  for (let y = 0; y <= top; y += top / 4) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--rand)"/><text x="${Lr - 4}" y="${Y(y) + 4}" text-anchor="end">${y}</text>`;
+  for (const t of [-8, 0, 12]) sv += `<text x="${W - R + 4}" y="${Yt(t) + 4}">${t}°</text>`;
+  sv += `<line x1="${Lr}" x2="${W - R}" y1="${Yt(0)}" y2="${Yt(0)}" stroke="#60a5fa" stroke-dasharray="3 4" opacity=".6"/>`;
+  n.forEach((x, i) => { const xl = Lr + i * bw; let y0 = Y(0);
+    const tip = `${tg(x.d)}${x.ta != null ? ` · außen tiefst ${zahl(x.ta, 1)} °C` : ""}<br>WP am Anschlag ${hm(x.gr || 0)}<br>Daikin Regel ${hm(x.da || 0)} · von Hand ${hm(x.dh || 0)}<br>Heizstab Heizen ${hm(x.hs || 0)}`;
+    for (const [m, c] of [[x.gr, "#3b82f6"], [x.da, "#eab308"], [x.dh, "#fde68a"], [x.hs, "#ef4444"]]) { if (!m) continue; const h = y0 - Y(m);
+      sv += `<rect x="${(xl + bw * 0.12).toFixed(1)}" y="${(y0 - h).toFixed(1)}" width="${(bw * 0.76).toFixed(1)}" height="${h.toFixed(1)}" fill="${c}" data-tip="${tip}"/>`; y0 -= h; }
+    sv += `<rect x="${xl.toFixed(1)}" y="${T}" width="${bw.toFixed(1)}" height="${H - T - B}" fill="transparent" data-tip="${tip}"/>`;
+    if (i % Math.ceil(n.length / 8) === 0) sv += `<text x="${(xl + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${tg(x.d)}</text>`; });
+  const p = n.map((x, i) => x.ta == null ? null : `${(Lr + i * bw + bw / 2).toFixed(1)},${Yt(x.ta).toFixed(1)}`).filter(Boolean);
+  sv += `<polyline points="${p.join(" ")}" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3 3" style="pointer-events:none"/>`;
+  sv += n.map((x, i) => x.ta == null ? "" : `<circle cx="${(Lr + i * bw + bw / 2).toFixed(1)}" cy="${Yt(x.ta).toFixed(1)}" r="2.6" fill="${x.ta < 0 ? "#60a5fa" : "#cbd5e1"}" style="pointer-events:none"/>`).join("");
+  const sum = (k) => n.reduce((a, x) => a + (x[k] || 0), 0);
+  const html = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
+    + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#3b82f6">■</span> WP am Anschlag · <span style="color:#eab308">■</span> Daikin (Regel) · <span style="color:#fde68a">■</span> Daikin (von Hand) · <span style="color:#ef4444">■</span> Heizstab Heizen · <span style="color:#cbd5e1">┅</span> außen Tiefstwert (rechts)</p>`
+    + `<p style="color:var(--leise);font-size:12.5px">${n.length} Tage: WP am Anschlag ${hm(sum("gr"))} · Daikin ${hm(sum("da") + sum("dh"))} · Heizstab im Heizbetrieb ${hm(sum("hs"))}. Läuft die WP an ihrer Leistungsgrenze, springt die Daikin im Wintergarten ein – der Heizstab bleibt aus.</p>`;
+  if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
+}
+
+// 13.11.2026 (Nutzer): BWWP-Temperaturen 48 h mit Schaltschwellen (live aus verlauf.json ns) und Bändern
+// WP lädt Warmwasser (blau) / WP-Heizstab (rot) / BWWP-Verdichter (Streifen unten). Daten verlauf.json bw (SQL sensor.bwwp_temp_verlauf).
+function zeigeBwwpTemp(v) {
+  const box = $("bwt_box"); if (!box) return;
+  const bw = (v && v.bw) || {}, bt = bw.bt || [], bn = bw.bn || [], ns = (v && v.ns) || {}, ss = ns.s || {}, g = ((ns.g || {}).bwwp) || {};
+  if (bt.length < 3) { box.innerHTML = '<p style="color:var(--leise)">Noch keine Daten.</p>'; return; }
+  const f = (e) => parseFloat(ss[e]);
+  const sw = [[Number(g.start ?? 52), "BWWP an", "#60a5fa"], [f("input_number.uvr_ww_soll") + f("input_number.uvr_ww_diff_aus"), "WP-Ladung aus", "#fb923c"],
+    [f("input_number.uvr_ww_soll") + f("input_number.uvr_ww_diff_ein"), "WP lädt nach", "#fb923c"], [f("input_number.bwwp_soll_et") - 1, "BWWP-Heizstab", "#ef4444"]].filter((x) => isFinite(x[0]));
+  const t1 = Date.now(), t0 = t1 - 48 * 3600e3, W = Math.round(Math.max(300, Math.min(900, box.clientWidth || 600))), H = 240, Lr = 30, R = 8, T = 10, B = 40;
+  const X = (t) => Lr + (t - t0) / (t1 - t0) * (W - Lr - R), lo = 25, hi = 60, Y = (c) => T + (1 - (Math.max(lo, Math.min(hi, c)) - lo) / (hi - lo)) * (H - T - B);
+  let sv = "";
+  for (const c of [30, 40, 50, 60]) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(c)}" y2="${Y(c)}" stroke="var(--rand)"/><text x="${Lr - 4}" y="${Y(c) + 4}" text-anchor="end">${c}°</text>`;
+  // Bänder aus den Schaltwechseln
+  const band = (e, c, y, h, op) => { let an = null, out = ""; const ev = bn.filter((x) => x[0] === e).map((x) => [x[1] * 1000, x[2]]);
+    const st = ev.length && ev[0][1] === 0 ? t0 : null; if (st) an = t0;
+    for (const [t, o] of ev) { if (o && an === null) an = Math.max(t, t0); if (!o && an !== null) { if (t > t0) out += `<rect x="${X(an).toFixed(1)}" y="${y}" width="${Math.max(1, X(t) - X(an)).toFixed(1)}" height="${h}" fill="${c}" opacity="${op}"/>`; an = null; } }
+    if (an !== null) out += `<rect x="${X(an).toFixed(1)}" y="${y}" width="${Math.max(1, X(t1) - X(an)).toFixed(1)}" height="${h}" fill="${c}" opacity="${op}"/>`; return out; };
+  sv += band("l", "#3b82f6", T, H - T - B, 0.22) + band("h", "#ef4444", T, H - T - B, 0.35) + band("b", "#f87171", H - B + 4, 6, 0.9);
+  sv += `<text x="${Lr - 4}" y="${H - B + 10}" text-anchor="end" style="font-size:9px">BWWP</text>`;
+  for (const [c, n, col] of sw) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(c)}" y2="${Y(c)}" stroke="${col}" stroke-dasharray="5 4" stroke-width="1.3"/><text x="${W - R - 2}" y="${Y(c) - 3}" text-anchor="end" fill="${col}" style="font-size:10px">${n} ${zahl(c, 0)}°</text>`;
+  const linie = (k, col, w) => { let last = null, pts = []; for (const r of bt) { const val = r[k] ?? last; if (val == null) continue; last = val; const t = r[0] * 600e3 + 300e3; if (t < t0) continue; pts.push(`${X(t).toFixed(1)},${Y(val).toFixed(1)}`); }
+    return `<polyline points="${pts.join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" style="pointer-events:none"/>`; };
+  sv += linie(2, "#facc15", 1.6) + linie(1, "#ef4444", 2.6);
+  let l1 = null, l2 = null;
+  for (const r of bt) { l1 = r[1] ?? l1; l2 = r[2] ?? l2; const t = r[0] * 600e3; if (t < t0) continue;
+    const z = new Date(t + 300e3).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    sv += `<rect x="${X(t).toFixed(1)}" y="${T}" width="${(X(t + 600e3) - X(t)).toFixed(2)}" height="${H - T - B}" fill="transparent" data-tip="${z}<br>Speicher mitte (T2) ${l1 != null ? zahl(l1, 1) : "–"} °C<br>Warmwasser ${l2 != null ? zahl(l2, 1) : "–"} °C"/>`; }
+  for (let h = Math.ceil(t0 / 3600e3); h * 3600e3 < t1; h++) { const t = h * 3600e3, d = new Date(t); if (d.getHours() % 6) continue;
+    sv += `<text x="${X(t).toFixed(1)}" y="${H - 8}" text-anchor="middle">${d.getHours() ? String(d.getHours()).padStart(2, "0") + ":00" : d.toLocaleDateString("de-DE", { weekday: "short" })}</text>`; }
+  const html = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
+    + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#ef4444">━</span> Speicher mitte (T2, danach schaltet die BWWP) · <span style="color:#facc15">━</span> Warmwasser am Ausgang · <span style="color:#3b82f6">■</span> WP lädt Warmwasser · <span style="color:#ef4444">■</span> WP-Heizstab · <span style="color:#f87171">▬</span> BWWP läuft · gestrichelt = Schaltschwellen</p>`;
+  if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
+}
+
 function zeigeFrueher(v, s = {}) {
   const fv = (v && v.fv) || {};
   const h = { states: { "sensor.frueher_heute_vergleich": { state: "", attributes: fv.a || {} } } };
@@ -1909,6 +1975,8 @@ async function holen() {
     try { zeigeSchwellen(d, VERLAUF); } catch (e) { console.warn("schwellen", e); }
     try { zeigeFrueher(VERLAUF, s); } catch (e) { console.warn("frueher", e); }
     try { zeigeSchall(s, VERLAUF); } catch (e) { console.warn("schall", e); }
+    try { zeigeWerHilft(VERLAUF); } catch (e) { console.warn("werhilft", e); }
+    try { zeigeBwwpTemp(VERLAUF); } catch (e) { console.warn("bwwptemp", e); }
     try { zeigeZaehler(s); } catch (e) { console.warn("zaehler", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     // 13.10.2026 (Nutzer): hängt die Lieferung aus dem Haus, deutlich sagen seit wann (Datum + Dauer) – vorher nur „Stand 22:29 · Daten veraltet“
