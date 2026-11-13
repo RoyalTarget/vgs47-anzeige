@@ -1901,6 +1901,9 @@ function zeigeWerHilft(v) {
       sv += `<rect x="${(xl + bw * 0.12).toFixed(1)}" y="${(y0 - h).toFixed(1)}" width="${(bw * 0.76).toFixed(1)}" height="${h.toFixed(1)}" fill="${c}" data-tip="${tip}"/>`; y0 -= h; }
     sv += `<rect x="${xl.toFixed(1)}" y="${T}" width="${bw.toFixed(1)}" height="${H - T - B}" fill="transparent" data-tip="${tip}"/>`;
     if (i % Math.ceil(n.length / 8) === 0) sv += `<text x="${(xl + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${tg(x.d)}</text>`; });
+  // 13.11.2026 (Nutzer): weißer Strich = Daikin-Regel aktiv seit 04.11.2026 ca. 10:45 (daikin_regel.yaml)
+  const ri = n.findIndex((x) => x.d === '2026-11-04'); if (ri >= 0) { const xr = (Lr + (ri + 10.75 / 24) * bw).toFixed(1);
+    sv += `<line x1="${xr}" x2="${xr}" y1="${T - 2}" y2="${Y(0)}" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 3" style="pointer-events:none"/><text x="${(+xr + 4).toFixed(1)}" y="${T + 8}" style="font-size:10px;fill:#fff;pointer-events:none">Regel ab 04.11.</text>`; }
   const p = n.map((x, i) => x.ta == null ? null : `${(Lr + i * bw + bw / 2).toFixed(1)},${Yt(x.ta).toFixed(1)}`).filter(Boolean);
   sv += `<polyline points="${p.join(" ")}" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3 3" style="pointer-events:none"/>`;
   sv += n.map((x, i) => x.ta == null ? "" : `<circle cx="${(Lr + i * bw + bw / 2).toFixed(1)}" cy="${Yt(x.ta).toFixed(1)}" r="2.6" fill="${x.ta < 0 ? "#60a5fa" : "#cbd5e1"}" style="pointer-events:none"/>`).join("");
