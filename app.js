@@ -61,9 +61,12 @@ function bedingung(c, s) {
   return true;
 }
 
-function zeigeSchema(s, sk) {
+function zeigeSchema(s, sk, A = {}) {
   for (const sl of slots) {
     if (!sl.entity) continue;
+    // 14.11.2026 (Nutzer): Klima-Zeilen über den Geschoss-Kästen – Text aus Attributen von sensor.schema_klima_* (schema_klima.yaml),
+    // nur im passenden Modus (sl.m: 0 aus · 1 heizt · 2 kühlt · 3 Lüfter); Bauskript homeassistant/schema/klima/klima_schema.py
+    if (sl.attr) { const m = Math.round(num(s, sl.entity) ?? -1); $("slot_" + sl.id).textContent = (sl.m || []).includes(m) ? String(((A[sl.entity] || {})[sl.attr]) ?? "") : ""; continue; }
     let v = num(s, sl.entity), unit = sl.unit, dec = sl.dec;
     // elektrische WP-Leistung kommt in W
     if (sl.entity === "sensor.wp_leistung_elektrisch_gesamt") { unit = "W"; dec = 0; }
@@ -1990,7 +1993,7 @@ async function holen() {
     tlSetzen(VERLAUF);
     try { KUECHE = await (await fetch(DATEN.replace("data.json", "kueche.json") + "?t=" + Date.now(), { cache: "no-store" })).json(); zeigeKueche(); } catch (e) { console.warn("kueche", e); }
     const s = d.s || {}, a = d.a || {};
-    zeigeSchema(s, d.sk); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
+    zeigeSchema(s, d.sk, a); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d); zeigeTagesbericht(d);
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
     try { zeigeWpFenster(d, VERLAUF); for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id); } catch (e) { console.warn("wpf", e); }   // Zeitleiste neu: LLWP-kWh brauchen WPF (18.10.2026)
