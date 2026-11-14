@@ -307,7 +307,7 @@ const KL_STIL = `<style>
   #klima .mb{display:flex;gap:4px;justify-content:flex-end}
   #klima .mb span{width:34px;height:30px;border-radius:8px;display:grid;place-items:center;background:rgba(255,255,255,.05)}
   #klima .mb svg{width:18px;height:18px;fill:var(--leise)}#klima .mb span.on svg{fill:#fff}
-  #klima .fuss{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;color:var(--leise);font-size:12.5px;padding:7px 0 3px;border-top:1px solid var(--rand,#2e3138)}
+  #klima .fuss{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;color:var(--leise);font-size:12.5px;padding:7px 0 3px}
   #klima .k2{display:none}
   @container (max-width:600px){
     #klima .row{grid-template-columns:1fr auto auto;grid-template-areas:"wer ist sw" "mb mb mb";row-gap:8px;column-gap:10px}
