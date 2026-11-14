@@ -762,5 +762,413 @@
   "dec": 1,
   "fs": 10,
   "w": 600
+ },
+ {
+  "id": "kl_dg_0_text",
+  "left": 75.42,
+  "top": 2.89,
+  "anchor": "l80",
+  "color": "#a1a1aa",
+  "prefix": "",
+  "entity": "sensor.schema_klima_dg",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 500,
+  "attr": "text",
+  "m": [
+   0
+  ]
+ },
+ {
+  "id": "kl_dg_1_ist",
+  "left": 75.42,
+  "top": 2.89,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_dg",
+  "unit": "",
+  "dec": 0,
+  "fs": 12.5,
+  "w": 600,
+  "attr": "ist",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_dg_1_soll",
+  "left": 77.42,
+  "top": 2.89,
+  "anchor": "l80",
+  "color": "#9ca3af",
+  "prefix": "",
+  "entity": "sensor.schema_klima_dg",
+  "unit": "",
+  "dec": 0,
+  "fs": 10,
+  "w": 500,
+  "attr": "soll",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_dg_1_kw",
+  "left": 84.42,
+  "top": 2.89,
+  "anchor": "r80",
+  "color": "#ef4444",
+  "prefix": "",
+  "entity": "sensor.schema_klima_dg",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 700,
+  "attr": "kw",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_dg_2_ist",
+  "left": 75.42,
+  "top": 2.89,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_dg",
+  "unit": "",
+  "dec": 0,
+  "fs": 12.5,
+  "w": 600,
+  "attr": "ist",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_dg_2_soll",
+  "left": 77.42,
+  "top": 2.89,
+  "anchor": "l80",
+  "color": "#9ca3af",
+  "prefix": "",
+  "entity": "sensor.schema_klima_dg",
+  "unit": "",
+  "dec": 0,
+  "fs": 10,
+  "w": 500,
+  "attr": "soll",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_dg_2_kw",
+  "left": 84.42,
+  "top": 2.89,
+  "anchor": "r80",
+  "color": "#60a5fa",
+  "prefix": "",
+  "entity": "sensor.schema_klima_dg",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 700,
+  "attr": "kw",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_dg_3_text",
+  "left": 75.42,
+  "top": 2.89,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_dg",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 500,
+  "attr": "text",
+  "m": [
+   3
+  ]
+ },
+ {
+  "id": "kl_og_0_text",
+  "left": 75.42,
+  "top": 22.64,
+  "anchor": "l80",
+  "color": "#a1a1aa",
+  "prefix": "",
+  "entity": "sensor.schema_klima_og",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 500,
+  "attr": "text",
+  "m": [
+   0
+  ]
+ },
+ {
+  "id": "kl_og_1_ist",
+  "left": 75.42,
+  "top": 22.64,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_og",
+  "unit": "",
+  "dec": 0,
+  "fs": 12.5,
+  "w": 600,
+  "attr": "ist",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_og_1_soll",
+  "left": 77.42,
+  "top": 22.64,
+  "anchor": "l80",
+  "color": "#9ca3af",
+  "prefix": "",
+  "entity": "sensor.schema_klima_og",
+  "unit": "",
+  "dec": 0,
+  "fs": 10,
+  "w": 500,
+  "attr": "soll",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_og_1_kw",
+  "left": 84.42,
+  "top": 22.64,
+  "anchor": "r80",
+  "color": "#ef4444",
+  "prefix": "",
+  "entity": "sensor.schema_klima_og",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 700,
+  "attr": "kw",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_og_2_ist",
+  "left": 75.42,
+  "top": 22.64,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_og",
+  "unit": "",
+  "dec": 0,
+  "fs": 12.5,
+  "w": 600,
+  "attr": "ist",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_og_2_soll",
+  "left": 77.42,
+  "top": 22.64,
+  "anchor": "l80",
+  "color": "#9ca3af",
+  "prefix": "",
+  "entity": "sensor.schema_klima_og",
+  "unit": "",
+  "dec": 0,
+  "fs": 10,
+  "w": 500,
+  "attr": "soll",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_og_2_kw",
+  "left": 84.42,
+  "top": 22.64,
+  "anchor": "r80",
+  "color": "#60a5fa",
+  "prefix": "",
+  "entity": "sensor.schema_klima_og",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 700,
+  "attr": "kw",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_og_3_text",
+  "left": 75.42,
+  "top": 22.64,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_og",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 500,
+  "attr": "text",
+  "m": [
+   3
+  ]
+ },
+ {
+  "id": "kl_eg_0_text",
+  "left": 75.42,
+  "top": 44.68,
+  "anchor": "l80",
+  "color": "#a1a1aa",
+  "prefix": "",
+  "entity": "sensor.schema_klima_eg",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 500,
+  "attr": "text",
+  "m": [
+   0
+  ]
+ },
+ {
+  "id": "kl_eg_1_ist",
+  "left": 75.42,
+  "top": 44.68,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_eg",
+  "unit": "",
+  "dec": 0,
+  "fs": 12.5,
+  "w": 600,
+  "attr": "ist",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_eg_1_soll",
+  "left": 77.42,
+  "top": 44.68,
+  "anchor": "l80",
+  "color": "#9ca3af",
+  "prefix": "",
+  "entity": "sensor.schema_klima_eg",
+  "unit": "",
+  "dec": 0,
+  "fs": 10,
+  "w": 500,
+  "attr": "soll",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_eg_1_kw",
+  "left": 84.42,
+  "top": 44.68,
+  "anchor": "r80",
+  "color": "#ef4444",
+  "prefix": "",
+  "entity": "sensor.schema_klima_eg",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 700,
+  "attr": "kw",
+  "m": [
+   1
+  ]
+ },
+ {
+  "id": "kl_eg_2_ist",
+  "left": 75.42,
+  "top": 44.68,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_eg",
+  "unit": "",
+  "dec": 0,
+  "fs": 12.5,
+  "w": 600,
+  "attr": "ist",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_eg_2_soll",
+  "left": 77.42,
+  "top": 44.68,
+  "anchor": "l80",
+  "color": "#9ca3af",
+  "prefix": "",
+  "entity": "sensor.schema_klima_eg",
+  "unit": "",
+  "dec": 0,
+  "fs": 10,
+  "w": 500,
+  "attr": "soll",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_eg_2_kw",
+  "left": 84.42,
+  "top": 44.68,
+  "anchor": "r80",
+  "color": "#60a5fa",
+  "prefix": "",
+  "entity": "sensor.schema_klima_eg",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 700,
+  "attr": "kw",
+  "m": [
+   2
+  ]
+ },
+ {
+  "id": "kl_eg_3_text",
+  "left": 75.42,
+  "top": 44.68,
+  "anchor": "l80",
+  "color": "#e5e7eb",
+  "prefix": "",
+  "entity": "sensor.schema_klima_eg",
+  "unit": "",
+  "dec": 0,
+  "fs": 11.5,
+  "w": 500,
+  "attr": "text",
+  "m": [
+   3
+  ]
  }
 ]
