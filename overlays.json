@@ -1260,5 +1260,137 @@
    ]
   ],
   "v": 8
+ },
+ {
+  "img": "schema_klima_dg_0.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_dg",
+    null,
+    0.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_dg_1.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_dg",
+    0.5,
+    1.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_dg_2.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_dg",
+    1.5,
+    2.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_dg_3.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_dg",
+    2.5,
+    3.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_og_0.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_og",
+    null,
+    0.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_og_1.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_og",
+    0.5,
+    1.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_og_2.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_og",
+    1.5,
+    2.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_og_3.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_og",
+    2.5,
+    3.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_eg_0.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_eg",
+    null,
+    0.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_eg_1.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_eg",
+    0.5,
+    1.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_eg_2.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_eg",
+    1.5,
+    2.5
+   ]
+  ],
+  "v": 1
+ },
+ {
+  "img": "schema_klima_eg_3.svg",
+  "conds": [
+   [
+    "sensor.schema_klima_eg",
+    2.5,
+    3.5
+   ]
+  ],
+  "v": 1
  }
 ]
