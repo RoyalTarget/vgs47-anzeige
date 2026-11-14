@@ -1928,7 +1928,7 @@ function zeigeWerHilft(v) {
   const sum = (k) => n.reduce((a, x) => a + (x[k] || 0), 0);
   const html = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
     + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#3b82f6">■</span> WP am Anschlag allein · <svg width="10" height="10" style="vertical-align:-1px"><rect width="10" height="10" fill="url(#whr)"/></svg> WP am Anschlag + Daikin · <span style="color:#eab308">■</span> Daikin, WP unter Limit (hell = von Hand) · <span style="color:#ef4444">■</span> Heizstab · <span style="color:#cbd5e1">┅</span> außen Tiefstwert (rechte Achse, °C) · Säule = Stunden am Limit oder mit Hilfe, jede Minute einmal</p>`
-    + `<p style="color:var(--leise);font-size:12.5px">${n.length} Tage: WP am Anschlag allein ${hm(sum("gr"))} · WP am Anschlag + Daikin ${hm(sum("ub"))} · Daikin, WP unter Limit ${hm(sum("da") + sum("dh") - sum("ub"))} · Heizstab ${hm(sum("hs"))}. Läuft die WP an ihrer Leistungsgrenze, springt die Daikin im Wintergarten ein – der Heizstab bleibt aus.</p>`;
+    + `<p style="color:var(--leise);font-size:12.5px">${n.length} Tage: WP am Anschlag allein ${hm(sum("gr"))} · WP am Anschlag + Daikin ${hm(sum("ub"))} · Daikin, WP unter Limit ${hm(sum("da") + sum("dh") - sum("ub"))} · Heizstab ${hm(sum("hs"))}. Läuft die WP an ihrer Leistungsgrenze, springt die Daikin im Wintergarten ein. Der WP-Heizstab ist erst unter −2 °C außen freigegeben.</p>`;
   if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
   box.dataset.pruef = pf.length ? pf.join("; ") : "ok"; if (pf.length) console.warn("werhilft Prüfung:", pf);
 }
