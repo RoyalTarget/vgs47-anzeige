@@ -1881,6 +1881,7 @@ function zeigeSchall(s, v) {
 
 // 13.11.2026 (Nutzer): „Wer hilft der WP?“ je Tag – Minuten WP am Anschlag (blau), Daikin Regel (gelb) / von Hand (hellgelb),
 // WP-Heizstab im Heizbetrieb (rot), Außen-Tiefstwert als Linie (rechte Achse). Daten verlauf.json wh {h: heute, t: Tage} (waermehilfe.yaml).
+// 14.11.2026 (Nutzer): jede Minute zählt nur einmal (Heizstab > Daikin > WP allein) → Säulenhöhe = echte Stunden; ub = Daikin + WP trotzdem am Anschlag.
 function zeigeWerHilft(v) {
   const box = $("wh_box"); if (!box) return;
   const wh = (v && v.wh) || {}, L = [...(wh.t || [])]; if (wh.h && wh.h.d) L.unshift(wh.h);
@@ -1888,17 +1889,34 @@ function zeigeWerHilft(v) {
   if (!n.length) { box.innerHTML = '<p style="color:var(--leise)">Noch keine Daten.</p>'; return; }
   const W = Math.round(Math.max(300, Math.min(1400, box.clientWidth || 600))), H = 230, Lr = 34, R = 34, T = 20, B = 24, bw = (W - Lr - R) / n.length;
   const mx = Math.max(120, ...n.map((x) => (x.gr || 0) + (x.da || 0) + (x.dh || 0) + (x.hs || 0)));
-  const top = Math.ceil(mx / 120) * 120, Y = (m) => T + (1 - m / top) * (H - T - B), Yt = (t) => T + (1 - (t + 8) / 20) * (H - T - B);
+  const sch = [60, 120, 180, 240, 360].find((k) => Math.ceil(mx / k) <= 5) || 360, top = Math.ceil(mx / sch) * sch, Y = (m) => T + (1 - m / top) * (H - T - B), Yt = (t) => T + (1 - (t + 8) / 20) * (H - T - B);
   const tg = (d) => d.slice(8, 10) + "." + d.slice(5, 7) + ".", hm = (m) => m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`;
   let sv = "";
-  for (let y = 0; y <= top; y += top / 4) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--rand)"/><text x="${Lr - 4}" y="${Y(y) + 4}" text-anchor="end">${y ? zahl(y / 60) + " h" : "0"}</text>`;
+  for (let y = 0; y <= top; y += sch) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--rand)"/><text x="${Lr - 4}" y="${Y(y) + 4}" text-anchor="end">${y ? zahl(y / 60) + " h" : "0"}</text>`;
     sv += `<text x="${Lr - 4}" y="9" text-anchor="end" style="font-size:10px">Dauer</text><text x="${W - R + 4}" y="9" style="font-size:10px">außen</text>`;   // 13.11.2026 Nutzer: Achsen klarer – Stunden statt Minuten + Achsentitel
   for (const t of [-8, 0, 12]) sv += `<text x="${W - R + 4}" y="${Yt(t) + 4}">${t}°</text>`;
   sv += `<line x1="${Lr}" x2="${W - R}" y1="${Yt(0)}" y2="${Yt(0)}" stroke="#60a5fa" stroke-dasharray="3 4" opacity=".6"/>`;
+  // 14.11.2026 (Nutzer): Stapel von unten: WP allein (blau) · WP am Anschlag + Daikin (schraffiert blau/gelb, Hand blau/hellgelb) · Daikin, WP unter Limit (gelb/hellgelb) · Heizstab (rot)
+  // Höhe je Teil = Y(0) − Y(m) (vorher y0 − Y(m) → obere Teile zu kurz, Heizstab negativ). Selbstprüfung → box.dataset.pruef (UI-Check). Gleich wie vgs_werhilft.js.
+  const heuteD = new Date().toISOString().slice(0, 10), pf = [], bisher = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+  sv += `<defs><pattern id="whr" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#eab308"/><rect width="3" height="6" fill="#3b82f6"/></pattern>`
+    + `<pattern id="whh" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fde68a"/><rect width="3" height="6" fill="#3b82f6"/></pattern></defs>`;
   n.forEach((x, i) => { const xl = Lr + i * bw; let y0 = Y(0);
-    const tip = `${tg(x.d)}${x.ta != null ? ` · außen tiefst ${zahl(x.ta, 1)} °C` : ""}<br>WP am Anschlag ${hm(x.gr || 0)}<br>Daikin Regel ${hm(x.da || 0)} · von Hand ${hm(x.dh || 0)}<br>Heizstab Heizen ${hm(x.hs || 0)}`;
-    for (const [m, c] of [[x.gr, "#3b82f6"], [x.da, "#eab308"], [x.dh, "#fde68a"], [x.hs, "#ef4444"]]) { if (!m) continue; const h = y0 - Y(m);
+    const ub = x.ub || 0, uh = x.uh || 0, teile = [
+      [x.gr || 0, "#3b82f6", "WP am Anschlag allein"],
+      [ub - uh, "url(#whr)", "WP am Anschlag + Daikin (Regel)"],
+      [uh, "url(#whh)", "WP am Anschlag + Daikin (von Hand)"],
+      [(x.da || 0) - (ub - uh), "#eab308", "Daikin (Regel), WP unter Limit"],
+      [(x.dh || 0) - uh, "#fde68a", "Daikin (von Hand), WP unter Limit"],
+      [x.hs || 0, "#ef4444", "Heizstab (WP am Anschlag)"]];
+    const ges = teile.reduce((a, t) => a + t[0], 0); let summe = 0;
+    const sw = (c) => c.startsWith("url") ? `<svg width="10" height="10" style="vertical-align:-1px"><rect width="10" height="10" fill="${c}"/></svg>` : `<span style="color:${c}">■</span>`;
+    const tip = escH(`<b>${tg(x.d)}</b>${x.ta != null ? ` · außen tiefst ${zahl(x.ta, 1)} °C` : ""}`
+      + `<br><b>am Limit oder mit Hilfe: ${hm(ges)}</b> von ${x.d === heuteD ? "bisher " + hm(bisher()) : "24 h"}`
+      + [...teile].reverse().filter((t) => t[0] > 0).map((t) => `<br>${sw(t[1])} ${t[2]}: ${hm(t[0])}`).join("")).replace(/"/g, "&quot;");
+    for (const [m, c] of teile) { if (m < 0) pf.push(`${x.d} Teil < 0`); if (m <= 0) continue; const h = Y(0) - Y(m); summe += h;
       sv += `<rect x="${(xl + bw * 0.12).toFixed(1)}" y="${(y0 - h).toFixed(1)}" width="${(bw * 0.76).toFixed(1)}" height="${h.toFixed(1)}" fill="${c}" data-tip="${tip}"/>`; y0 -= h; }
+    if (Math.abs(summe - (Y(0) - Y(ges))) > 0.5) pf.push(`${x.d} Höhe ≠ Summe`); if (ges > 1440) pf.push(`${x.d} > 24 h`);
     sv += `<rect x="${xl.toFixed(1)}" y="${T}" width="${bw.toFixed(1)}" height="${H - T - B}" fill="transparent" data-tip="${tip}"/>`;
     if (i % Math.ceil(n.length / 8) === 0) sv += `<text x="${(xl + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${tg(x.d)}</text>`; });
   // 13.11.2026 (Nutzer): weißer Strich = Daikin-Regel aktiv seit 04.11.2026 ca. 10:45 (daikin_regel.yaml)
@@ -1909,9 +1927,10 @@ function zeigeWerHilft(v) {
   sv += n.map((x, i) => x.ta == null ? "" : `<circle cx="${(Lr + i * bw + bw / 2).toFixed(1)}" cy="${Yt(x.ta).toFixed(1)}" r="2.6" fill="${x.ta < 0 ? "#60a5fa" : "#cbd5e1"}" style="pointer-events:none"/>`).join("");
   const sum = (k) => n.reduce((a, x) => a + (x[k] || 0), 0);
   const html = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
-    + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#3b82f6">■</span> WP am Anschlag · <span style="color:#eab308">■</span> Daikin (Regel) · <span style="color:#fde68a">■</span> Daikin (von Hand) · <span style="color:#ef4444">■</span> Heizstab Heizen · <span style="color:#cbd5e1">┅</span> außen Tiefstwert (rechte Achse, °C) · Säulen = Stunden je Tag</p>`
-    + `<p style="color:var(--leise);font-size:12.5px">${n.length} Tage: WP am Anschlag ${hm(sum("gr"))} · Daikin ${hm(sum("da") + sum("dh"))} · Heizstab im Heizbetrieb ${hm(sum("hs"))}. Läuft die WP an ihrer Leistungsgrenze, springt die Daikin im Wintergarten ein – der Heizstab bleibt aus.</p>`;
+    + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#3b82f6">■</span> WP am Anschlag allein · <svg width="10" height="10" style="vertical-align:-1px"><rect width="10" height="10" fill="url(#whr)"/></svg> WP am Anschlag + Daikin · <span style="color:#eab308">■</span> Daikin, WP unter Limit (hell = von Hand) · <span style="color:#ef4444">■</span> Heizstab · <span style="color:#cbd5e1">┅</span> außen Tiefstwert (rechte Achse, °C) · Säule = Stunden am Limit oder mit Hilfe, jede Minute einmal</p>`
+    + `<p style="color:var(--leise);font-size:12.5px">${n.length} Tage: WP am Anschlag allein ${hm(sum("gr"))} · WP am Anschlag + Daikin ${hm(sum("ub"))} · Daikin, WP unter Limit ${hm(sum("da") + sum("dh") - sum("ub"))} · Heizstab ${hm(sum("hs"))}. Läuft die WP an ihrer Leistungsgrenze, springt die Daikin im Wintergarten ein – der Heizstab bleibt aus.</p>`;
   if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
+  box.dataset.pruef = pf.length ? pf.join("; ") : "ok"; if (pf.length) console.warn("werhilft Prüfung:", pf);
 }
 
 // 13.11.2026 (Nutzer): BWWP-Temperaturen 48 h mit Schaltschwellen (live aus verlauf.json ns) und Bändern
