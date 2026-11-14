@@ -359,7 +359,10 @@ function zeichne() {
     zl.push(z); const r = daten?.reihen[z.k.e], hy1 = z.h - 2, raum = hy?.raum[z.k.e];
     g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${schmal ? '' : (raum && raum.erster === z.k.e ? '600 ' : '')}11px system-ui, sans-serif`; g.textAlign = 'left';
     { const zs = daten?.zuS?.[z.k.e], la = zs ? zs[daten.n - 2] || zs[daten.n - 1] : 0;   // letzter fertiger Abschnitt
-      const kz = VENTIL[z.k.e] ? (h?.states[VENTIL[z.k.e]]?.state === 'off' ? 'zu' : '') : la ? 'zu' : '';   // 06.11.2026 (Nutzer): ohne „?“, Schätzung erkennt man an der blassen Farbe + Legende
+      // 14.11.2026 (Nutzer „Ventile Emil sind doch zu?“): Emil wie die Schalter-Kreise LIVE – Shelly stromlos (Thermostat zu) + Pumpe an = sofort „zu“,
+      // sonst wartete die Beschriftung auf den nächsten vollen 10-min-Abschnitt (bis 20 min Verzug, Abschnitt mit Restwerten zählt nicht)
+      const emLive = EMIL.includes(z.k.e) && ['unavailable', 'unknown'].includes(h?.states[z.k.e]?.state) && h?.states[PU]?.state === 'on';
+      const kz = VENTIL[z.k.e] ? (h?.states[VENTIL[z.k.e]]?.state === 'off' ? 'zu' : '') : (la || emLive) ? 'zu' : '';   // 06.11.2026 (Nutzer): ohne „?“, Schätzung erkennt man an der blassen Farbe + Legende
       // 12.11.2026 (Nutzer „zu fehlt bei WG W“): iPhone-Spalte 58 px, „WG W“ + „zu“ 0,4 px zu breit → „zu“ fehlte. Jetzt hat „zu“ Vorrang, der Name wird bei Bedarf gestaucht.
       const fn = g.font; g.font = '600 10px system-ui, sans-serif'; const kw = kz ? g.measureText(kz).width : 0; g.font = fn;
       const nmax = X0 - 10 - (kz ? kw + 3 : 0), nw = Math.min(g.measureText(z.k.k).width, nmax);
