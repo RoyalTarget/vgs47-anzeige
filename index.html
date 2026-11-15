@@ -125,10 +125,10 @@
     <div class="kat-titel" role="heading" aria-level="2">🚿 Warmwasser</div>
 
 
-  <!-- 13.11.2026 (Nutzer): BWWP-Temperaturen 48 h mit Schaltschwellen (verlauf.json bw, app.js zeigeBwwpTemp) -->
+  <!-- 15.11.2026 (Nutzer): Warmwasser in einer Grafik – Temperaturen + BWWP-Leistung (lib/vgs_bwwp_temp.js wie Dashboard, Daten verlauf.json bw) -->
   <section>
-    <h2>Warmwasser – Speicher · 48 h</h2>
-    <div class="karte"><div id="bwt_box" class="md-tab"></div></div>
+    <h2>Warmwasser – Speicher und BWWP · 48 h</h2>
+    <div class="karte" style="padding:0"><vgs-bwwp-temp-card id="bwt_karte"></vgs-bwwp-temp-card></div>
   </section>
   <!-- 22.10.2026 (Nutzer): BWWP-Kennzahlen (web_texte.yaml bwwp_md → verlauf.json fw.bwwp) -->
   <section>
@@ -265,6 +265,7 @@
 </main>
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
+<script src="lib/vgs_bwwp_temp.js?v=202611151342"></script>
 <script src="lib/vgs_waermekosten.js?v=202611151337"></script>
 <script src="lib/vgs_schwellen.js?v=202611151120"></script>
 <script src="lib/vgs_wann.js?v=202611011239"></script>
@@ -273,6 +274,6 @@
 <script src="lib/vgs_ring.js?v=202610221238"></script>
 <script src="lib/vgs_kueche.js?v=202611131424"></script>
 <script src="lib/vgs_hv.js?v=202611061730"></script>
-<script src="app.js?v=202611151334"></script>
+<script src="app.js?v=202611151342"></script>
 </body>
 </html>
