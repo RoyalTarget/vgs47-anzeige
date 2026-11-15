@@ -1980,52 +1980,15 @@ function zeigeWerHilft(v) {
   box.dataset.pruef = pf.length ? pf.join("; ") : "ok"; if (pf.length) console.warn("werhilft Prüfung:", pf);
 }
 
-// 13.11.2026 (Nutzer): BWWP-Temperaturen 48 h mit Schaltschwellen (live aus verlauf.json ns) und Bändern
-// WP lädt Warmwasser (blau) / WP-Heizstab (rot) / BWWP-Verdichter (Streifen unten). Daten verlauf.json bw (SQL sensor.bwwp_temp_verlauf).
-// 15.11.2026 (Nutzer, Kundenfragen): Wärmekosten – dieselbe Karte wie im Dashboard (lib/vgs_waermekosten.js), Daten verlauf.json wk
-function zeigeWaermeKosten(v) {
-  const el = $("wk_karte"); if (!el || !el.setConfig || !v || !v.wk) return;
-  if (!el.__cfg) { el.setConfig({}); el.__cfg = true; }
-  el.hass = { states: { "sensor.waerme_kosten": { last_updated: JSON.stringify(v.wk), attributes: v.wk } } };
-}
-
+// 15.11.2026 (Nutzer: „eine Grafik für die BWWP, Leistung mit rein“): dieselbe Karte wie im Dashboard (lib/vgs_bwwp_temp.js v3) –
+// hass aus verlauf.json: bw (SQL sensor.bwwp_temp_verlauf: bt [Block, T2, WW, W BWWP, W Heizstab], bn), ns.g.bwwp (Start-Schwelle), ns.s (UVR-Sollwerte).
 function zeigeBwwpTemp(v) {
-  const box = $("bwt_box"); if (!box) return;
-  const bw = (v && v.bw) || {}, bt = bw.bt || [], bn = bw.bn || [], ns = (v && v.ns) || {}, ss = ns.s || {}, g = ((ns.g || {}).bwwp) || {};
-  if (bt.length < 3) { box.innerHTML = '<p style="color:var(--leise)">Noch keine Daten.</p>'; return; }
-  const f = (e) => parseFloat(ss[e]);
-  const sw = [[Number(g.start ?? 52), "BWWP an", "#60a5fa"], [f("input_number.uvr_ww_soll") + f("input_number.uvr_ww_diff_aus"), "WP-Ladung aus", "#fb923c"],
-    [f("input_number.uvr_ww_soll") + f("input_number.uvr_ww_diff_ein"), "WP lädt nach", "#fb923c"], [f("input_number.bwwp_soll_et") - 1, "BWWP-Heizstab", "#ef4444"]].filter((x) => isFinite(x[0]));
-  const t1 = Date.now(), t0 = t1 - 48 * 3600e3, W = Math.round(Math.max(300, Math.min(1400, box.clientWidth || 600))), H = 240, Lr = 30, R = W < 520 ? 74 : 104, T = 10, B = 40, kurz = W < 520, pf = [];
-  // 15.11.2026 (Nutzer: „Schriften ganz rechts nicht in den Kurven“): Schwellen-Text in eigenem Rand rechts (R), gleicher Code wie Dashboard vgs_bwwp_temp.js
-  const X = (t) => Lr + (t - t0) / (t1 - t0) * (W - Lr - R), lo = 25, hi = 60, Y = (c) => T + (1 - (Math.max(lo, Math.min(hi, c)) - lo) / (hi - lo)) * (H - T - B);
-  let sv = "";
-  for (const c of [30, 40, 50, 60]) sv += `<line x1="${Lr}" x2="${W - R}" y1="${Y(c)}" y2="${Y(c)}" stroke="var(--rand)"/><text x="${Lr - 4}" y="${Y(c) + 4}" text-anchor="end">${c}°</text>`;
-  // Bänder aus den Schaltwechseln
-  const band = (e, c, y, h, op) => { let an = null, out = ""; const ev = bn.filter((x) => x[0] === e).map((x) => [x[1] * 1000, x[2]]);
-    // erster Eintrag „aus“ heißt nicht „vorher an“ (HA schreibt nach Neustart „off“) → kein Band ab Fensterbeginn
-    for (const [t, o] of ev) { if (o && an === null) an = Math.max(t, t0); if (!o && an !== null) { if (t > t0) out += `<rect x="${X(an).toFixed(1)}" y="${y}" width="${Math.max(1, X(t) - X(an)).toFixed(1)}" height="${h}" fill="${c}" opacity="${op}"/>`; an = null; } }
-    if (an !== null) out += `<rect x="${X(an).toFixed(1)}" y="${y}" width="${Math.max(1, X(t1) - X(an)).toFixed(1)}" height="${h}" fill="${c}" opacity="${op}"/>`; return out; };
-  sv += band("l", "#3b82f6", T, H - T - B, 0.22) + band("h", "#ef4444", T, H - T - B, 0.35) + band("b", "#f87171", H - B + 4, 6, 0.9);
-  const xr = W - R, lab = sw.map(([c, n, col]) => ({ c, n: kurz ? n.replace("WP-Ladung aus", "Ladung aus").replace("WP lädt nach", "lädt nach").replace("BWWP-Heizstab", "Heizstab") : n, col, y: Y(c) + 3.5 })).sort((a, b) => a.y - b.y);
-  for (let i = 1; i < lab.length; i++) if (lab[i].y - lab[i - 1].y < 12) lab[i].y = lab[i - 1].y + 12;
-  for (const L of lab) sv += `<line x1="${Lr}" x2="${xr}" y1="${Y(L.c)}" y2="${Y(L.c)}" stroke="${L.col}" stroke-dasharray="5 4" stroke-width="1.3"/>`
-    + `<line x1="${xr}" x2="${xr + 4}" y1="${Y(L.c)}" y2="${L.y - 3.5}" stroke="${L.col}" stroke-width="1"/>`
-    + `<text x="${xr + 6}" y="${L.y}" fill="${L.col}" style="font-size:10px">${L.n} ${zahl(L.c, 0)}°</text>`;
-  if (!lab.every((L) => L.y <= H - B + 2)) pf.push("Schwellen-Text unter dem Zeichenbereich");
-  const linie = (k, col, w) => { let last = null, pts = []; for (const r of bt) { const val = r[k] ?? last; if (val == null) continue; last = val; const t = r[0] * 600e3 + 300e3; if (t < t0) continue; pts.push(`${X(t).toFixed(1)},${Y(val).toFixed(1)}`); }
-    return `<polyline points="${pts.join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" style="pointer-events:none"/>`; };
-  sv += linie(2, "#facc15", 1.6) + linie(1, "#ef4444", 2.6);
-  let l1 = null, l2 = null;
-  for (const r of bt) { l1 = r[1] ?? l1; l2 = r[2] ?? l2; const t = r[0] * 600e3; if (t < t0) continue;
-    const z = new Date(t + 300e3).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-    sv += `<rect x="${X(t).toFixed(1)}" y="${T}" width="${(X(t + 600e3) - X(t)).toFixed(2)}" height="${H - T - B}" fill="transparent" data-tip="${z}<br>Speicher mitte (T2) ${l1 != null ? zahl(l1, 1) : "–"} °C<br>Warmwasser ${l2 != null ? zahl(l2, 1) : "–"} °C"/>`; }
-  for (let h = Math.ceil(t0 / 3600e3); h * 3600e3 < t1; h++) { const t = h * 3600e3, d = new Date(t); if (d.getHours() % 6) continue;
-    sv += `<text x="${X(t).toFixed(1)}" y="${H - 8}" text-anchor="middle">${d.getHours() ? String(d.getHours()).padStart(2, "0") + ":00" : d.toLocaleDateString("de-DE", { weekday: "short" })}</text>`; }
-  const html = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
-    + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#ef4444">━</span> Speicher mitte (T2, danach schaltet die BWWP) · <span style="color:#facc15">━</span> Warmwasser am Ausgang · <span style="color:#3b82f6">■</span> WP lädt Warmwasser · <span style="color:#ef4444">■</span> WP-Heizstab · <span style="color:#f87171">▬</span> BWWP läuft · gestrichelt = Schaltschwellen</p>`;
-  if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
-  box.dataset.pruef = pf.length ? pf.join("; ") : "ok";
+  const el = $("bwt_karte"); if (!el || !el.setConfig || !v || !v.bw) return;
+  if (!el.__cfg) { el.setConfig({}); el.__cfg = true; }
+  const ns = v.ns || {}, ss = ns.s || {}, st = { "sensor.bwwp_temp_verlauf": { last_updated: String((v.bw.bt || []).length) + JSON.stringify((v.bw.bt || []).slice(-1)), attributes: v.bw },
+    "sensor.naechster_start": { last_updated: JSON.stringify((ns.g || {}).bwwp || {}), attributes: { geraete: ns.g || {} } } };
+  for (const e of ["input_number.uvr_ww_soll", "input_number.uvr_ww_diff_aus", "input_number.uvr_ww_diff_ein", "input_number.bwwp_soll_et"]) st[e] = { state: ss[e], last_updated: String(ss[e]) };
+  el.hass = { states: st };
 }
 
 function zeigeFrueher(v, s = {}) {
