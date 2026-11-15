@@ -1982,6 +1982,13 @@ function zeigeWerHilft(v) {
 
 // 13.11.2026 (Nutzer): BWWP-Temperaturen 48 h mit Schaltschwellen (live aus verlauf.json ns) und Bändern
 // WP lädt Warmwasser (blau) / WP-Heizstab (rot) / BWWP-Verdichter (Streifen unten). Daten verlauf.json bw (SQL sensor.bwwp_temp_verlauf).
+// 15.11.2026 (Nutzer, Kundenfragen): Wärmekosten – dieselbe Karte wie im Dashboard (lib/vgs_waermekosten.js), Daten verlauf.json wk
+function zeigeWaermeKosten(v) {
+  const el = $("wk_karte"); if (!el || !el.setConfig || !v || !v.wk) return;
+  if (!el.__cfg) { el.setConfig({}); el.__cfg = true; }
+  el.hass = { states: { "sensor.waerme_kosten": { last_updated: JSON.stringify(v.wk), attributes: v.wk } } };
+}
+
 function zeigeBwwpTemp(v) {
   const box = $("bwt_box"); if (!box) return;
   const bw = (v && v.bw) || {}, bt = bw.bt || [], bn = bw.bn || [], ns = (v && v.ns) || {}, ss = ns.s || {}, g = ((ns.g || {}).bwwp) || {};
@@ -2053,6 +2060,7 @@ async function holen() {
     try { zeigeSchall(s, VERLAUF); } catch (e) { console.warn("schall", e); }
     try { zeigeWerHilft(VERLAUF); } catch (e) { console.warn("werhilft", e); }
     try { zeigeBwwpTemp(VERLAUF); } catch (e) { console.warn("bwwptemp", e); }
+    try { zeigeWaermeKosten(VERLAUF); } catch (e) { console.warn("waermekosten", e); }
     try { zeigeZaehler(s); } catch (e) { console.warn("zaehler", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
     // 13.10.2026 (Nutzer): hängt die Lieferung aus dem Haus, deutlich sagen seit wann (Datum + Dauer) – vorher nur „Stand 22:29 · Daten veraltet“
