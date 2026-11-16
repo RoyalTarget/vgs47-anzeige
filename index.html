@@ -72,6 +72,11 @@
     <h2>Fußbodenheizung – Wärmebild &amp; Hydraulik</h2>
     <div class="karte" style="padding:0;overflow:hidden"><iframe src="fbh_waermebild.html?v=202611141904" title="Wärmebild Fußbodenheizung" class="fbhbild" loading="lazy"></iframe></div>
   </section>
+  <!-- 16.11.2026 (Nutzer): Heizung – Wer braucht, wer liefert? (lib/vgs_heizbedarf.js wie Dashboard, Daten heizung.json) -->
+  <section>
+    <h2>Heizung – Wer braucht, wer liefert? · 48 h</h2>
+    <div class="karte" style="padding:0"><vgs-heizbedarf-card id="hb_karte"></vgs-heizbedarf-card></div>
+  </section>
   <section>
     <h2>Wärmequellen – wann lief was</h2>
     <div class="karte">
@@ -266,6 +271,7 @@
 
 <footer>Nur Anzeige · Werte aus Home Assistant, etwa jede Minute aktualisiert</footer>
 <script src="lib/vgs_bwwp_temp.js?v=202611151351"></script>
+<script src="lib/vgs_heizbedarf.js?v=202611160822"></script>
 <script src="lib/vgs_waermekosten.js?v=202611151514"></script>
 <script src="lib/vgs_schwellen.js?v=202611151120"></script>
 <script src="lib/vgs_wann.js?v=202611011239"></script>
@@ -274,6 +280,6 @@
 <script src="lib/vgs_ring.js?v=202610221238"></script>
 <script src="lib/vgs_kueche.js?v=202611131424"></script>
 <script src="lib/vgs_hv.js?v=202611061730"></script>
-<script src="app.js?v=202611151342"></script>
+<script src="app.js?v=202611160822"></script>
 </body>
 </html>
