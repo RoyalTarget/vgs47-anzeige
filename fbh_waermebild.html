@@ -81,6 +81,7 @@ const GIST = 'https://gist.githubusercontent.com/RoyalTarget/f9832b91288808b13a2
 const WEB = { h: null, d: null, t: 0 };
 function hass() { return hassEcht() || WEB.h; }
 function kreise(h) { const k = h?.states['sensor.fbh_kreise']?.attributes?.kreise; return Array.isArray(k) ? k : []; }
+const wF = (v) => v === null || v === undefined || isNaN(v) ? '–' : Math.round(v).toLocaleString('de-DE');
 const zahl = (v, d = 1) => v === null || v === undefined || isNaN(v) ? '–' : v.toFixed(d).replace('.', ',');
 
 // ---------- Farben ----------
@@ -213,12 +214,13 @@ const RAEUME = [
   ['Lesezimmer', 760, 20, ['sensor.rl_dg_4'], 20],
   ['Yoga', 633, 20, ['sensor.rl_yoga'], 20],
   ['Bad OG', 464, 24, ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand'], 24],
-  ['Flur OG', null, 18, ['sensor.rl_og_flur'], 20],
+  ['Flur OG', 273, 18, ['sensor.rl_og_flur'], 20],   // 16.11.2026: keine JOCO-Heizlast („Zuleitungen“) → geschätzt wie Diele EG je m² (783 W / 10,62 m² × 3,7 m²)
   ['Emils Zimmer', 1068, 20, ['sensor.rl_og_5', 'sensor.rl_og_6'], 22],
   // 02.11.2026: WZ und WiGa getrennt (WZ 1/2 am Gira, WG I/A/W am Shelly nach H&T A). JOCO hat nur EINE Heizlast für beide →
   // 6. Feld = gemeinsame Gruppe: Bedarf/Versorgung nur gemeinsam (Wunsch 22), „gibt ab“ je Teil.
-  ['Wohnen', 3439, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2'], 22.5, 'WZ + WiGa'],
-  ['WiGa', 3439, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22, 'WZ + WiGa'],
+  // 16.11.2026 (Nutzer): JOCO 3.439 W gemeinsam → 40 % Wohnen / 60 % WiGa, zusätzlich Summenzeile „WZ + WiGa“
+  ['Wohnen', 1376, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2'], 22.5, 'WZ + WiGa'],
+  ['WiGa', 2063, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22, 'WZ + WiGa'],
   ['WC', 154, 20, ['sensor.rl_wc'], 20],
   ['Flur EG', 783, 18, ['sensor.rl_flur'], 20]];
 // Raumtemperatur je Raum (19.10.2026, Nutzer): H&T nach Standort (input_select.ht_x_standort, wandert mit), feste Fühler je Raum.
@@ -245,31 +247,40 @@ function raumSegs(h, r) { const l = raumTemps(h, r.name); if (!l.length) return 
   segs.push([' / Soll ' + String(r.soll).replace('.', ',') + ' °C', '#6b7280']); return segs; }
 function segsMalen(g, segs, x, y) { g.textAlign = 'left'; for (const [t, f] of segs) { g.fillStyle = f; g.fillText(t, x, y); x += g.measureText(t).width; } return x; }
 const F_OR = '#f97316', F_GR = '#22c55e', F_BL = '#60a5fa', F_NA = '#6b7280';
+// 16.11.2026 (Nutzer): Raum-Status statt Versorgungs-Prozent – Farbe = was ihr wollt, nicht Papierwert. Ändern: hier.
+const STATUS = { 'Yoga': 'kuehl_b', 'Lesezimmer': 'kuehl_b', 'Gästezimmer': 'kuehl_b', 'WiGa': 'kuehl' };
+const ST_F = { passt: ['#22c55e', 'passt'], kuehl: ['#3b82f6', 'zu kühl'], kuehl_b: ['#93c5fd', 'bewusst kühl'], warm: ['#f97316', 'zu warm'], warm_b: ['#fdba74', 'bewusst warm'] };
+// EG-Reihenfolge (Nutzer 16.11.): WC, Flur, dann Wohnen, WiGa und die Summe am Ende
+const K_ORDER = ['sensor.rl_wc', 'sensor.rl_flur', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'];
+const DAIKIN_INFO = 'Daikin heizt zu: nachts Ø 1,7 kW Wärme (0,69 kWh/h Strom × COP 2,5, 09.–16.11.; in den Messnächten aus)';
 let offen = null;   // iPhone: aufgeklappter Raum (Name)
 function hydro(h, K) {
+  // 16.11.2026 (Nutzer, mit Röhrchen-Ablesung + PMG-Bilanz validiert): Watt je Raum = Mittel über die Messnächte (geschlossene Nächte = 0).
+  // Je Nacht nur offene Kreise (kr[4] = zu; Zonen exakt über die Shellys), ihre Röhrchen-Verhältnisse auf den CORA-Durchfluss der Nacht (t.q) abgeglichen.
+  // Plan = JOCO-Heizlast auf Wunschtemperatur und Ø außen der Messnächte. Kontrolle: Σ Räume gegen PMG (q × (VL − RL PMG)).
   const T = h?.states['sensor.fbh_abgleich']?.attributes?.tage || [], sp = {}; let nMax = 0;
-  for (const k of K) { const l = [], ab = k.ist_ab ? new Date(k.ist_ab).getTime() : 0;   // ist_ab: Röhrchen neu eingestellt → nur Nächte danach
+  for (const k of K) { const l = [], ab = k.ist_ab ? new Date(k.ist_ab).getTime() : 0;
     for (const t of T) { if (ab && new Date(t.start).getTime() < ab) continue; for (const r of (t.kr || [])) if (r[0] === k.k && !r[4]) l.push(r[2]); }
     l.sort((x, y) => x - y); const n = l.length; nMax = Math.max(nMax, n); sp[k.e] = n ? (l[(n - 1) >> 1] + l[n >> 1]) / 2 : null; }
   const vlN = T.length ? T.reduce((s, t) => s + (+t.vl || 0), 0) / T.length : null;
   const au = T.length ? T.reduce((s, t) => s + (+t.au || 0), 0) / T.length : (parseFloat(h?.states['sensor.cmi_t_aussen']?.state) || 10);
+  const kn = Object.fromEntries(K.map((k) => [k.k, k])), wk = {}; let sumK = 0, sumP = 0, nP = 0;
+  for (const k of K) wk[k.e] = 0;
+  for (const t of T) { const of = (t.kr || []).filter((r) => !r[4] && kn[r[0]] && typeof kn[r[0]].ist === 'number');
+    const sq = of.reduce((a, r) => a + kn[r[0]].ist, 0); const f = t.q && sq > 0 ? t.q / 60 / sq : 1; let sn = 0;
+    for (const r of of) { const w = kn[r[0]].ist * f * r[2] * 69.78; wk[kn[r[0]].e] += w / T.length; sn += w; }
+    if (t.q) { sumK += sn; sumP += t.q * (t.vl - t.rlp) * 1.163; nP++; } }
   const raum = {}, liste = [];
   for (const [name, last, norm, fu, soll, gem] of RAEUME) {
-    let w = 0, ok = true; const ks = [];
-    for (const k of K.filter((q) => fu.includes(q.e))) { const e = k.e; ks.push(k);
-      const ww = typeof k.ist === 'number' && typeof sp[e] === 'number' ? k.ist * sp[e] * 69.78 : null; if (ww === null) ok = false; else w += ww; }
-    const neu = ks.some((k) => k.ist_ab && sp[k.e] === null);
-    const bed = typeof last === 'number' ? last * (soll - au) / (norm + 16) : null, p = !neu && bed && bed > 0 ? w / bed * 100 : null;
-    const farbe = p === null ? F_NA : p < 70 ? F_OR : p > 140 ? F_BL : F_GR;
-    const r = { name, soll, w, ok, bed, p, farbe, neu, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
+    const ks = K.filter((q) => fu.includes(q.e)), w = ks.reduce((a, k) => a + (wk[k.e] || 0), 0);
+    const bed = typeof last === 'number' ? last * (soll - au) / (norm + 16) : null;
+    const st = STATUS[name] || 'passt', farbe = ST_F[st][0];
+    const r = { name, soll, w, ok: true, bed, p: bed ? w / bed * 100 : null, farbe, st, neu: false, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
-  // gemeinsame Gruppen (WZ + WiGa): Bedarf einmal mit Wunsch 22, Versorgung = Summe gibt ab / Bedarf, gleiche Farbe für beide Teile
-  for (const gn of new Set(liste.filter((r) => r.gem).map((r) => r.gem))) { const tl = liste.filter((r) => r.gem === gn), q = RAEUME.find((x) => x[5] === gn);
-    const w = tl.reduce((a, r) => a + r.w, 0), ok = tl.every((r) => r.ok), neu = tl.some((r) => r.neu), bed = q[1] * (22 - au) / (q[2] + 16);
-    const p = !neu && bed > 0 ? w / bed * 100 : null, farbe = p === null ? F_NA : p < 70 ? F_OR : p > 140 ? F_BL : F_GR;
-    tl.forEach((r, i) => Object.assign(r, { bed: null, p, farbe, gemW: w, gemBed: bed, gemOk: ok, gemLetzter: i === tl.length - 1 })); }
+  for (const gn of new Set(liste.filter((r) => r.gem).map((r) => r.gem))) { const tl = liste.filter((r) => r.gem === gn);
+    tl.forEach((r, i) => Object.assign(r, { gemW: tl.reduce((a, x) => a + x.w, 0), gemBed: tl.reduce((a, x) => a + (x.bed || 0), 0), gemLetzter: i === tl.length - 1 })); }
   const L = T[T.length - 1], zu = L ? (L.kr || []).filter((r) => r[4]).map((r) => r[0]) : [];
-  return { sp, au, vlN, raum, liste, nNacht: nMax, zu, letzte: L };
+  return { sp, au, vlN, raum, liste, nNacht: nMax, zu, letzte: L, kontrolle: nP ? { k: sumK / nP, p: sumP / nP, n: nP } : null };
 }
 function karteAnpassen(gesamt) {   // HA-Section: Kachelhöhe = Inhalt (Zeile 56 px + 8 px Abstand)
   try { const fr = window.frameElement; if (!fr) return; let e = fr;
@@ -286,8 +297,10 @@ function fussZeile(h, hy, schmal) {
     : `⚪ gerade keine Messung – ${mf?.attributes?.grund || '?'}`;
   if (hy) { s += ` · Kreis in der letzten Nacht zugegangen: ${hy.zu.length ? '<b>🚪 ' + hy.zu.join(', ') + '</b>' : '–'}`;
     if (hy.letzte) { const d = new Date(hy.letzte.start); s += ` · Spreizung Nacht = Median ${hy.nNacht} Messnächte (VL Ø ${zahl(hy.vlN)} °C, letzte ${d.getDate()}.${d.getMonth() + 1}.) – nicht VL jetzt − RL jetzt`; }
-    s += schmal ? '<br>Kreis antippen = Raum-Bilanz auf/zu · Punkt = Versorgung des Raums: ' : '<br>Leiste = Versorgung des Raums: ';
-    s += `<span style="color:${F_OR}">orange</span> &lt; 70 % · <span style="color:${F_GR}">grün</span> passt · <span style="color:${F_BL}">blau</span> &gt; 140 % (Wasser verschenkt, drosseln lohnt) · gibt ab = Röhrchen × Spreizung, Bedarf = Heizlast 2012 auf Wunschtemp. (Soll) und Ø ${zahl(hy.au)} °C außen umgerechnet`; }
+    s += schmal ? '<br>Kreis antippen = Raum-Bilanz auf/zu · Punkt = Raum: ' : '<br>Punkt = Raum: ';
+    s += Object.values(ST_F).map(([c, t]) => `<span style="color:${c}">●</span> ${t}`).join(' · ')
+      + ` · Wärme = Mittel der Messnächte (nur offene Kreise, Röhrchen-Verhältnis auf den HK-Durchfluss abgeglichen) · Plan = Heizlast 2012 auf Wunschtemp. und Ø ${zahl(hy.au)} °C außen`;
+    if (hy.kontrolle) { const k = hy.kontrolle, d = k.k / k.p - 1; s += ` · <b>Kontrolle:</b> Σ Räume ${wF(k.k)} W, PMG ${wF(k.p)} W (${d > 0 ? '+' : ''}${Math.round(d * 100)} %)`; } }
   const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
 
 function zeichne() {
@@ -302,10 +315,10 @@ function zeichne() {
   // Zeilenplan
   const zl = []; let y = ACHSE;
   const plan = [];
-  for (const G of gruppen) { const ks = K.filter((k) => k.g === G); if (!ks.length) continue;
+  for (const G of gruppen) { const ks = K.filter((k) => k.g === G).sort((a, b) => (K_ORDER.indexOf(a.e) + 1 || 99) - (K_ORDER.indexOf(b.e) + 1 || 99)); if (!ks.length) continue;
     plan.push({ typ: 'g', G, ks, h: 14 });
     for (const k of ks) { plan.push({ typ: 'k', k, h: ZH }); const r = hy?.raum[k.e];
-      if (r && r.letzter === k.e) { if (SH) plan.push({ typ: 's', r, h: SH + 4 }); if (schmal && offen === r.name) plan.push({ typ: 'p', r, h: 60 + r.ks.length * 15 + (raumTemps(h, r.name).length ? 15 : 0) }); } }
+      if (r && r.letzter === k.e) { if (SH) plan.push({ typ: 's', r, h: SH + 4 }); if (SH && r.gem && r.gemLetzter) plan.push({ typ: 's2', r, h: SH + 4 }); if (schmal && offen === r.name) plan.push({ typ: 'p', r, h: 60 + r.ks.length * 15 + (raumTemps(h, r.name).length ? 15 : 0) }); } }
     plan.push({ typ: 'gap', h: 4 }); }
   for (const z of plan) { z.y = y; y += z.h; }
   const FH = y + LEG + 4;
@@ -326,7 +339,7 @@ function zeichne() {
   if (!schmal && hy) { cx = { rl: X1 + 8 + C.rl - 4, sp: X1 + 8 + C.rl + C.sp - 4, ro: X1 + 8 + C.rl + C.sp + C.ro - 4, bar: X1 + 8 + C.rl + C.sp + C.ro + 8, p: W - 4 };
     g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.textAlign = 'right';
     g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung Nacht', cx.sp, ACHSE / 2); g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2);
-    g.textAlign = 'left'; g.fillText(breit ? 'Versorgung Raum' : '', cx.bar, ACHSE / 2); if (!breit) { g.textAlign = 'right'; g.fillText('Raum', cx.p, ACHSE / 2); } }
+    g.textAlign = 'left'; g.fillText(breit ? 'Raum · Wärme Nacht · Plan' : '', cx.bar, ACHSE / 2); if (!breit) { g.textAlign = 'right'; g.fillText('Watt', cx.p, ACHSE / 2); } }
   else if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2); }
   const iv = daten ? Math.max(0, Math.floor((von - daten.t0) / BIN)) : 0, ib = daten ? Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN)) : 0;
   const zeitAus = (i) => daten.t0 + i * BIN, z1 = (v, d = 1) => zahl(v, d);
@@ -340,21 +353,27 @@ function zeichne() {
         g.fillText('VL ' + (isNaN(vl) ? '–' : zahl(vl) + ' °C'), cx.rl, z.y + 7);
         if (hy.vlN !== null) g.fillText('VL Ø ' + zahl(hy.vlN) + ' °C', cx.sp, z.y + 7); }
       continue; }
-    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; const st = r.neu ? `Σ ${r.name} · Röhrchen neu eingestellt – Spreizung erst nach der nächsten Messnacht` : `Σ ${r.name} · gibt ab ${Math.round(r.w)} W${r.ok ? '' : ' (unvollständig)'}` + (r.gem ? (r.gemLetzter ? ` · ${r.gem} gibt ab ${Math.round(r.gemW)} W · Bedarf ${Math.round(r.gemBed)} W` : '') : ` · Bedarf ${r.bed === null ? '–' : Math.round(r.bed)} W`); g.fillText(st, 8, z.y + SH / 2);
-      const sg = raumSegs(h, r); if (sg.length) segsMalen(g, [[' · Raum ', '#9ca3af'], ...sg], 8 + g.measureText(st).width, z.y + SH / 2);
+    if (z.typ === 's2') { const r = z.r; g.textAlign = 'left'; g.font = '600 10px system-ui, sans-serif'; g.fillStyle = '#facc15'; const t0 = `Σ ${r.gem} `; g.fillText(t0, 8, z.y + SH / 2);
+      g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
+      g.fillText(`· Wärme ${wF(r.gemW)} W · Plan ${wF(r.gemBed)} W → ${zahl(r.gemW / r.gemBed)}× · JOCO 2012 nur gemeinsam; die FBH gibt die Wärme überwiegend im WiGa ab, das WZ profitiert mit`, 8 + g.measureText(t0).width + 2, z.y + SH / 2, W - 20 - g.measureText(t0).width);
+      g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
+    if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif';
+      const st = `Σ ${r.name} · Wärme ${wF(r.w)} W · ` + (r.bed === null ? 'Plan –' : `Plan bei ${zahl(r.soll)} °C: ${wF(r.bed)} W → ${zahl(r.w / r.bed)}×`) + (r.name === 'Flur OG' ? ' (Plan geschätzt)' : r.gem ? ` (Plan = ${r.name === 'Wohnen' ? '40' : '60'} % von ${r.gem})` : '');
+      g.fillText(st, 8, z.y + SH / 2); let xr = 8 + g.measureText(st).width;
+      const sg = raumSegs(h, r); if (sg.length) xr = segsMalen(g, [[' · Raum ', '#9ca3af'], ...sg], xr, z.y + SH / 2);
+      if (r.name === 'WiGa') { g.fillStyle = '#60a5fa'; const dt = ' · Daikin heizt zu (nachts Ø 1,7 kW Wärme)'; if (W - 8 - xr >= g.measureText(dt).width) g.fillText(dt, xr, z.y + SH / 2); }
       g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
     if (z.typ === 'p') { const r = z.r, x0 = 6, x1 = W - 6; g.fillStyle = '#26262b'; g.beginPath(); g.roundRect(x0, z.y + 2, x1 - x0, z.h - 6, 8); g.fill();
-      g.textAlign = 'left'; g.font = '600 12px system-ui, sans-serif'; g.fillStyle = '#e5e7eb'; const t1 = `${r.name} – versorgt zu `; g.fillText(t1, x0 + 10, z.y + 14);
-      g.fillStyle = r.farbe; g.fillText(r.p === null ? '–' : Math.round(r.p) + ' %', x0 + 10 + g.measureText(t1).width, z.y + 14);
-      balken(x0 + 10, z.y + 24, x1 - x0 - 20, 6, r.p, r.farbe);
+      g.textAlign = 'left'; g.font = '600 12px system-ui, sans-serif'; g.fillStyle = r.farbe; g.beginPath(); g.arc(x0 + 15, z.y + 13, 4.5, 0, 7); g.fill();
+      g.fillStyle = '#e5e7eb'; const t1 = `${r.name} · ${ST_F[r.st][1]} · ${wF(r.w)} W`; g.fillText(t1, x0 + 26, z.y + 14);
+      g.font = '11px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; g.fillText(r.bed === null ? 'Plan –' : `Plan bei ${zahl(r.soll)} °C: ${wF(r.bed)} W → ${zahl(r.w / r.bed)}×`, x0 + 10, z.y + 29, x1 - x0 - 20);
       g.font = '11px system-ui, sans-serif'; let yy = z.y + 41;
       for (const k of r.ks) { const s = hy.sp[k.e], rl = parseFloat(h?.states[k.e]?.state); g.fillStyle = '#d1d5db'; g.textAlign = 'left'; g.fillText(k.k, x0 + 10, yy);
         g.fillStyle = '#9ca3af'; g.textAlign = 'right';
         g.fillText(`Röhrchen ${typeof k.ist === 'number' ? z1(k.ist) : '–'}${k.soll ? ' / ' + z1(k.soll) : ''} · Spr. ${s === null ? '–' : z1(s) + ' K'} · RL ${isNaN(rl) ? '–' : z1(rl)}`, x1 - 10, yy); yy += 15; }
       { const sg = raumSegs(h, r); if (sg.length) { segsMalen(g, [['Raum ', '#d1d5db'], ...sg], x0 + 10, yy); yy += 15; } }
       g.textAlign = 'left'; g.fillStyle = '#9ca3af';
-      const tip = r.neu ? 'Röhrchen neu eingestellt – Messnacht abwarten' : r.p === null ? 'keine Heizlast hinterlegt' : r.p > 140 ? 'viel Wasser, kaum abgekühlt → drosseln lohnt' : r.p < 70 ? 'wenig Wärme → nur handeln, wenn der Raum zu kühl ist' : 'passt (70–140 %)';
-      g.fillText((r.gem ? `gibt ab ${Math.round(r.w)} W · ${r.gem} ${Math.round(r.gemW)} W · Bedarf ${r.gem} ${Math.round(r.gemBed)} W` : `gibt ab ${Math.round(r.w)} W · Bedarf ${r.bed === null ? '–' : Math.round(r.bed)} W`) + ` · ${tip}`, x0 + 10, yy, x1 - x0 - 20); continue; }
+      g.fillText(r.name === 'WiGa' ? DAIKIN_INFO : r.gem ? `${r.gem} zusammen ${wF(r.gemW)} W · Plan ${wF(r.gemBed)} W → ${zahl(r.gemW / r.gemBed)}×` : r.st === 'kuehl_b' ? 'bewusst gedrosselt' : '', x0 + 10, yy, x1 - x0 - 20); continue; }
     if (z.typ !== 'k') continue;
     zl.push(z); const r = daten?.reihen[z.k.e], hy1 = z.h - 2, raum = hy?.raum[z.k.e];
     g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${schmal ? '' : (raum && raum.erster === z.k.e ? '600 ' : '')}11px system-ui, sans-serif`; g.textAlign = 'left';
@@ -392,8 +411,11 @@ function zeichne() {
     g.fillText(typeof z.k.ist === 'number' ? zahl(z.k.ist) : '–', xs - 8, ym);
     if (z.k.soll) { g.textAlign = 'left'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.fillText('/ ' + zahl(z.k.soll), xs - 4, ym); }
     g.textAlign = 'right';
-    if (raum && raum.erster === z.k.e) { if (C.bar) balken(cx.bar, ym - 3, C.bar - 8, 6, raum.p, raum.farbe);
-      g.textAlign = 'right'; g.fillStyle = raum.farbe; g.font = '600 11px system-ui, sans-serif'; g.fillText(raum.neu ? 'neu' : raum.p === null ? '–' : Math.round(raum.p) + ' %', cx.p, ym); }
+    // 16.11.2026 (Nutzer): Punkt = Raum-Status (Farbe, Text im Tooltip) · Wärme je Nacht (W) · Plan – Punkte in einer Linie
+    if (raum && raum.erster === z.k.e) { const xd = C.bar ? cx.bar + 6 : cx.p - 52;
+      g.fillStyle = raum.farbe; g.beginPath(); g.arc(xd, ym, 4.5, 0, 7); g.fill();
+      g.textAlign = 'right'; g.fillStyle = '#e5e7eb'; g.font = '600 11px system-ui, sans-serif'; g.fillText(wF(raum.w) + ' W', C.bar ? cx.bar + 76 : cx.p, ym);
+      if (C.bar) { g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; g.fillText(raum.bed === null ? 'Plan –' : 'Plan ' + wF(raum.bed) + ' W', cx.bar + 84, ym, cx.p - cx.bar - 84); } }
   }
   // Mitternachtslinien
   g.strokeStyle = 'rgba(229,231,235,.55)'; g.lineWidth = 1;
