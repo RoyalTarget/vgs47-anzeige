@@ -1889,42 +1889,30 @@ function schallTip(g, mz) {
     + l(`Geschätzt aus Verdichterleistung + Herstellertabelle${mz > 0 ? ` · ${dz(mz)} eigene Messungen` : ""}. Maßgeblich (TA Lärm): vor dem nächsten Wohn-/Schlafraumfenster.`); }
 
 // WP-Geräusch (23.10.2026, Nutzer: „Fakten pro WP“): jetzt (aus sensor.wp_schall_gegenueber, andere Orte per −20·log(Abstand)),
-// Nächte 22–6 Uhr als Säulen (verlauf.json ws.n = [Datum, max, typisch, Minuten > 35, Laufzeit]), Messstand. Keine Hausnummern/Namen.
+// Nächte 22–6 Uhr als Säulen (verlauf.json ws.n = [Datum, max, typisch, Minuten > 35, Laufzeit]). Keine Hausnummern/Namen.
 function zeigeSchall(s, v) {
+  // 16.11.2026 (Nutzer: Rechnung reicht, Messen zu aufwendig – „Website so wie Desktop“): nur noch Zeile + Nacht-Säulen,
+  // Linie „volle Leistung 33“ (Wolf 100 % = 58 dB(A) Schallleistung → 33 dB(A) gegenüber), keine Jetzt-Tabelle/Messstand mehr.
   const box = $("ws_box"); if (!box) return;
-  const ws = (v && v.ws) || {}, n = ws.n || [], g = num(s, "sensor.wp_schall_gegenueber");
-  const h = new Date().getHours(), nacht = h >= 22 || h < 6, gw = nacht ? 35 : 50;
-  const fa = (x) => x <= gw - 5 ? "#22c55e" : x <= gw ? "#f59e0b" : "#ef4444", dz = (x) => zahl(x, 0);
-  let html = `<table><tr><th style="text-align:left">jetzt</th><th style="text-align:right">Abstand</th><th style="text-align:right">dB(A)</th><th style="text-align:right">Grenze ${nacht ? "nachts" : "tags"}</th></tr>`;
-  if (g > 0) html += `<tr><td><b>Häuser gegenüber</b></td><td style="text-align:right">10 m</td><td style="text-align:right"><b style="color:${fa(g)}">${dz(g)}</b></td><td style="text-align:right">${gw}</td></tr>`
-    + `<tr><td>Haustür Nachbarhaus <span style="color:var(--leise)">(vorne nur Flur/WC/Küche – zählt nicht)</span></td><td style="text-align:right">3,5 m</td><td style="text-align:right">${dz(g + 9.1)}</td><td style="text-align:right">–</td></tr>`
-    + `<tr><td>Schlafzimmer Nachbarhaus <span style="color:var(--leise)">(hinter den Häusern)</span></td><td style="text-align:right">14 m</td><td style="text-align:right">&lt; ${dz(g - 2.9)}</td><td style="text-align:right">${gw}</td></tr>`
-    + `<tr><td style="color:var(--leise)">an der WP (Schallleistung)</td><td style="text-align:right">–</td><td style="text-align:right;color:var(--leise)">${dz(g + 25)}</td><td></td></tr>`;
-  else html += `<tr><td colspan="4">Verdichter steht – kein Geräusch.</td></tr>`;
-  html += "</table>";
+  const ws = (v && v.ws) || {}, n = (ws.n || []).slice(-30), dz = (x) => zahl(x, 1);
+  const tg = (d) => d.slice(8, 10) + "." + d.slice(5, 7) + ".";
+  let html = `<p style="color:var(--leise);font-size:13px;margin:0 0 6px">Häuser gegenüber, gerechnet aus der Verdichterleistung (Herstellertabelle + Abstand). `
+    + (n.length ? `Lauteste Minute der letzten ${n.length} Nächte <b style="color:var(--text)">${dz(Math.max(...n.map((x) => x[1])))} dB(A)</b> · ` : "")
+    + `auch bei voller Verdichterleistung höchstens <b style="color:var(--text)">33 dB(A)</b> · Grenzwert nachts <b style="color:var(--text)">35 dB(A)</b></p>`;
   if (n.length) {
-    const l = n[n.length - 1], tg = (d) => d.slice(8, 10) + "." + d.slice(5, 7) + ".";
-    const mx = Math.max(...n.map((x) => x[1])), u35 = n.reduce((a, x) => a + x[3], 0);
-    html += `<p><b>Letzte Nacht</b> (${tg(l[0])} 22–6 Uhr): gegenüber höchstens <b>${dz(l[1])} dB(A)</b>, typisch ${dz(l[2])} · WP lief ${zahl(l[4] / 60, 1)} h · über 35 dB(A): <b>${l[3]} min</b><br>`
-      + `<span style="color:var(--leise)">Seit ${tg(n[0][0])} (${n.length} Nächte): lauteste Minute ${dz(mx)} dB(A), Minuten über 35 dB(A) zusammen ${u35}. Zum Vergleich: Flüstern 30 dB(A).</span></p>`;
-    // Säulen: lauteste Minute je Nacht, Linie = typisch, rote Linie = Grenzwert nachts 35
-    // Breite = echte Kartenbreite (max. 760 px) → Schrift bleibt 1:1, statt am Desktop riesig / am iPhone winzig skaliert
-    const W = Math.round(Math.max(300, Math.min(760, box.clientWidth || 600))), H = 190, L = 28, R = 6, T = 10, B = 24, y0 = 10, y1 = 40, bw = (W - L - R) / n.length;
+    const W = Math.round(Math.max(300, Math.min(760, box.clientWidth || 600))), H = 170, L = 28, R = 6, T = 10, B = 24, y0 = 10, y1 = 40, bw = (W - L - R) / n.length;
     const Y = (x) => T + (y1 - Math.max(y0, Math.min(y1, x))) / (y1 - y0) * (H - T - B);
     let sv = "";
     for (const y of [10, 20, 30, 40]) sv += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--rand)"/><text x="${L - 4}" y="${Y(y) + 4}" text-anchor="end">${y}</text>`;
     n.forEach((x, i) => { const xl = L + i * bw;
-      sv += `<rect x="${(xl + bw * 0.15).toFixed(1)}" y="${Y(x[1]).toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${(Y(y0) - Y(x[1])).toFixed(1)}" fill="#38bdf8" data-tip="${tg(x[0])} 22–6 Uhr<br>lauteste Minute ${dz(x[1])} dB(A)<br>typisch ${dz(x[2])} dB(A) · WP ${zahl(x[4] / 60, 1)} h<br>über 35 dB(A): ${x[3]} min"/>`;
+      sv += `<rect x="${(xl + bw * 0.15).toFixed(1)}" y="${Y(x[1]).toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${(Y(y0) - Y(x[1])).toFixed(1)}" fill="#38bdf8" data-tip="${tg(x[0])} 22–6 Uhr<br>lauteste Minute ${dz(x[1])} dB(A)<br>typisch ${dz(x[2])} dB(A) · WP ${zahl(x[4] / 60, 1)} h"/>`;
       if (i % Math.ceil(n.length / 8) === 0) sv += `<text x="${(xl + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${tg(x[0])}</text>`; });
     sv += `<polyline points="${n.map((x, i) => `${(L + i * bw + bw / 2).toFixed(1)},${Y(x[2]).toFixed(1)}`).join(" ")}" fill="none" stroke="#1d4ed8" stroke-width="3" style="pointer-events:none"/>`;
+    sv += `<line x1="${L}" x2="${W - R}" y1="${Y(33)}" y2="${Y(33)}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${L + 4}" y="${Y(33) - 4}" fill="#f59e0b">volle Leistung 33</text>`;
     sv += `<line x1="${L}" x2="${W - R}" y1="${Y(35)}" y2="${Y(35)}" stroke="#ef4444" stroke-width="2"/><text x="${W - R}" y="${Y(35) - 4}" text-anchor="end" fill="#ef4444">Grenzwert nachts 35</text>`;
     html += `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
-      + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#38bdf8">■</span> lauteste Minute je Nacht (Häuser gegenüber) · <span style="color:#1d4ed8">━</span> typisch · <span style="color:#ef4444">━</span> Grenzwert nachts</p>`;
+      + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#38bdf8">■</span> lauteste Minute je Nacht · <span style="color:#1d4ed8">━</span> typisch (Mittel im Lauf) · <span style="color:#f59e0b">┅</span> volle Verdichterleistung · <span style="color:#ef4444">━</span> Grenzwert nachts (reines Wohngebiet, TA Lärm)</p>`;
   }
-  const kn = Object.keys(ws.k || {}).length;
-  html += `<p style="color:var(--leise);font-size:12.5px">Geschätzt aus der Verdichterleistung nach Herstellertabelle (Schallleistung 49 dB(A) bei 50 %, 58 dB(A) bei voller Leistung) und Abstand; +6 dB für die Hauswand vorsichtig eingerechnet. `
-    + `Maßgeblich nach TA Lärm: vor dem Fenster eines Wohn- oder Schlafraums, reines Wohngebiet nachts 35, tags 50 dB(A). `
-    + (ws.m ? `Eigene Messungen: ${ws.m}${kn ? `, damit korrigiert in ${kn} Leistungsstufe(n)` : ""}${ws.uh ? ` – ${ws.uh}× war die WP leiser als die Umgebung` : ""}.` : "Eigene Nachmessungen mit dem Handy folgen.") + "</p>";
   if (box.__h !== html) { box.__h = html; box.innerHTML = html; }
 }
 
