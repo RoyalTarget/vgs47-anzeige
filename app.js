@@ -1982,6 +1982,14 @@ function zeigeWerHilft(v) {
 
 // 15.11.2026 (Nutzer: „eine Grafik für die BWWP, Leistung mit rein“): dieselbe Karte wie im Dashboard (lib/vgs_bwwp_temp.js v3) –
 // hass aus verlauf.json: bw (SQL sensor.bwwp_temp_verlauf: bt [Block, T2, WW, W BWWP, W Heizstab], bn), ns.g.bwwp (Start-Schwelle), ns.s (UVR-Sollwerte).
+// 15.11.2026 (Nutzer, Kundenfragen): Wärmekosten – dieselbe Karte wie im Dashboard (lib/vgs_waermekosten.js), Daten verlauf.json wk
+// 16.11.2026: Funktion war beim Umbau zeigeBwwpTemp (15.11. 13:45) versehentlich mit gelöscht worden → Karte ohne Daten; wiederhergestellt.
+function zeigeWaermeKosten(v) {
+  const el = $("wk_karte"); if (!el || !el.setConfig || !v || !v.wk) return;
+  if (!el.__cfg) { el.setConfig({}); el.__cfg = true; }
+  el.hass = { states: { "sensor.waerme_kosten": { last_updated: JSON.stringify(v.wk), attributes: v.wk } } };
+}
+
 function zeigeBwwpTemp(v) {
   const el = $("bwt_karte"); if (!el || !el.setConfig || !v || !v.bw) return;
   if (!el.__cfg) { el.setConfig({}); el.__cfg = true; }
@@ -2004,6 +2012,15 @@ function zeigeFrueher(v, s = {}) {
     el.hass = teil === "start" ? { states: { ...hk.states, ...Object.fromEntries(["sensor.ht_wohnzimmer_temperatur", "sensor.cmi_t_aussen"].filter((e) => s[e] !== undefined && s[e] !== null).map((e) => [e, { state: String(s[e]) }])) } } : hk; }   // 12.11.2026: Startkachel zeigt Raum/außen live (data.json s)
   for (const [id, md] of [["gas_tab", fw.gas], ["az_tab", fw.az], ["bwwp_tab", fw.bwwp]]) { const el = $(id); if (el && md && el.__md !== md) { el.__md = md; el.innerHTML = mdHtml(md); } } }
 
+// 16.11.2026 (Nutzer): „Heizung – Wer braucht, wer liefert? · 48 h“ – gleiche Karte wie im Dashboard (lib/vgs_heizbedarf.js),
+// Daten aus der eigenen Gist-Datei heizung.json (HA alle 10 min, SQL sensor.heizung_bedarf_verlauf: d, bn)
+let HEIZUNG = null, HEIZUNG_T = 0;
+function zeigeHeizbedarf(hz) {
+  const el = $("hb_karte"); if (!el || !el.setConfig || !hz || !hz.d) return;
+  if (!el.__cfg) { el.setConfig({}); el.__cfg = true; }
+  el.hass = { states: { "sensor.heizung_bedarf_verlauf": { last_updated: String(hz.t), attributes: { d: hz.d, bn: hz.bn || [] } } } };
+}
+
 let VERLAUF = null, VERLAUF_T = 0;
 async function holen() {
   try {
@@ -2023,6 +2040,9 @@ async function holen() {
     try { zeigeSchall(s, VERLAUF); } catch (e) { console.warn("schall", e); }
     try { zeigeWerHilft(VERLAUF); } catch (e) { console.warn("werhilft", e); }
     try { zeigeBwwpTemp(VERLAUF); } catch (e) { console.warn("bwwptemp", e); }
+    if (!HEIZUNG || Date.now() - HEIZUNG_T > 24e4) try {
+      HEIZUNG = await (await fetch(DATEN.replace("data.json", "heizung.json") + "?t=" + Date.now(), { cache: "no-store" })).json(); HEIZUNG_T = Date.now(); } catch (e) {}
+    try { zeigeHeizbedarf(HEIZUNG); } catch (e) { console.warn("heizbedarf", e); }
     try { zeigeWaermeKosten(VERLAUF); } catch (e) { console.warn("waermekosten", e); }
     try { zeigeZaehler(s); } catch (e) { console.warn("zaehler", e); }
     const t = new Date(d.t), alt = (Date.now() - t) / 60000;
