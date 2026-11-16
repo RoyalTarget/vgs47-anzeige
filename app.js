@@ -324,7 +324,10 @@ function zeigeKlima(s, a) {
     if (st === undefined) pf.push("fehlt " + e);
     const m = KL_MODI.find((x) => x[0] === st), kw = sa.kw || "";
     const pk = { 0: "aus", 1: "heat", 2: "cool", 3: "fan" }[Math.round(num(s, sc) ?? 0)] || "aus";
-    const unter = st === "unavailable" ? "nicht erreichbar" : (m ? m[2] : (st ?? "–")) + (kw ? " · " + kw : "");
+    // 16.11.2026 (wie Dashboard vgs_klima.js): kW = Wärme (Strom × COP-Annahme) gelb, Kälte blau, Strom (Modell) dahinter
+    const sw = num(s, `sensor.klima_${k}_leistung_geschatzt`);
+    const kwT = kw ? `<span style="color:${pk === "cool" ? "#60a5fa" : "#facc15"}">${kw} ${pk === "cool" ? "Kälte" : "Wärme"}</span>` + (sw >= 20 ? ` · ${zahl(sw / 1000, 1)} kW Strom` : "") : "";
+    const unter = st === "unavailable" ? "nicht erreichbar" : (m ? m[2] : (st ?? "–")) + (kwT ? " · " + kwT : "");
     const heute = num(s, `sensor.klima_${k}_betrieb_heute`);
     const sollTxt = at.soll == null || st === "fan_only" ? "–" : zahl(at.soll, 1) + " °C";
     const sym = KL_MODI.map(([x, f, t]) => `<span class="${x === st ? "on" : ""}" style="${x === st ? "background:" + f : ""}" data-tip="${t}"><svg viewBox="0 0 24 24"><path d="${KL_ICON[x]}"/></svg></span>`).join("");
@@ -333,7 +336,7 @@ function zeigeKlima(s, a) {
       + `<div class="sw"><small>Soll</small><b>${sollTxt}</b></div>`
       + `<div class="kwh">${z1(heute)} kWh<small>heute</small></div><div class="mb">${sym}</div></div>`;
   }).join("");
-  const html = KL_STIL + zeilen + `<div class="fuss"><span>Monat zusammen ${z1(num(s, "sensor.klima_gesamt_monat"))} kWh</span><span>Ist = Daikin-Fühler (ganze Grad) · kW geschätzt</span></div>`;
+  const html = KL_STIL + zeilen + `<div class="fuss"><span>Monat zusammen ${z1(num(s, "sensor.klima_gesamt_monat"))} kWh</span><span>Ist = Daikin-Fühler (ganze Grad) · Strom = Modell, Wärme = Strom × COP (Annahme)</span></div>`;
   if (box.__h !== html) { box.__h = html; box.className = ""; box.innerHTML = html; }
   box.dataset.pruef = pf.length ? pf.join("; ") : "ok";
 }
