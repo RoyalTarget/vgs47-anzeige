@@ -313,6 +313,7 @@ const KL_STIL = `<style>
     #klima .row{grid-template-columns:1fr auto auto;grid-template-areas:"wer ist sw" "mb mb mb";row-gap:8px;column-gap:10px}
     #klima .wer{grid-area:wer}#klima .ist{grid-area:ist}#klima .sw{grid-area:sw}#klima .mb{grid-area:mb;justify-content:space-between}#klima .mb span{flex:1}
     #klima .kwh{display:none}#klima .k2{display:inline}
+    #klima .wer small{white-space:normal;line-height:1.35}
   }
 </style>`;
 function zeigeKlima(s, a) {
@@ -326,12 +327,12 @@ function zeigeKlima(s, a) {
     const pk = { 0: "aus", 1: "heat", 2: "cool", 3: "fan" }[Math.round(num(s, sc) ?? 0)] || "aus";
     // 16.11.2026 (wie Dashboard vgs_klima.js): kW = Wärme (Strom × COP-Annahme) gelb, Kälte blau, Strom (Modell) dahinter
     const sw = num(s, `sensor.klima_${k}_leistung_geschatzt`);
-    const kwT = kw ? `<span style="color:${pk === "cool" ? "#60a5fa" : "#facc15"}">${kw} ${pk === "cool" ? "Kälte" : "Wärme"}</span>` + (sw >= 20 ? ` · ${zahl(sw / 1000, 1)} kW Strom` : "") : "";
+    const kwT = kw ? `<span style="color:${pk === "cool" ? "#60a5fa" : "#facc15"}">${kw.replace(" ", "\u00a0")}\u00a0${pk === "cool" ? "Kälte" : "Wärme"}</span>` + (sw >= 20 ? ` · ${zahl(sw / 1000, 1)}\u00a0kW\u00a0Strom` : "") : "";
     const unter = st === "unavailable" ? "nicht erreichbar" : (m ? m[2] : (st ?? "–")) + (kwT ? " · " + kwT : "");
     const heute = num(s, `sensor.klima_${k}_betrieb_heute`);
     const sollTxt = at.soll == null || st === "fan_only" ? "–" : zahl(at.soll, 1) + " °C";
     const sym = KL_MODI.map(([x, f, t]) => `<span class="${x === st ? "on" : ""}" style="${x === st ? "background:" + f : ""}" data-tip="${t}"><svg viewBox="0 0 24 24"><path d="${KL_ICON[x]}"/></svg></span>`).join("");
-    return `<div class="row"><div class="wer"><span class="dot ${pk}"></span><div>${n}<small>${unter}<span class="k2"> · ${z1(heute)} kWh heute</span></small></div></div>`
+    return `<div class="row"><div class="wer"><span class="dot ${pk}"></span><div>${n}<small>${unter}<span class="k2"> · ${z1(heute)}\u00a0kWh\u00a0heute</span></small></div></div>`
       + `<div class="ist">${at.ist == null ? "–" : zahl(at.ist, 0)}<small> °C</small></div>`
       + `<div class="sw"><small>Soll</small><b>${sollTxt}</b></div>`
       + `<div class="kwh">${z1(heute)} kWh<small>heute</small></div><div class="mb">${sym}</div></div>`;
