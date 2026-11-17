@@ -30,6 +30,7 @@
   #fuss { padding: 2px 10px 6px; color: var(--grau); font-size: 11px; line-height: 1.5; }
   #fuss .ti, #kopf .ti { cursor: help; color: #93c5fd; }
   #tinfo { margin-right: auto; }
+  #fuss .ibox { margin-top: 6px; padding: 8px 10px; background: #26262b; border-radius: 8px; color: #d1d5db; }
   #fuss .klein { font-size: 10px; color: #6b7280; }
   #fuss b { color: var(--fg); font-weight: 600; }
   #tip { position: fixed; display: none; pointer-events: none; background: rgba(24,24,27,.97); border: 1px solid #52525b; border-radius: 8px;
@@ -258,14 +259,16 @@ function raumTemps(h, name) { const l = [];
   return l; }
 function raumSegs(h, r) {   // 17.11.2026 (Nutzer): eine Aussage je Raum – Raumfühler gegen Soll, gefärbt wie der Punkt (grün passt, orange zu warm, blau zu kühl)
   const f = ST_F[r.st][0], kz = (v) => (v > 0 ? '+' : '−') + zahl(Math.abs(v)) + '\u00a0K';
-  if (r.tR === null || r.tR === undefined) return r.st === 'kuehl_b' ? [['bewusst kühl (kein Fühler)', f]] : [['kein Raumfühler', '#6b7280']];
+  if (r.tR === null || r.tR === undefined) return r.st === 'kein' ? [['kein Raumfühler', '#6b7280']] : [[ST_F[r.st][1], f], [' (laut Rückmeldung, kein Fühler)', '#9ca3af']];
   return [['Raum ', '#9ca3af'], [zahl(r.tR) + ' °C', f], [' bei Soll ' + String(r.soll).replace('.', ',') + ' → ', '#9ca3af'], [r.st === 'passt' ? 'passt' : ST_F[r.st][1] + ' ' + kz(r.dT), f]]; }
+const punkt = (g, r, x, y, rd) => { g.beginPath(); g.arc(x, y, r.rm ? rd - 0.8 : rd, 0, 7); if (r.rm) { g.strokeStyle = r.farbe; g.lineWidth = 1.6; g.stroke(); } else { g.fillStyle = r.farbe; g.fill(); } };   // ● gemessen · ○ Rückmeldung
 function segsMalen(g, segs, x, y) { g.textAlign = 'left'; for (const [t, f] of segs) { g.fillStyle = f; g.fillText(t, x, y); x += g.measureText(t).width; } return x; }
 const F_OR = '#f97316', F_GR = '#22c55e', F_BL = '#60a5fa', F_NA = '#6b7280';
 // 17.11.2026 (Nutzer): Wärme gegen JOCO – blau = weniger Watt als geplant (< 0,8×), grau = wie geplant, rot = mehr Watt (> 1,25×)
 const xFarbe = (q) => q < 0.8 ? '#60a5fa' : q > 1.25 ? '#f87171' : '#e5e7eb';
 // 16.11.2026 (Nutzer): Raum-Status statt Versorgungs-Prozent – Farbe = was ihr wollt, nicht Papierwert. Ändern: hier.
-const STATUS = { 'Yoga': 'kuehl_b', 'Lesezimmer': 'kuehl_b', 'Gästezimmer': 'kuehl_b', 'WiGa': 'kuehl' };
+// 17.11.2026 (Nutzer): Räume ohne Fühler → Punkt nach Rückmeldung des Nutzers (Ring statt gefüllt); bei neuer Einschätzung hier umtragen
+const STATUS = { 'Yoga': 'kuehl_b', 'Lesezimmer': 'kuehl_b', 'Gästezimmer': 'kuehl_b', 'WC': 'passt' };   // WC: „angenehm warm“ 17.11.
 const ST_F = { kein: ['#6b7280', 'kein Fühler'], passt: ['#22c55e', 'passt'], kuehl: ['#3b82f6', 'zu kühl'], kuehl_b: ['#93c5fd', 'bewusst kühl'], warm: ['#f97316', 'zu warm'], warm_b: ['#fdba74', 'bewusst warm'] };
 // EG-Reihenfolge (Nutzer 16.11.): WC, Flur, dann Wohnen, WiGa und die Summe am Ende
 // 17.11.2026: Flur O gehört zum JOCO-Raum Flur/Treppe → wird im EG unter Flur E gezeigt (GRUPPE)
@@ -315,7 +318,8 @@ const qLog = (e, i) => { const r = RAUM_VON[e], x = r && daten?.rw?.[r[0]]; if (
   for (let j = Math.max(0, i - h); j <= Math.min(x.w.length - 1, i + h); j++) { const w = x.w[j], p = x.p[j]; if (w == null || !p || ((w <= 0) !== zu)) continue; sw += w; sp += p; }
   return sp ? Math.log2(Math.max(sw, 1) / sp) : null; };
 const DAIKIN_INFO = 'Daikin heizt zu: nachts Ø 1,7 kW Wärme (0,69 kWh/h Strom × COP 2,5, 09.–16.11.; in den Messnächten aus)';
-let offen = null;   // iPhone: aufgeklappter Raum (Name)
+let offen = null, infoAuf = false;   // infoAuf: ⓘ am Titel aufgeklappt (17.11.2026, Tooltip ging im iframe nicht)
+let _dummy = null;   // iPhone: aufgeklappter Raum (Name)
 function hydro(h, K) {
   // 16.11.2026 (Nutzer, mit Röhrchen-Ablesung + PMG-Bilanz validiert): Watt je Raum = Mittel über die Messnächte (geschlossene Nächte = 0).
   // Je Nacht nur offene Kreise (kr[4] = zu; Zonen exakt über die Shellys), ihre Röhrchen-Verhältnisse auf den CORA-Durchfluss der Nacht (t.q) abgeglichen.
@@ -339,8 +343,8 @@ function hydro(h, K) {
     const bed = typeof last === 'number' ? last * (norm - au) / (norm + 16) : null;   // 17.11.2026: Plan auf Raumtemp. 2012
     // 17.11.2026 (Nutzer): Punkt live = Raumfühler (erster ohne Daikin) gegen Soll, ±0,5 K = passt; ohne Fühler fester Eintrag (STATUS) bzw. „kein Fühler“
     const ft = raumTemps(h, name).filter((t) => !t.g)[0], dT = ft ? ft.v - soll : null;
-    const st = dT === null ? (STATUS[name] || 'kein') : Math.abs(dT) <= 0.5 ? 'passt' : dT < 0 ? (STATUS[name] === 'kuehl_b' ? 'kuehl_b' : 'kuehl') : 'warm', farbe = ST_F[st][0];
-    const r = { name, soll, norm, w, dT, tR: ft ? ft.v : null, ok: true, bed, p: bed ? w / bed * 100 : null, farbe, st, neu: false, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
+    const rm = dT === null, st = dT === null ? (STATUS[name] || 'kein') : Math.abs(dT) <= 0.5 ? 'passt' : dT < 0 ? (STATUS[name] === 'kuehl_b' ? 'kuehl_b' : 'kuehl') : 'warm', farbe = ST_F[st][0];
+    const r = { name, soll, norm, w, dT, rm, tR: ft ? ft.v : null, ok: true, bed, p: bed ? w / bed * 100 : null, farbe, st, neu: false, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
   for (const gn of new Set(liste.filter((r) => r.gem).map((r) => r.gem))) { const tl = liste.filter((r) => r.gem === gn);
     tl.forEach((r, i) => Object.assign(r, { gemW: tl.reduce((a, x) => a + x.w, 0), gemBed: tl.reduce((a, x) => a + (x.bed || 0), 0), gemLetzter: i === tl.length - 1 })); }
@@ -361,15 +365,19 @@ function fussZeile(h, hy, schmal) {
   // Messnacht + Selbstprüfung + Erklärung im ⓘ am Titel. Rücklauf-gegen-Pumpe (Röhrchen-Werkzeug) entfällt hier.
   const mf = h?.states['binary_sensor.fbh_messfenster'], lauf = h?.states['sensor.fbh_abgleich']?.attributes?.lauf || {};
   const l = ['Farbe = Watt je Raum gegen Plan: blau unter 80 %, grau 80–125 %, rot über 125 % (je Raum über 1 h geglättet). Plan = Heizlast 2012 auf die Raumtemperatur von 2012' + (hy ? ` und Ø ${zahl(hy.au)} °C außen der Messnächte` : '') + '.',
-    'Punkt und Raum-Temperatur = Raumfühler gegen Soll (±0,5 K = passt): grün passt, orange zu warm, blau zu kühl, hellblau bewusst kühl (ohne Fühler), grau kein Fühler.',
+    'Punkt und Raum-Temperatur = Raumfühler gegen Soll (±0,5 K = passt): grün passt, orange zu warm, blau zu kühl, hellblau bewusst kühl. Ring statt Punkt = kein Fühler, Einschätzung laut Rückmeldung (WC passt, GZ/LZ/Yoga bewusst kühl).',
     'Wärme Nacht = Mittel der Messnächte (nur offene Kreise, Röhrchen-Verhältnis auf den CORA-Durchfluss abgeglichen).' + (schmal ? ' Kreis antippen = Raum-Bilanz.' : ''),
     (mf?.state === 'on' ? `Messnacht läuft seit ${lauf.start ? new Date(lauf.start).toTimeString().slice(0, 5) : '–'} (${lauf.n || 0} min, zählt ab 60 min).` : `Gerade keine Messung – ${mf?.attributes?.grund || '?'}.`)
       + (hy ? ` Letzte Nacht zu: ${hy.zu.join(', ') || '–'}.` : '')];
   if (daten?.ok) { const [von, bis] = fenster(), a = Math.max(0, Math.floor((von - daten.t0) / BIN)), b = Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN));
     let n = 0, o = 0, sA = 0, nA = 0, sQ = 0, nQ = 0; for (let i = a; i < b; i++) { if (daten.ok[i] === null) continue; n++; if (daten.ok[i]) o++; if (daten.kA[i] != null) { sA += daten.kA[i]; nA++; } if (daten.kQ[i] != null) { sQ += daten.kQ[i]; nQ++; } }
     if (n) l.push(`Selbstprüfung je 10 min: Σ Wärme Kreise ÷ PMG ${nA ? Math.round(sA / nA * 100) : '–'} % (Grenze ±10 %), CORA ÷ Röhrchen der offenen Kreise ${nQ ? Math.round(sQ / nQ * 100) : '–'} % (gelbe Linie, Grenze 96–106 %), bestanden ${Math.round(o / n * 100)} % – Ergebnis je Abschnitt im Tooltip der Streifen.`); }
-  const ti = $('tinfo'); if (ti) ti.title = l.join('\n\n');
-  const s = '';
+  const ti = $('tinfo'); if (ti && !ti.__k) { ti.__k = true; ti.addEventListener('click', () => { infoAuf = !infoAuf; zeichne(); }); }
+  // 17.11.2026 (Nutzer): Punkt-Legende sichtbar unter dem Bild (gehört zur Farblegende)
+  const ta = parseFloat(h?.states[TA]?.state);
+  let s = 'Punkt = Raum gegen Soll: ' + ['passt', 'warm', 'kuehl', 'kuehl_b'].map((k) => `<span style="color:${ST_F[k][0]}">●</span> ${ST_F[k][1]}`).join(' · ') + ' · ○ = laut Rückmeldung (kein Fühler)'
+    + (isNaN(ta) ? '' : ` · Plan bei außen ${zahl(ta)} °C`);
+  if (infoAuf) s += '<div class="ibox">' + l.join('<br>') + '</div>';
   const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
 
 function zeichne() {
@@ -420,8 +428,8 @@ function zeichne() {
     if (z.typ === 'g') { g.textAlign = 'left'; g.fillStyle = '#93c5fd'; g.font = '600 11px system-ui, sans-serif'; g.fillText(z.G, 4, z.y + 7);
       const n = z.ks.filter((k) => h?.states[k.e]).length; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText(`${n}/${z.ks.length}`, 26, z.y + 7);
       if (cx && hy && z.G === plan.find((q) => q.typ === 'g').G) { const vl = parseFloat(h?.states[VL]?.state); g.textAlign = 'right'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#f87171';
-        const ta = parseFloat(h?.states[TA]?.state); g.fillText((isNaN(ta) ? '' : 'außen ' + zahl(ta) + ' °C · ') + 'VL ' + (isNaN(vl) ? '–' : zahl(vl) + ' °C'), cx.rl, z.y + 7);   // 17.11.2026: außen jetzt (Plan hängt davon ab; Text-Karte entfällt)
-        if (hy.vlN !== null) g.fillText('VL Ø ' + zahl(hy.vlN) + ' °C', cx.sp, z.y + 7); }
+        // 17.11.2026 (Nutzer): außen/VL im Kopf entfernt (für das Bild nicht nötig; außen steht in der Legende)
+        }
       continue; }
     if (z.typ === 'q') { const QM = 1200, yb = z.y + z.h - 3, sk = (v) => yb - Math.min(v, QM) / QM * (z.h - 8);
       g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, z.h - 2);
@@ -450,7 +458,7 @@ function zeichne() {
       if (r.name === 'WiGa') { g.fillStyle = '#60a5fa'; const dt = ' · Daikin heizt zu (nachts Ø 1,7 kW Wärme)'; if (W - 8 - xr >= g.measureText(dt).width) g.fillText(dt, xr, z.y + SH / 2); }
       g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
     if (z.typ === 'p') { const r = z.r, x0 = 6, x1 = W - 6; g.fillStyle = '#26262b'; g.beginPath(); g.roundRect(x0, z.y + 2, x1 - x0, z.h - 6, 8); g.fill();
-      g.textAlign = 'left'; g.font = '600 12px system-ui, sans-serif'; g.fillStyle = r.farbe; g.beginPath(); g.arc(x0 + 15, z.y + 13, 4.5, 0, 7); g.fill();
+      g.textAlign = 'left'; g.font = '600 12px system-ui, sans-serif'; punkt(g, r, x0 + 15, z.y + 13, 4.5);
       g.fillStyle = '#e5e7eb'; const t1 = `${r.name} · ${ST_F[r.st][1]} · ${wF(r.w)} W`; g.fillText(t1, x0 + 26, z.y + 14);
       g.font = '11px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; if (r.bed === null) g.fillText('Plan –', x0 + 10, z.y + 29); else segsMalen(g, [[`${wF(r.w)} W = `, '#9ca3af'], [pz(r.w / r.bed), xFarbe(r.w / r.bed)], [` vom Plan (${wF(r.bed)} W)`, '#9ca3af']], x0 + 10, z.y + 29);
       g.font = '11px system-ui, sans-serif'; let yy = z.y + 41;
@@ -485,7 +493,7 @@ function zeichne() {
       g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1; }
     const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
     if (schmal) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt), W - (hy ? 18 : 4), ym);
-      if (hy && raum) { g.fillStyle = raum.farbe; g.beginPath(); g.arc(W - 8, ym, 4, 0, 7); g.fill(); if (offen === raum.name) { g.strokeStyle = '#e5e7eb'; g.lineWidth = 1.2; g.stroke(); } } continue; }
+      if (hy && raum) { punkt(g, raum, W - 8, ym, 4); if (offen === raum.name) { g.strokeStyle = '#e5e7eb'; g.lineWidth = 1.2; g.stroke(); } } continue; }
     if (!hy) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt) + ' °C', X1 + 44, ym);
       if (sn) { const m = sa / sn; g.fillStyle = Math.abs(m) < 0.4 ? '#9ca3af' : m < 0 ? '#60a5fa' : '#f87171'; g.font = '10px system-ui, sans-serif'; g.fillText((m > 0 ? '+' : '') + zahl(m), W - 4, ym); } continue; }
     // Desktop A: Spalten
@@ -500,7 +508,7 @@ function zeichne() {
     if (hy.wk && hy.wk[z.k.e] != null) { g.textAlign = 'right'; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText(wF(hy.wk[z.k.e]) + ' W', cx.kw, ym); }
     // 16.11.2026 (Nutzer): Punkt = Raum-Status (Farbe, Text im Tooltip) · Wärme je Nacht (W) · Plan – Punkte in einer Linie
     if (raum && raum.erster === z.k.e) { const xd = C.bar ? cx.bar + 6 : cx.p - 52;
-      g.fillStyle = raum.farbe; g.beginPath(); g.arc(xd, ym, 4.5, 0, 7); g.fill();
+      punkt(g, raum, xd, ym, 4.5);
       g.textAlign = 'right'; g.fillStyle = '#e5e7eb'; g.font = '600 11px system-ui, sans-serif'; g.fillText(wF(raum.w) + ' W', C.bar ? cx.bar + 76 : cx.p, ym);
       if (C.bar) { g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; g.fillText(raum.bed === null ? 'Plan –' : 'Plan ' + wF(raum.bed) + ' W', cx.bar + 84, ym, cx.p - cx.bar - 84); } }
   }
