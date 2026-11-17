@@ -221,7 +221,8 @@ function leinwand(c, w, h) { const dpr = window.devicePixelRatio || 1; c.width =
 // [Name, Norm-Heizlast W bei −16 °C, Norm-Raumtemp. (JOCO 2012, DIN EN 12831), RL-Fühler, Wunschtemp. (Nutzer 19.10.2026)]
 // Quelle: Verlegeplan/JOCO_Auslegung_2012.md. Bedarf = Heizlast / (Norm + 16) × (Wunsch − Ø außen); Raum-Farbe gegen Wunsch.
 const RAEUME = [
-  // 17.11.2026 (Nutzer): Plan = JOCO FBH-Blatt 04.06.2012 (neuer als die Formblätter R vom 23.05.) auf die Raumtemp. von 2012 (3. Feld), nicht auf den Wunsch.
+  // 17.11.2026 (Nutzer): Plan = JOCO FBH-Blatt 04.06.2012 (neuer als die Formblätter R vom 23.05.). 18.11.2026 (Nutzer): Plan auf eure Wunschtemp. (5. Feld),
+  // also Heizlast ÷ (Raumtemp. 2012 + 16) × (Wunsch − außen) – Emil ist Wohnraum (22), nicht mehr Schlafzimmer.
   // WZ/WiGa nach Bauteilliste R 2 getrennt (WiGa = Glasdach, Fenster O/S, Boden Erdreich; Wohnen = Wände, Boden über Keller; Lüftung nach Fläche) = 76/24 von 3.439 W.
   // Flur EG + Flur OG = JOCO-Raum 1.4 „WF mit Diele EG-DG“ (783 W, 18 °C). Quelle Verlegeplan/JOCO_Auslegung_2012.md.
   ['Bad DG', 568, 24, ['sensor.rl_bad_fussboden', 'sensor.rl_bad_wand'], 24],
@@ -237,7 +238,7 @@ const RAEUME = [
   ['Wohnen', 811, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2'], 22.5, 'WZ + WiGa'],
   ['WiGa', 2628, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22, 'WZ + WiGa'],
   ['WC', 154, 20, ['sensor.rl_wc'], 20],
-  ['Flur/Treppe', 783, 18, ['sensor.rl_og_flur', 'sensor.rl_flur'], 21.5]];   // 17.11.2026 (Nutzer): Wunsch Flur 21,5 (Plan bleibt auf 18 °C von 2012)
+  ['Flur/Treppe', 783, 18, ['sensor.rl_og_flur', 'sensor.rl_flur'], 21.5]];   // 17.11.2026 (Nutzer): Wunsch Flur 21,5; Plan seit 18.11. auf Wunsch
 // Raumtemperatur je Raum (19.10.2026, Nutzer): H&T nach Standort (input_select.ht_x_standort, wandert mit), feste Fühler je Raum.
 // Daikin nur ganze Grad (gerundet angezeigt, ohne „≈“ seit 01.11.2026). Farbe gegen Wunschtemp. (RAEUME): grün ≥ Soll − 0,5, sonst orange.
 const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'WiGa', 'WZ-Mitte': 'Wohnen', 'Yoga': 'Yoga', 'OG-Flur': 'Flur/Treppe',
@@ -281,7 +282,7 @@ const GIRA_GR = [['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden'], ['sensor.rl_
   ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand'], ['sensor.rl_wc'], ['sensor.rl_flur']];   // je Gira-Thermostat; Emil exakt, WZ/WiGa Shelly
 const RAUM_VON = {}; for (const r of RAEUME) for (const e of r[3]) RAUM_VON[e] = r;
 // 17.11.2026 (Nutzer): Watt je Kreis und Abschnitt = Röhrchen-Anteil am CORA-Durchfluss × (VL − RL Kreis) × 1,163 (l/min → 69,78);
-// geschlossene Kreise (Shelly zu, Emil stromlos, „zu (geschätzt)“) = 0 W und zählen nicht zum Anteil. Raum = Summe; Plan = JOCO × (Raumtemp. 2012 − außen) / (Raumtemp. 2012 + 16).
+// geschlossene Kreise (Shelly zu, Emil stromlos, „zu (geschätzt)“) = 0 W und zählen nicht zum Anteil. Raum = Summe; Plan = JOCO × (Wunsch − außen) / (Raumtemp. 2012 + 16) (18.11.2026).
 function berechneQ(d) {
   const n = d.n, Kn = d.K.filter((k) => typeof k.ist === 'number'), ta0 = parseFloat(hass()?.states[TA]?.state);
   d.wk = {}; d.rw = {}; for (const k of d.K) d.wk[k.e] = new Array(n).fill(null);
@@ -309,8 +310,8 @@ function berechneQ(d) {
       d.qSoll[i] = qs; d.kQ[i] = q / qs; d.kA[i] = pm > 200 ? sw / pm : null;
       d.ok[i] = d.kQ[i] >= 0.96 && d.kQ[i] <= 1.06 && (d.kA[i] === null || Math.abs(d.kA[i] - 1) <= 0.1); }
     const ta = d.ta?.[i] ?? ta0;
-    for (const [name, last, norm, fu] of RAEUME) { const ws = fu.map((e) => d.wk[e]?.[i]); if (ws.some((v) => v == null) || isNaN(ta)) continue;
-      d.rw[name].w[i] = ws.reduce((a, b) => a + b, 0); d.rw[name].p[i] = Math.max(1, last * (norm - ta) / (norm + 16)); } } }
+    for (const [name, last, norm, fu, wu] of RAEUME) { const ws = fu.map((e) => d.wk[e]?.[i]); if (ws.some((v) => v == null) || isNaN(ta)) continue;
+      d.rw[name].w[i] = ws.reduce((a, b) => a + b, 0); d.rw[name].p[i] = Math.max(1, last * (wu - ta) / (norm + 16)); } } }
 // 17.11.2026 (Nutzer: „zu krass gestreift“): Farbe = Σ Watt ÷ Σ Plan über 1 h (±30 min), gewichtet statt Mittel der Faktoren; Abschnitte mit 0 W (Ventil zu) zählen nur, wenn der Raum jetzt auch zu ist
 const pz = (q) => Math.round(q * 100) + '\u00a0%';   // 17.11.2026 (Nutzer): Faktor als % vom Plan statt ×
 const qLog = (e, i) => { const r = RAUM_VON[e], x = r && daten?.rw?.[r[0]]; if (!x || x.w[i] == null || !x.p[i]) return null;
@@ -340,7 +341,7 @@ function hydro(h, K) {
   for (const [name, last, norm, fu, soll, gem] of RAEUME) {
     const ks = K.filter((q) => fu.includes(q.e)), w = ks.reduce((a, k) => a + (wk[k.e] || 0), 0);
     if (name === 'Flur/Treppe') ks.sort((a, b) => fu.indexOf(a.e) - fu.indexOf(b.e)); if (ks.every((k) => K_ORDER.includes(k.e))) ks.sort((a, b) => K_ORDER.indexOf(a.e) - K_ORDER.indexOf(b.e));
-    const bed = typeof last === 'number' ? last * (norm - au) / (norm + 16) : null;   // 17.11.2026: Plan auf Raumtemp. 2012
+    const bed = typeof last === 'number' ? last * (soll - au) / (norm + 16) : null;   // 18.11.2026: Plan auf Wunschtemp.
     // 17.11.2026 (Nutzer): Punkt live = Raumfühler (erster ohne Daikin) gegen Soll, ±0,5 K = passt; ohne Fühler fester Eintrag (STATUS) bzw. „kein Fühler“
     const ft = raumTemps(h, name).filter((t) => !t.g)[0], dT = ft ? ft.v - soll : null;
     const rm = dT === null, st = dT === null ? (STATUS[name] || 'kein') : Math.abs(dT) <= 0.5 ? 'passt' : dT < 0 ? (STATUS[name] === 'kuehl_b' ? 'kuehl_b' : 'kuehl') : 'warm', farbe = ST_F[st][0];
@@ -364,7 +365,7 @@ function fussZeile(h, hy, schmal) {
   // 17.11.2026 (Nutzer: „wir wollen das Wärmebild verstehen“): unter dem Bild nur die Legende; Punkt/Temperatur stehen in der Σ-Zeile,
   // Messnacht + Selbstprüfung + Erklärung im ⓘ am Titel. Rücklauf-gegen-Pumpe (Röhrchen-Werkzeug) entfällt hier.
   const mf = h?.states['binary_sensor.fbh_messfenster'], lauf = h?.states['sensor.fbh_abgleich']?.attributes?.lauf || {};
-  const l = ['Farbe = Watt je Raum gegen Plan: blau unter 80 %, grau 80–125 %, rot über 125 % (je Raum über 1 h geglättet). Plan = Heizlast 2012 auf die Raumtemperatur von 2012' + (hy ? ` und Ø ${zahl(hy.au)} °C außen der Messnächte` : '') + '.',
+  const l = ['Farbe = Watt je Raum gegen Plan: blau unter 80 %, grau 80–125 %, rot über 125 % (je Raum über 1 h geglättet). Plan = Heizlast 2012 auf eure Wunschtemperatur' + (hy ? ` und Ø ${zahl(hy.au)} °C außen der Messnächte` : '') + '.',
     'Punkt und Raum-Temperatur = Raumfühler gegen Soll (±0,5 K = passt): grün passt, orange zu warm, blau zu kühl, hellblau bewusst kühl. Ring statt Punkt = kein Fühler, Einschätzung laut Rückmeldung (WC passt, GZ/LZ/Yoga bewusst kühl).',
     'Wärme Nacht = Mittel der Messnächte (nur offene Kreise, Röhrchen-Verhältnis auf den CORA-Durchfluss abgeglichen).' + (schmal ? ' Kreis antippen = Raum-Bilanz.' : ''),
     (mf?.state === 'on' ? `Messnacht läuft seit ${lauf.start ? new Date(lauf.start).toTimeString().slice(0, 5) : '–'} (${lauf.n || 0} min, zählt ab 60 min).` : `Gerade keine Messung – ${mf?.attributes?.grund || '?'}.`)
