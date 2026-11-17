@@ -36,8 +36,8 @@
 <body>
 <div id="kopf"><span class="t" id="titel">Rücklauf je Kreis</span>
   <button id="jetzt" hidden title="zurück zu jetzt">↦ Jetzt</button>
-  <button id="m_abw" class="an" title="Rücklauf je Kreis gegen den Gesamt-Rücklauf an der Pumpe (PMG)">Abweichung</button>
-  <button id="m_temp" title="Rücklauftemperatur 20–35 °C">Temperatur</button></div>
+  <button id="m_abw" class="an" hidden title="Rücklauf je Kreis gegen den Gesamt-Rücklauf an der Pumpe (PMG)">Abweichung</button>
+  <button id="m_temp" hidden title="Rücklauftemperatur 20–35 °C">Temperatur</button></div>
 <canvas id="feld"></canvas>
 <canvas id="leiste"></canvas>
 <div id="fuss"></div>
@@ -72,7 +72,7 @@ function schaetzeZu(d) {
 const zuGesch = (e, i) => daten?.zuS?.[e]?.[i] || 0;   // 0 offen/unbekannt · 1 geschätzt zu · 2 exakt zu (Emil)
 let BIN = 6e5;   // 22.10.2026: Website setzt BIN aus den Daten (7 Tage à 30 min), HA bleibt 10 min
 let modus = 'abw', win = { live: true, breite: H48, bis: 0 }, daten = null, geo = null;
-try { const m = localStorage.getItem('fbh_modus'); if (m === 'temp' || m === 'abw') modus = m; } catch (e) {}
+// 17.11.2026 (Nutzer: „mir ist nur die Abweichung wichtig“): Umschalter Temperatur ausgeblendet, immer Abweichung
 
 function hassEcht() { try { const h = parent !== window && parent.document.querySelector('home-assistant')?.hass; if (h && h.states) return h; } catch (e) {} return null; }
 // Anzeigeseite (03.10.2026): ohne HA kommen die Daten aus dem Gist (fb = [Unix-s, Index, Wert] 10-min-Mittel 48 h, fi = Reihenfolge der Indizes,
@@ -213,28 +213,31 @@ function leinwand(c, w, h) { const dpr = window.devicePixelRatio || 1; c.width =
 // [Name, Norm-Heizlast W bei −16 °C, Norm-Raumtemp. (JOCO 2012, DIN EN 12831), RL-Fühler, Wunschtemp. (Nutzer 19.10.2026)]
 // Quelle: Verlegeplan/JOCO_Auslegung_2012.md. Bedarf = Heizlast / (Norm + 16) × (Wunsch − Ø außen); Raum-Farbe gegen Wunsch.
 const RAEUME = [
+  // 17.11.2026 (Nutzer): Plan = JOCO FBH-Blatt 04.06.2012 (neuer als die Formblätter R vom 23.05.) auf die Raumtemp. von 2012 (3. Feld), nicht auf den Wunsch.
+  // WZ/WiGa nach Bauteilliste R 2 getrennt (WiGa = Glasdach, Fenster O/S, Boden Erdreich; Wohnen = Wände, Boden über Keller; Lüftung nach Fläche) = 76/24 von 3.439 W.
+  // Flur EG + Flur OG = JOCO-Raum 1.4 „WF mit Diele EG-DG“ (783 W, 18 °C). Quelle Verlegeplan/JOCO_Auslegung_2012.md.
   ['Bad DG', 568, 24, ['sensor.rl_bad_fussboden', 'sensor.rl_bad_wand'], 24],
   ['Gästezimmer', 984, 20, ['sensor.rl_dg_3'], 20],
   ['Lesezimmer', 760, 20, ['sensor.rl_dg_4'], 20],
   ['Yoga', 633, 20, ['sensor.rl_yoga'], 20],
   ['Bad OG', 464, 24, ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand'], 24],
-  ['Flur OG', 273, 18, ['sensor.rl_og_flur'], 20],   // 16.11.2026: keine JOCO-Heizlast („Zuleitungen“) → geschätzt wie Diele EG je m² (783 W / 10,62 m² × 3,7 m²)
+   // 16.11.2026: keine JOCO-Heizlast („Zuleitungen“) → geschätzt wie Diele EG je m² (783 W / 10,62 m² × 3,7 m²)
   ['Emils Zimmer', 1068, 20, ['sensor.rl_og_5', 'sensor.rl_og_6'], 22],
   // 02.11.2026: WZ und WiGa getrennt (WZ 1/2 am Gira, WG I/A/W am Shelly nach H&T A). JOCO hat nur EINE Heizlast für beide →
   // 6. Feld = gemeinsame Gruppe: Bedarf/Versorgung nur gemeinsam (Wunsch 22), „gibt ab“ je Teil.
   // 16.11.2026 (Nutzer): JOCO 3.439 W gemeinsam → 40 % Wohnen / 60 % WiGa, zusätzlich Summenzeile „WZ + WiGa“
-  ['Wohnen', 1376, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2'], 22.5, 'WZ + WiGa'],
-  ['WiGa', 2063, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22, 'WZ + WiGa'],
+  ['Wohnen', 811, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2'], 22.5, 'WZ + WiGa'],
+  ['WiGa', 2628, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22, 'WZ + WiGa'],
   ['WC', 154, 20, ['sensor.rl_wc'], 20],
-  ['Flur EG', 783, 18, ['sensor.rl_flur'], 20]];
+  ['Flur/Treppe', 783, 18, ['sensor.rl_flur', 'sensor.rl_og_flur'], 20]];
 // Raumtemperatur je Raum (19.10.2026, Nutzer): H&T nach Standort (input_select.ht_x_standort, wandert mit), feste Fühler je Raum.
 // Daikin nur ganze Grad (gerundet angezeigt, ohne „≈“ seit 01.11.2026). Farbe gegen Wunschtemp. (RAEUME): grün ≥ Soll − 0,5, sonst orange.
-const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'WiGa', 'WZ-Mitte': 'Wohnen', 'Yoga': 'Yoga', 'OG-Flur': 'Flur OG',
-  'WC EG': 'WC', 'Flur EG': 'Flur EG', 'Emils Zimmer': 'Emils Zimmer', 'Lesezimmer': 'Lesezimmer', 'Gästezimmer': 'Gästezimmer' };
+const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'WiGa', 'WZ-Mitte': 'Wohnen', 'Yoga': 'Yoga', 'OG-Flur': 'Flur/Treppe',
+  'WC EG': 'WC', 'Flur EG': 'Flur/Treppe', 'Emils Zimmer': 'Emils Zimmer', 'Lesezimmer': 'Lesezimmer', 'Gästezimmer': 'Gästezimmer' };
 // 23.10.2026 (Nutzer): WiGa-Daikin raus – Fühler im Innengerät misst die eigene Warmluft (+4…6 K gegen H&T A WiGa-Ende); 03.11. als Anzeige zurück (s. RAUM_T)
 // 29.10.2026: feste H&T WZ (an der Thermostat-Stelle) + Flur EG; CMI-Raumfühler daneben als Vergleich
 const RAUM_T = { 'Wohnen': [['sensor.ht_wohnzimmer_temperatur', 'H&T WZ'], ['sensor.cmi_t_raum', 'CMI']],
-  'Flur EG': [['sensor.ht_flur_eg_temperatur', 'H&T']],
+  'Flur/Treppe': [['sensor.ht_flur_eg_temperatur', 'H&T EG']],
   'Bad DG': [['sensor.ht_bad_dg_temperatur', 'H&T']],   // 04.11.2026: fester H&T Bad DG (Display + Helligkeit)
   'Emils Zimmer': [['sensor.emil_climatecontrol_raumtemperatur', 'Daikin', 1]],
   // 03.11.2026 (Nutzer): Daikin WiGa wieder anzeigen (nur Anzeige, nicht Regelung) – H&T A sitzt am kältesten Ort (Fenster/Stahlträger),
@@ -251,11 +254,15 @@ function raumSegs(h, r) { const l = raumTemps(h, r.name); if (!l.length) return 
   segs.push([' / Soll ' + String(r.soll).replace('.', ',') + ' °C', '#6b7280']); return segs; }
 function segsMalen(g, segs, x, y) { g.textAlign = 'left'; for (const [t, f] of segs) { g.fillStyle = f; g.fillText(t, x, y); x += g.measureText(t).width; } return x; }
 const F_OR = '#f97316', F_GR = '#22c55e', F_BL = '#60a5fa', F_NA = '#6b7280';
+// 17.11.2026 (Nutzer): Wärme gegen JOCO – blau = weniger Watt als geplant (< 0,8×), grau = wie geplant, rot = mehr Watt (> 1,25×)
+const xFarbe = (q) => q < 0.8 ? '#60a5fa' : q > 1.25 ? '#f87171' : '#e5e7eb';
 // 16.11.2026 (Nutzer): Raum-Status statt Versorgungs-Prozent – Farbe = was ihr wollt, nicht Papierwert. Ändern: hier.
 const STATUS = { 'Yoga': 'kuehl_b', 'Lesezimmer': 'kuehl_b', 'Gästezimmer': 'kuehl_b', 'WiGa': 'kuehl' };
 const ST_F = { passt: ['#22c55e', 'passt'], kuehl: ['#3b82f6', 'zu kühl'], kuehl_b: ['#93c5fd', 'bewusst kühl'], warm: ['#f97316', 'zu warm'], warm_b: ['#fdba74', 'bewusst warm'] };
 // EG-Reihenfolge (Nutzer 16.11.): WC, Flur, dann Wohnen, WiGa und die Summe am Ende
-const K_ORDER = ['sensor.rl_wc', 'sensor.rl_flur', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'];
+// 17.11.2026: Flur O gehört zum JOCO-Raum Flur/Treppe → wird im EG unter Flur E gezeigt (GRUPPE)
+const GRUPPE = { 'sensor.rl_og_flur': 'EG' }, gr = (k) => GRUPPE[k.e] || k.g;
+const K_ORDER = ['sensor.rl_wc', 'sensor.rl_flur', 'sensor.rl_og_flur', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'];
 const DAIKIN_INFO = 'Daikin heizt zu: nachts Ø 1,7 kW Wärme (0,69 kWh/h Strom × COP 2,5, 09.–16.11.; in den Messnächten aus)';
 let offen = null;   // iPhone: aufgeklappter Raum (Name)
 function hydro(h, K) {
@@ -277,9 +284,10 @@ function hydro(h, K) {
   const raum = {}, liste = [];
   for (const [name, last, norm, fu, soll, gem] of RAEUME) {
     const ks = K.filter((q) => fu.includes(q.e)), w = ks.reduce((a, k) => a + (wk[k.e] || 0), 0);
-    const bed = typeof last === 'number' ? last * (soll - au) / (norm + 16) : null;
+    if (ks.every((k) => K_ORDER.includes(k.e))) ks.sort((a, b) => K_ORDER.indexOf(a.e) - K_ORDER.indexOf(b.e));
+    const bed = typeof last === 'number' ? last * (norm - au) / (norm + 16) : null;   // 17.11.2026: Plan auf Raumtemp. 2012
     const st = STATUS[name] || 'passt', farbe = ST_F[st][0];
-    const r = { name, soll, w, ok: true, bed, p: bed ? w / bed * 100 : null, farbe, st, neu: false, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
+    const r = { name, soll, norm, w, ok: true, bed, p: bed ? w / bed * 100 : null, farbe, st, neu: false, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
   for (const gn of new Set(liste.filter((r) => r.gem).map((r) => r.gem))) { const tl = liste.filter((r) => r.gem === gn);
     tl.forEach((r, i) => Object.assign(r, { gemW: tl.reduce((a, x) => a + x.w, 0), gemBed: tl.reduce((a, x) => a + (x.bed || 0), 0), gemLetzter: i === tl.length - 1 })); }
@@ -303,7 +311,7 @@ function fussZeile(h, hy, schmal) {
     if (hy.letzte) { const d = new Date(hy.letzte.start); s += ` · Spreizung Nacht = Median ${hy.nNacht} Messnächte (VL Ø ${zahl(hy.vlN)} °C, letzte ${d.getDate()}.${d.getMonth() + 1}.) – nicht VL jetzt − RL jetzt`; }
     s += schmal ? '<br>Kreis antippen = Raum-Bilanz auf/zu · Punkt = Raum: ' : '<br>Punkt = Raum: ';
     s += Object.values(ST_F).map(([c, t]) => `<span style="color:${c}">●</span> ${t}`).join(' · ')
-      + ` · Wärme = Mittel der Messnächte (nur offene Kreise, Röhrchen-Verhältnis auf den HK-Durchfluss abgeglichen) · Plan = Heizlast 2012 auf Wunschtemp. und Ø ${zahl(hy.au)} °C außen`;
+      + ` · Wärme = Mittel der Messnächte (nur offene Kreise, Röhrchen-Verhältnis auf den HK-Durchfluss abgeglichen) · Plan = Heizlast JOCO 2012 auf die Raumtemp. von 2012 und Ø ${zahl(hy.au)} °C außen · × <span style="color:#60a5fa">blau</span> = weniger Watt als geplant (unter 0,8), grau = wie geplant, <span style="color:#f87171">rot</span> = mehr Watt (über 1,25)`;
     if (hy.kontrolle) { const k = hy.kontrolle, d = k.k / k.p - 1; s += ` · <b>Kontrolle:</b> Σ Räume ${wF(k.k)} W, PMG ${wF(k.p)} W (${d > 0 ? '+' : ''}${Math.round(d * 100)} %)`; } }
   const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
 
@@ -319,7 +327,7 @@ function zeichne() {
   // Zeilenplan
   const zl = []; let y = ACHSE;
   const plan = [];
-  for (const G of gruppen) { const ks = K.filter((k) => k.g === G).sort((a, b) => (K_ORDER.indexOf(a.e) + 1 || 99) - (K_ORDER.indexOf(b.e) + 1 || 99)); if (!ks.length) continue;
+  for (const G of gruppen) { const ks = K.filter((k) => gr(k) === G).sort((a, b) => (K_ORDER.indexOf(a.e) + 1 || 99) - (K_ORDER.indexOf(b.e) + 1 || 99)); if (!ks.length) continue;
     plan.push({ typ: 'g', G, ks, h: 14 });
     for (const k of ks) { plan.push({ typ: 'k', k, h: ZH }); const r = hy?.raum[k.e];
       if (r && r.letzter === k.e) { if (SH) plan.push({ typ: 's', r, h: SH + 4 }); if (SH && r.gem && r.gemLetzter) plan.push({ typ: 's2', r, h: SH + 4 }); if (schmal && offen === r.name) plan.push({ typ: 'p', r, h: 60 + r.ks.length * 15 + (raumTemps(h, r.name).length ? 15 : 0) }); } }
@@ -359,18 +367,18 @@ function zeichne() {
       continue; }
     if (z.typ === 's2') { const r = z.r; g.textAlign = 'left'; g.font = '600 10px system-ui, sans-serif'; g.fillStyle = '#facc15'; const t0 = `Σ ${r.gem} `; g.fillText(t0, 8, z.y + SH / 2);
       g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
-      g.fillText(`· Wärme ${wF(r.gemW)} W · Plan ${wF(r.gemBed)} W → ${zahl(r.gemW / r.gemBed)}× · JOCO 2012 nur gemeinsam; die FBH gibt die Wärme überwiegend im WiGa ab, das WZ profitiert mit`, 8 + g.measureText(t0).width + 2, z.y + SH / 2, W - 20 - g.measureText(t0).width);
+      segsMalen(g, [[`· Wärme ${wF(r.gemW)} W · Plan ${wF(r.gemBed)} W → `, '#9ca3af'], [zahl(r.gemW / r.gemBed) + '×', xFarbe(r.gemW / r.gemBed)], [' · JOCO 2012 hat WZ + WiGa als einen Raum gerechnet', '#9ca3af']], 8 + g.measureText(t0).width + 2, z.y + SH / 2);
       g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
     if (z.typ === 's') { const r = z.r; g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif';
-      const st = `Σ ${r.name} · Wärme ${wF(r.w)} W · ` + (r.bed === null ? 'Plan –' : `Plan bei ${zahl(r.soll)} °C: ${wF(r.bed)} W → ${zahl(r.w / r.bed)}×`) + (r.name === 'Flur OG' ? ' (Plan geschätzt)' : r.gem ? ` (Plan = ${r.name === 'Wohnen' ? '40' : '60'} % von ${r.gem})` : '');
-      g.fillText(st, 8, z.y + SH / 2); let xr = 8 + g.measureText(st).width;
+      const st = `Σ ${r.name} · Wärme ${wF(r.w)} W · ` + (r.bed === null ? 'Plan –' : `Plan JOCO bei ${zahl(r.norm)} °C: ${wF(r.bed)} W → `);
+      let xr = segsMalen(g, [[st, '#9ca3af'], ...(r.bed === null ? [] : [[zahl(r.w / r.bed) + '×', xFarbe(r.w / r.bed)]]), [r.gem ? ' (Plan nach JOCO-Bauteilliste)' : '', '#9ca3af']], 8, z.y + SH / 2);
       const sg = raumSegs(h, r); if (sg.length) xr = segsMalen(g, [[' · Raum ', '#9ca3af'], ...sg], xr, z.y + SH / 2);
       if (r.name === 'WiGa') { g.fillStyle = '#60a5fa'; const dt = ' · Daikin heizt zu (nachts Ø 1,7 kW Wärme)'; if (W - 8 - xr >= g.measureText(dt).width) g.fillText(dt, xr, z.y + SH / 2); }
       g.strokeStyle = '#2f2f33'; g.lineWidth = 1; g.beginPath(); g.moveTo(4, z.y + z.h - 1.5); g.lineTo(W - 4, z.y + z.h - 1.5); g.stroke(); continue; }
     if (z.typ === 'p') { const r = z.r, x0 = 6, x1 = W - 6; g.fillStyle = '#26262b'; g.beginPath(); g.roundRect(x0, z.y + 2, x1 - x0, z.h - 6, 8); g.fill();
       g.textAlign = 'left'; g.font = '600 12px system-ui, sans-serif'; g.fillStyle = r.farbe; g.beginPath(); g.arc(x0 + 15, z.y + 13, 4.5, 0, 7); g.fill();
       g.fillStyle = '#e5e7eb'; const t1 = `${r.name} · ${ST_F[r.st][1]} · ${wF(r.w)} W`; g.fillText(t1, x0 + 26, z.y + 14);
-      g.font = '11px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; g.fillText(r.bed === null ? 'Plan –' : `Plan bei ${zahl(r.soll)} °C: ${wF(r.bed)} W → ${zahl(r.w / r.bed)}×`, x0 + 10, z.y + 29, x1 - x0 - 20);
+      g.font = '11px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; if (r.bed === null) g.fillText('Plan –', x0 + 10, z.y + 29); else segsMalen(g, [[`Plan JOCO bei ${zahl(r.norm)} °C: ${wF(r.bed)} W → `, '#9ca3af'], [zahl(r.w / r.bed) + '×', xFarbe(r.w / r.bed)]], x0 + 10, z.y + 29);
       g.font = '11px system-ui, sans-serif'; let yy = z.y + 41;
       for (const k of r.ks) { const s = hy.sp[k.e], rl = parseFloat(h?.states[k.e]?.state); g.fillStyle = '#d1d5db'; g.textAlign = 'left'; g.fillText(k.k, x0 + 10, yy);
         g.fillStyle = '#9ca3af'; g.textAlign = 'right';
