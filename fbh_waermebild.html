@@ -36,7 +36,7 @@
 <body>
 <div id="kopf"><span class="t" id="titel">Rücklauf je Kreis</span>
   <button id="jetzt" hidden title="zurück zu jetzt">↦ Jetzt</button>
-  <button id="m_abw" class="an" title="Abweichung vom Mittel aller gemessenen Kreise">Abweichung</button>
+  <button id="m_abw" class="an" title="Rücklauf je Kreis gegen den Gesamt-Rücklauf an der Pumpe (PMG)">Abweichung</button>
   <button id="m_temp" title="Rücklauftemperatur 20–35 °C">Temperatur</button></div>
 <canvas id="feld"></canvas>
 <canvas id="leiste"></canvas>
@@ -157,6 +157,7 @@ async function ladeWeb() {
   WEB.h = { states }; const da = K.filter((k) => serie[k.e]), reihen = {}; for (const k of da) reihen[k.e] = serie[k.e];
   const ref = new Array(n).fill(null);   // wie in HA: Kreise mit Ventil zu zählen nicht zum Mittel
   for (let i = 0; i < n; i++) { let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i], zr = zu[VENTIL[e]]; if (v !== null && !(zr && zr[i] !== null && zr[i] < 0.5)) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
+  { const rp = serie[RLG] || []; for (let i = 0; i < n; i++) if (rp[i] !== null && rp[i] !== undefined) ref[i] = rp[i]; }   // 17.11.2026: Bezug = PMG-Rücklauf (Fallback Mittel)
   const q = serie['sensor.cmi_hk_durchfluss'] || new Array(n).fill(null);
   daten = { t0, n, K, reihen, ref, vl: serie[VL] || new Array(n).fill(null), rl: serie[RLG] || new Array(n).fill(null),
     pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), zu, geladen: Date.now() };
@@ -184,8 +185,11 @@ async function lade() {
   // Schalter: unavailable/entfernt = Lücke (null bleibt drin), sonst trägt binne ein altes „off“ über die Lücke (30.10. Mini entfernt → WiGa fälschlich „zu“)
   const pkS = (id) => (r[id] || []).map((x) => [(x.lu ?? x.last_updated) * 1000, x.s === 'on' ? 1 : x.s === 'off' ? 0 : null]);
   const zu = {}; for (const e of sw) zu[e] = binne(pkS(e), t0, n, BIN, true);
-  const ref = new Array(n).fill(null);   // Bezug: Mittel aller gemessenen Kreise (Anlegefühler messen systematisch tiefer als der PMG-Fühler); Kreise mit Ventil zu zählen nicht
-  for (let i = 0; i < n; i++) { let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i], zr = zu[VENTIL[e]]; if (v !== null && !(zr && zr[i] !== null && zr[i] < 0.5)) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
+  // 17.11.2026 (Nutzer): Bezug = PMG-Rücklauf (Shelly B, sensor.hk_ruecklauf) = gemessene, nach Wassermenge gewichtete Mischung aller offenen Kreise.
+  // Validiert 17.11. 10:52: Misch-RL der 17 Kreise (Röhrchen-gewichtet) 28,72 vs. PMG 28,79 °C. Vorher (15.10.) Mittel der Kreise, weil der CMI-RL 0,5 K zu hoch misst.
+  // Fallback: einfaches Mittel der offenen Kreise, wenn der PMG-Wert fehlt.
+  const ref = new Array(n).fill(null), rp = binne(pk(RLG), t0, n, BIN);
+  for (let i = 0; i < n; i++) { if (rp[i] !== null) { ref[i] = rp[i]; continue; } let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i], zr = zu[VENTIL[e]]; if (v !== null && !(zr && zr[i] !== null && zr[i] < 0.5)) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
   daten = { t0, n, K, reihen, ref, vl: binne(pk(VL), t0, n, BIN), rl: binne(pk(RLG), t0, n, BIN), pu: binne(pk(PU, true), t0, n, BIN, true), zu, geladen: jetzt };
   daten.zuS = schaetzeZu(daten);
   zeichne();
@@ -324,7 +328,7 @@ function zeichne() {
   const FH = y + LEG + 4;
   const g = leinwand($('feld'), W, FH); g.clearRect(0, 0, W, FH);
   const X0 = LW, X1 = W - RW, [von, bis] = daten ? fenster() : [Date.now() - H48, Date.now()], X = (t) => X0 + (t - von) / (bis - von) * (X1 - X0);
-  $('titel').textContent = modus === 'abw' ? (schmal ? 'Abweichung vom Mittel' : 'Rücklauf je Kreis – Abweichung vom Mittel aller Kreise (blau = kälter, rot = wärmer)')
+  $('titel').textContent = modus === 'abw' ? (schmal ? 'Rücklauf gegen Pumpe' : 'Rücklauf je Kreis gegen den Gesamt-Rücklauf an der Pumpe (blau = kälter = gibt mehr ab, rot = wärmer = gibt weniger ab)')
     : (schmal ? 'Rücklauf 20–35 °C' : 'Rücklauf je Kreis – Temperatur 20–35 °C');
   // Zeitachse oben
   g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle'; g.fillStyle = '#9ca3af';
@@ -423,7 +427,7 @@ function zeichne() {
     for (const z of plan) if (z.typ === 'k') { g.beginPath(); g.moveTo(x, z.y); g.lineTo(x, z.y + z.h); g.stroke(); } }
   // Legende: Text – Farbbalken – Text
   const ly = y + 4; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
-  const tl = modus === 'abw' ? (schmal ? '−3 K' : '−3 K kälter') : '20 °C', tr = modus === 'abw' ? (schmal ? '+3 K · grau = Mittel' : '+3 K wärmer · grau = am Mittel (±0,4 K)') : '35 °C · blass = Pumpe aus';
+  const tl = modus === 'abw' ? (schmal ? '−3 K' : '−3 K kälter') : '20 °C', tr = modus === 'abw' ? (schmal ? '+3 K · grau = wie Pumpe' : '+3 K wärmer als der Rücklauf an der Pumpe · grau = ±0,4 K') : '35 °C · blass = Pumpe aus';
   g.fillText(tl, X0, ly + 7); const sw = modus === 'abw' ? 32 + g.measureText('Pumpe aus').width : 0;   // Platz für die Schraffur-Legende
   const lx = X0 + g.measureText(tl).width + 6, lb = Math.max(60, Math.min(180, (sw ? W - 4 : X1) - lx - g.measureText(tr).width - 12 - sw));
   for (let i = 0; i < lb; i++) { const v = modus === 'abw' ? -3 + 6 * i / lb : 20 + 15 * i / lb; g.fillStyle = farbe(v); g.fillRect(lx + i, ly + 3, 1.2, 8); }
@@ -490,7 +494,7 @@ function zeigeTip(ev) { if (!geo || !daten) return; const r = feld.getBoundingCl
     else if (zg === 1) s += `<span style="color:rgba(250,204,21,.85)">Ventil vermutlich zu – RL ≥ ${zahl(ZU_K)} K unter üblich (${b > 0 ? '+' : ''}${zahl(b)} K zum Mittel)</span><br>`; }
   if (!rr) s += '<span style="color:#9ca3af">noch kein Fühler</span>';
   else { s += `RL Kreis <b style="color:#f59e0b">${zahl(v)} °C</b><br>PMG: VL <span style="color:#ef4444">${zahl(vl)}</span> / RL <span style="color:#3b82f6">${zahl(rl)}</span> °C`;
-    if (v !== null && mw !== null) s += `<br>Abweichung vom Mittel (${zahl(mw)}) <b style="color:${Math.abs(v - mw) < 0.4 ? '#e5e7eb' : v < mw ? '#60a5fa' : '#f87171'}">${v - mw > 0 ? '+' : ''}${zahl(v - mw)} K</b>`;
+    if (v !== null && mw !== null) s += `<br>gegen Rücklauf Pumpe (${zahl(mw)} °C) <b style="color:${Math.abs(v - mw) < 0.4 ? '#e5e7eb' : v < mw ? '#60a5fa' : '#f87171'}">${v - mw > 0 ? '+' : ''}${zahl(v - mw)} K</b>`;
     if (v !== null && rl !== null) s += `<br><span style="color:#9ca3af">zum PMG-RL ${v - rl > 0 ? '+' : ''}${zahl(v - rl)} K</span>`;
     if (v !== null && vl !== null) s += ` · Spreizung ${zahl(vl - v)} K`; }
   tip.innerHTML = s; tip.style.display = 'block';
