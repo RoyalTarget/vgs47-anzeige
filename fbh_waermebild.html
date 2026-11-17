@@ -279,7 +279,7 @@ function berechneQ(d) {
   const n = d.n, Kn = d.K.filter((k) => typeof k.ist === 'number'), ta0 = parseFloat(hass()?.states[TA]?.state);
   d.wk = {}; d.rw = {}; for (const k of d.K) d.wk[k.e] = new Array(n).fill(null);
   // Selbstprüfung je Abschnitt (Nutzer 17.11.2026): (1) Σ Kreise ÷ PMG-Wärme (q × (VL − RL PMG) × 1,163) innerhalb ±10 %,
-  // (2) CORA ÷ erwarteter Durchfluss (Σ Röhrchen der offenen Kreise × 60 × KAL) ≥ 0,9 – sonst ist ein unbekanntes Ventil zu → Abschnitt blass.
+  // (2) CORA ÷ erwarteter Durchfluss (Σ Röhrchen der offenen Kreise × 60 × KAL) ≥ 0,9 – sonst ist ein unbekanntes Ventil zu → Ergebnis nur im Tooltip/Fußzeile (17.11.: nicht mehr blass/rote Marke).
   d.kA = new Array(n).fill(null); d.kQ = new Array(n).fill(null); d.qSoll = new Array(n).fill(null); d.ok = new Array(n).fill(null);
   d.zuQ = {}; for (const k of d.K) d.zuQ[k.e] = new Array(n).fill(0);
   for (const r of RAEUME) d.rw[r[0]] = { w: new Array(n).fill(null), p: new Array(n).fill(null) };
@@ -304,7 +304,11 @@ function berechneQ(d) {
     const ta = d.ta?.[i] ?? ta0;
     for (const [name, last, norm, fu] of RAEUME) { const ws = fu.map((e) => d.wk[e]?.[i]); if (ws.some((v) => v == null) || isNaN(ta)) continue;
       d.rw[name].w[i] = ws.reduce((a, b) => a + b, 0); d.rw[name].p[i] = Math.max(1, last * (norm - ta) / (norm + 16)); } } }
-const qLog = (e, i) => { const r = RAUM_VON[e], x = r && daten?.rw?.[r[0]]; if (!x || x.w[i] == null || !x.p[i]) return null; return Math.log2(Math.max(x.w[i], 1) / x.p[i]); };
+// 17.11.2026 (Nutzer: „zu krass gestreift“): Farbe = Σ Watt ÷ Σ Plan über 1 h (±30 min), gewichtet statt Mittel der Faktoren; Abschnitte mit 0 W (Ventil zu) zählen nur, wenn der Raum jetzt auch zu ist
+const qLog = (e, i) => { const r = RAUM_VON[e], x = r && daten?.rw?.[r[0]]; if (!x || x.w[i] == null || !x.p[i]) return null;
+  const h = Math.max(0, Math.round(18e5 / BIN)), zu = x.w[i] <= 0; let sw = 0, sp = 0;
+  for (let j = Math.max(0, i - h); j <= Math.min(x.w.length - 1, i + h); j++) { const w = x.w[j], p = x.p[j]; if (w == null || !p || ((w <= 0) !== zu)) continue; sw += w; sp += p; }
+  return sp ? Math.log2(Math.max(sw, 1) / sp) : null; };
 const DAIKIN_INFO = 'Daikin heizt zu: nachts Ø 1,7 kW Wärme (0,69 kWh/h Strom × COP 2,5, 09.–16.11.; in den Messnächten aus)';
 let offen = null;   // iPhone: aufgeklappter Raum (Name)
 function hydro(h, K) {
@@ -356,7 +360,7 @@ function fussZeile(h, hy, schmal) {
       + ` · Wärme = Mittel der Messnächte (nur offene Kreise, Röhrchen-Verhältnis auf den HK-Durchfluss abgeglichen) · Plan = Heizlast JOCO 2012 auf die Raumtemp. von 2012 und Ø ${zahl(hy.au)} °C außen · × <span style="color:#60a5fa">blau</span> = weniger Watt als geplant (unter 0,8), grau = wie geplant, <span style="color:#f87171">rot</span> = mehr Watt (über 1,25)`;
     if (daten?.ok) { const [von, bis] = fenster(), a = Math.max(0, Math.floor((von - daten.t0) / BIN)), b = Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN));
       let n = 0, o = 0, sA = 0, nA = 0, sQ = 0, nQ = 0; for (let i = a; i < b; i++) { if (daten.ok[i] === null) continue; n++; if (daten.ok[i]) o++; if (daten.kA[i] != null) { sA += daten.kA[i]; nA++; } if (daten.kQ[i] != null) { sQ += daten.kQ[i]; nQ++; } }
-      if (n) s += `<br><b>Selbstprüfung je 10 min</b> (blass = nicht bestanden, rote Marke unter dem Durchfluss): Σ Kreise ÷ PMG-Wärme Ø ${nA ? Math.round(sA / nA * 100) : '–'} % (Grenze ±10 %) · CORA ÷ Röhrchen der offenen Kreise Ø ${nQ ? Math.round(sQ / nQ * 100) : '–'} % (gelbe Linie = erwartet, Grenze 96–106 %; fehlt Durchfluss, werden die Thermostat-Gruppen als „zu (geschätzt)“ gesucht, deren Röhrchen die Lücke erklären und mit denen die offenen Kreise gemischt den PMG-Rücklauf ergeben) · bestanden ${Math.round(o / n * 100)} % der Abschnitte`; } }
+      if (n) s += `<br><b>Selbstprüfung je 10 min</b> (Ergebnis je Abschnitt im Tooltip; Farben je Raum über 1 h geglättet): Σ Kreise ÷ PMG-Wärme Ø ${nA ? Math.round(sA / nA * 100) : '–'} % (Grenze ±10 %) · CORA ÷ Röhrchen der offenen Kreise Ø ${nQ ? Math.round(sQ / nQ * 100) : '–'} % (gelbe Linie = erwartet, Grenze 96–106 %; fehlt Durchfluss, werden die Thermostat-Gruppen als „zu (geschätzt)“ gesucht, deren Röhrchen die Lücke erklären und mit denen die offenen Kreise gemischt den PMG-Rücklauf ergeben) · bestanden ${Math.round(o / n * 100)} % der Abschnitte`; } }
   const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
 
 function zeichne() {
@@ -419,7 +423,7 @@ function zeichne() {
       g.strokeStyle = 'rgba(250,204,21,.8)'; g.lineWidth = 1.2; g.beginPath(); st0 = false;   // erwartet laut Röhrchen der offenen Kreise
       for (let i = iv; i < ib; i++) { const v = daten.qSoll?.[i]; if (v == null) { st0 = false; continue; } const x = X(zeitAus(i) + BIN / 2); if (x < X0 || x > X1) continue; if (st0) g.lineTo(x, sk(v)); else { g.moveTo(x, sk(v)); st0 = true; } }
       g.stroke();
-      for (let i = iv; i < ib; i++) if (daten.ok?.[i] === false) { const xa = Math.max(X(zeitAus(i)), X0), xb = Math.min(X(zeitAus(i + 1)), X1); if (xb > xa) { g.fillStyle = 'rgba(248,113,113,.55)'; g.fillRect(xa, yb + 1, xb - xa + 0.5, 2); } }
+      // 17.11.2026 (Nutzer): keine roten Marken mehr unter dem Durchfluss – Prüfung läuft weiter, Ergebnis im Tooltip + Fußzeile
       g.textAlign = 'left'; g.font = '600 11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText('Durchfluss', 8, z.y + 12, X0 - 10);
       g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; g.fillText('PMG (CORA)', 8, z.y + 26, X0 - 10);
       g.fillStyle = 'rgba(229,231,235,.6)'; g.fillText(`alle offen ${wF(Q_OFFEN)} l/h`, X0 + 4, sk(Q_OFFEN) - 6);
@@ -467,7 +471,7 @@ function zeichne() {
       const xa = X(zeitAus(i)), xb = X(zeitAus(i + 1)); if (xb < X0 || xa > X1) continue;
       let col; if (an && (ventilZu(z.k.e, i) || zg === 2)) col = zuMuster(g);
       else if (an && zg === 1) col = zuMusterS(g);
-      else if (modus === 'abw') { const ql = qLog(z.k.e, i); if (!an) col = schraffur(g); else if (ql === null) col = '#2a2a2e'; else { col = farbeQL(ql); sa += ql; sn++; if (daten.ok?.[i] === false) g.globalAlpha = 0.3; } }
+      else if (modus === 'abw') { const ql = qLog(z.k.e, i); if (!an) col = schraffur(g); else if (ql === null) col = '#2a2a2e'; else { col = farbeQL(ql); sa += ql; sn++; } }
       else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
       g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1; }
     const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
