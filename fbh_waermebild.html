@@ -233,7 +233,7 @@ const RAEUME = [
   ['Wohnen', 811, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2'], 22.5, 'WZ + WiGa'],
   ['WiGa', 2628, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22, 'WZ + WiGa'],
   ['WC', 154, 20, ['sensor.rl_wc'], 20],
-  ['Flur/Treppe', 783, 18, ['sensor.rl_flur', 'sensor.rl_og_flur'], 20]];
+  ['Flur/Treppe', 783, 18, ['sensor.rl_og_flur', 'sensor.rl_flur'], 20]];
 // Raumtemperatur je Raum (19.10.2026, Nutzer): H&T nach Standort (input_select.ht_x_standort, wandert mit), feste Fühler je Raum.
 // Daikin nur ganze Grad (gerundet angezeigt, ohne „≈“ seit 01.11.2026). Farbe gegen Wunschtemp. (RAEUME): grün ≥ Soll − 0,5, sonst orange.
 const HT_ORT = { 'Bad DG': 'Bad DG', 'Bad OG': 'Bad OG', 'WiGa-Ende': 'WiGa', 'WZ-Mitte': 'Wohnen', 'Yoga': 'Yoga', 'OG-Flur': 'Flur/Treppe',
@@ -265,8 +265,9 @@ const STATUS = { 'Yoga': 'kuehl_b', 'Lesezimmer': 'kuehl_b', 'Gästezimmer': 'ku
 const ST_F = { passt: ['#22c55e', 'passt'], kuehl: ['#3b82f6', 'zu kühl'], kuehl_b: ['#93c5fd', 'bewusst kühl'], warm: ['#f97316', 'zu warm'], warm_b: ['#fdba74', 'bewusst warm'] };
 // EG-Reihenfolge (Nutzer 16.11.): WC, Flur, dann Wohnen, WiGa und die Summe am Ende
 // 17.11.2026: Flur O gehört zum JOCO-Raum Flur/Treppe → wird im EG unter Flur E gezeigt (GRUPPE)
-const GRUPPE = { 'sensor.rl_og_flur': 'EG' }, gr = (k) => GRUPPE[k.e] || k.g;
-const K_ORDER = ['sensor.rl_og_flur', 'sensor.rl_flur', 'sensor.rl_wc', 'sensor.rl_wz_1',   // 17.11.2026 (Nutzer): oben Flur O, dann Flur E, dann WC
+// 17.11.2026 (Nutzer, korrigiert): Flur O bleibt im OG, dort ganz unten (Σ Flur/Treppe steht unter Flur E im EG)
+const GRUPPE = {}, gr = (k) => GRUPPE[k.e] || k.g, ordK = (e) => e === 'sensor.rl_og_flur' ? 999 : (K_ORDER.indexOf(e) + 1 || 99);
+const K_ORDER = ['sensor.rl_flur', 'sensor.rl_wc', 'sensor.rl_wz_1',   // EG: Flur E, WC, dann WZ/WiGa
   'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'];
 const QH = 'sensor.cmi_hk_durchfluss', TA = 'sensor.cmi_t_aussen', Q_OFFEN = 1040, Q_KAL = 1039 / 1077;   // CORA ÷ Σ Röhrchen alle offen (17.11.)   // Durchfluss alle Kreise offen (Messung 17.11.2026: 1.039 l/h)
 const GIRA_GR = [['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden'], ['sensor.rl_dg_3'], ['sensor.rl_dg_4'], ['sensor.rl_yoga'], ['sensor.rl_og_flur'],
@@ -325,7 +326,7 @@ function hydro(h, K) {
   const raum = {}, liste = [];
   for (const [name, last, norm, fu, soll, gem] of RAEUME) {
     const ks = K.filter((q) => fu.includes(q.e)), w = ks.reduce((a, k) => a + (wk[k.e] || 0), 0);
-    if (ks.every((k) => K_ORDER.includes(k.e))) ks.sort((a, b) => K_ORDER.indexOf(a.e) - K_ORDER.indexOf(b.e));
+    if (name === 'Flur/Treppe') ks.sort((a, b) => fu.indexOf(a.e) - fu.indexOf(b.e)); if (ks.every((k) => K_ORDER.includes(k.e))) ks.sort((a, b) => K_ORDER.indexOf(a.e) - K_ORDER.indexOf(b.e));
     const bed = typeof last === 'number' ? last * (norm - au) / (norm + 16) : null;   // 17.11.2026: Plan auf Raumtemp. 2012
     const st = STATUS[name] || 'passt', farbe = ST_F[st][0];
     const r = { name, soll, norm, w, ok: true, bed, p: bed ? w / bed * 100 : null, farbe, st, neu: false, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
@@ -370,7 +371,7 @@ function zeichne() {
   // Zeilenplan
   const zl = []; let y = ACHSE;
   const plan = [];
-  for (const G of gruppen) { const ks = K.filter((k) => gr(k) === G).sort((a, b) => (K_ORDER.indexOf(a.e) + 1 || 99) - (K_ORDER.indexOf(b.e) + 1 || 99)); if (!ks.length) continue;
+  for (const G of gruppen) { const ks = K.filter((k) => gr(k) === G).sort((a, b) => ordK(a.e) - ordK(b.e)); if (!ks.length) continue;
     plan.push({ typ: 'g', G, ks, h: 14 });
     for (const k of ks) { plan.push({ typ: 'k', k, h: ZH }); const r = hy?.raum[k.e];
       if (r && r.letzter === k.e) { if (SH) plan.push({ typ: 's', r, h: SH + 4 }); if (SH && r.gem && r.gemLetzter) plan.push({ typ: 's2', r, h: SH + 4 }); if (schmal && offen === r.name) plan.push({ typ: 'p', r, h: 60 + r.ks.length * 15 + (raumTemps(h, r.name).length ? 15 : 0) }); } }
