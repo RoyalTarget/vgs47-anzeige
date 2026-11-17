@@ -498,7 +498,10 @@ function zeigeTabellen(s, k, lp, gh) {
   // Bilanz (01.10.2026; 19.10.2026 Victron-Anlage steht unter Sonstiges, Haus gesamt enthält sie): Haus gesamt − PV/Akku = aus dem Netz
   const neg = (v) => (v === null ? null : -v);
   const gg = (h, n) => (h === null || n === null ? null : Math.max(h - n, 0));
-  const ga30 = gg(h30, n30), gaj = gg(ha, na) === null ? null : gg(ha, na) * 365, nj = hj === null || gaj === null ? null : Math.max(hj - gaj, 0);
+  // 17.11.2026 (Nutzer): Jahr Netz = Monatsmodell (verlauf.json fv.a.netz_jahr aus jahresprognose.jinja, seit 16.11.), PV/Akku = Haus − Netz; Rückfall alt = Ø PV × 365
+  const _njm = VERLAUF && VERLAUF.fv && VERLAUF.fv.a && VERLAUF.fv.a.netz_jahr > 0 ? VERLAUF.fv.a.netz_jahr : null;
+  const ga30 = gg(h30, n30), gaj0 = gg(ha, na) === null ? null : gg(ha, na) * 365;
+  const nj = hj === null ? null : _njm !== null ? Math.min(_njm, hj) : gaj0 === null ? null : Math.max(hj - gaj0, 0), gaj = hj === null || nj === null ? null : Math.max(hj - nj, 0);
   html += zeile("haus", "Haus gesamt verbraucht<span class=\"eur\">inkl. Victron-Anlage · € = Wert, wenn alles aus dem Netz käme</span>", hp, hh, hm, ha, undefined, undefined, undefined, h30, undefined, false, hj)
     + zeile("pvabzug", "− davon aus PV/Akku<span class=\"eur\">gratis = gespart</span>", hp === null ? null : Math.max(hp - np, 0),
       neg(gg(hh, nh)), neg(gg(hm, nm)), neg(gg(ha, na)), undefined, undefined, undefined, neg(ga30), undefined, false, neg(gaj))
