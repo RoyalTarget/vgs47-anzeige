@@ -262,7 +262,8 @@ const ST_F = { passt: ['#22c55e', 'passt'], kuehl: ['#3b82f6', 'zu kühl'], kueh
 // EG-Reihenfolge (Nutzer 16.11.): WC, Flur, dann Wohnen, WiGa und die Summe am Ende
 // 17.11.2026: Flur O gehört zum JOCO-Raum Flur/Treppe → wird im EG unter Flur E gezeigt (GRUPPE)
 const GRUPPE = { 'sensor.rl_og_flur': 'EG' }, gr = (k) => GRUPPE[k.e] || k.g;
-const K_ORDER = ['sensor.rl_wc', 'sensor.rl_flur', 'sensor.rl_og_flur', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'];
+const K_ORDER = ['sensor.rl_og_flur', 'sensor.rl_flur', 'sensor.rl_wc', 'sensor.rl_wz_1',   // 17.11.2026 (Nutzer): oben Flur O, dann Flur E, dann WC
+  'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'];
 const DAIKIN_INFO = 'Daikin heizt zu: nachts Ø 1,7 kW Wärme (0,69 kWh/h Strom × COP 2,5, 09.–16.11.; in den Messnächten aus)';
 let offen = null;   // iPhone: aufgeklappter Raum (Name)
 function hydro(h, K) {
