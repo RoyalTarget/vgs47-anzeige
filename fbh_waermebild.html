@@ -69,7 +69,7 @@ function schaetzeZu(d) {
   // ≥ 4 geschätzte Kreise gleichzeitig = Ereignis der ganzen Anlage (VL-Sprung, Abtauen), kein Thermostat → verwerfen
   for (let i = 0; i < d.n; i++) { let c = 0; for (const e in out) if (out[e][i] === 1) c++; if (c >= 4) for (const e in out) if (out[e][i] === 1) out[e][i] = 0; }
   return out; }
-const zuGesch = (e, i) => daten?.zuS?.[e]?.[i] || 0;   // 0 offen/unbekannt · 1 geschätzt zu · 2 exakt zu (Emil)
+const zuGesch = (e, i) => daten?.zuS?.[e]?.[i] === 2 ? 2 : daten?.zuQ ? (daten.zuQ[e]?.[i] ? 1 : 0) : (daten?.zuS?.[e]?.[i] || 0);   // 17.11.2026: geschätzt zu = über den Durchfluss bestätigt   // 0 offen/unbekannt · 1 geschätzt zu · 2 exakt zu (Emil)
 let BIN = 6e5;   // 22.10.2026: Website setzt BIN aus den Daten (7 Tage à 30 min), HA bleibt 10 min
 let modus = 'abw', win = { live: true, breite: H48, bis: 0 }, daten = null, geo = null;
 // 17.11.2026 (Nutzer: „mir ist nur die Abweichung wichtig“): Umschalter Temperatur ausgeblendet, immer Abweichung
@@ -90,6 +90,9 @@ const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 function skala(stops, v) { if (v <= stops[0][0]) return stops[0][1]; for (let i = 1; i < stops.length; i++) if (v <= stops[i][0]) {
   const [a, ca] = stops[i - 1], [b, cb] = stops[i]; return mix(ca, cb, (v - a) / (b - a)); } return stops[stops.length - 1][1]; }
 const S_ABW = [[-3, hex('#2563eb')], [-1.5, hex('#60a5fa')], [-0.4, hex('#3f3f46')], [0.4, hex('#3f3f46')], [1.5, hex('#f87171')], [3, hex('#dc2626')]];
+// 17.11.2026 (Nutzer): Streifen = Wärme des Raums ÷ JOCO-Plan, log2-Skala: −1 = halb so viel, +1 = doppelt; grau 0,8–1,25×
+const S_Q = [[-1, hex('#2563eb')], [-0.6, hex('#60a5fa')], [-0.32, hex('#3f3f46')], [0.32, hex('#3f3f46')], [0.6, hex('#f87171')], [1, hex('#dc2626')]];
+const farbeQL = (l) => { const c = skala(S_Q, l); return `rgb(${c[0]},${c[1]},${c[2]})`; };
 const S_TEMP = [[20, hex('#1e3a8a')], [24, hex('#3b82f6')], [27, hex('#8b5cf6')], [30, hex('#c026d3')], [33, hex('#e11d48')], [35, hex('#f59e0b')]];
 const farbe = (v) => { const c = skala(modus === 'abw' ? S_ABW : S_TEMP, v); return `rgb(${c[0]},${c[1]},${c[2]})`; };
 // 03.11.2026 (Nutzer): „Pumpe aus“ schraffiert – vorher fast gleiches Grau wie „am Mittel ±0,4 K“ (#3f3f46) → verwechselbar
@@ -134,7 +137,7 @@ function binne(pkte, t0, n, bin, binaer) {
 const GIST_V = GIST.replace('data.json', 'verlauf.json');
 const FI = ['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden', 'sensor.rl_dg_3', 'sensor.rl_dg_4', 'sensor.rl_yoga', 'sensor.rl_og_bad', 'sensor.rl_og_bad_wand', 'sensor.rl_og_flur',
   'sensor.rl_og_5', 'sensor.rl_og_6', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5', 'sensor.rl_wc', 'sensor.rl_flur',
-  'sensor.cmi_hk_vorlauf', 'sensor.hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen'];
+  'sensor.cmi_hk_vorlauf', 'sensor.hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen', 'sensor.cmi_t_aussen'];
 // 06.11.2026 (Nutzer „Website zeigt altes Wärmebild“): Ventile WZ/WiGa als 0/1-Statistik (ventil_statistik.yaml) → wie im Dashboard „Ventil zu“
 const WEB_ZU = { 'switch.wz_antriebe': 'sensor.wz_ventile_offen', 'switch.wiga_antriebe': 'sensor.wiga_ventile_offen' };
 function webOhneNamen() {
@@ -160,11 +163,11 @@ async function ladeWeb() {
   { const rp = serie[RLG] || []; for (let i = 0; i < n; i++) if (rp[i] !== null && rp[i] !== undefined) ref[i] = rp[i]; }   // 17.11.2026: Bezug = PMG-Rücklauf (Fallback Mittel)
   const q = serie['sensor.cmi_hk_durchfluss'] || new Array(n).fill(null);
   daten = { t0, n, K, reihen, ref, vl: serie[VL] || new Array(n).fill(null), rl: serie[RLG] || new Array(n).fill(null),
-    pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), zu, geladen: Date.now() };
+    pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), zu, geladen: Date.now(), q, ta: serie[TA] || null };
   // 07.11.2026 (Nutzer „Website zeigt zu bei GZ/WC, Dashboard nicht“): Ventil-Statistik gibt es erst seit 06.11. abends → davor zählten die
   // zugedrehten WZ/WiGa-Kreise ins Mittel, Bezug zu tief, Basis der übrigen Kreise falsch → Schein-„zu“. Ohne Ventilwert keine Schätzung.
   daten.refLuecke = new Array(n).fill(false).map((_, i) => Object.values(WEB_ZU).some((e) => !serie[e] || serie[e][i] === null || serie[e][i] === undefined));
-  daten.zuS = schaetzeZu(daten);
+  daten.zuS = schaetzeZu(daten); berechneQ(daten);
   zeichne();
 }
 function webHoehe(px) { try { const fr = window.frameElement; if (fr && Math.abs(fr.offsetHeight - px) > 2) fr.style.height = px + 'px'; } catch (e) {} }
@@ -174,7 +177,7 @@ async function lade() {
   if (!inHA) { await ladeWeb(); return; }
   const h = hass(); if (!h) { setTimeout(lade, 2000); return; }
   const K = kreise(h), jetzt = Date.now(), t0 = Math.floor((jetzt - TAGE * 864e5) / BIN) * BIN, n = Math.ceil((jetzt - t0) / BIN);
-  const da = K.filter((k) => h.states[k.e]), sw = [...new Set(Object.values(VENTIL))].filter((e) => h.states[e]), ids = [...da.map((k) => k.e), VL, RLG, PU, ...sw];
+  const da = K.filter((k) => h.states[k.e]), sw = [...new Set(Object.values(VENTIL))].filter((e) => h.states[e]), ids = [...da.map((k) => k.e), VL, RLG, PU, QH, TA, ...sw];
   const r = await ws({ type: 'history/history_during_period', start_time: new Date(t0).toISOString(), end_time: new Date(jetzt).toISOString(),
     entity_ids: ids, minimal_response: true, no_attributes: true, significant_changes_only: false });
   const pk = (id, bin) => (r[id] || []).map((x) => [(x.lu ?? x.last_updated) * 1000, bin ? (x.s === 'on' ? 1 : x.s === 'off' ? 0 : null) : parseFloat(x.s)])
@@ -190,8 +193,9 @@ async function lade() {
   // Fallback: einfaches Mittel der offenen Kreise, wenn der PMG-Wert fehlt.
   const ref = new Array(n).fill(null), rp = binne(pk(RLG), t0, n, BIN);
   for (let i = 0; i < n; i++) { if (rp[i] !== null) { ref[i] = rp[i]; continue; } let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i], zr = zu[VENTIL[e]]; if (v !== null && !(zr && zr[i] !== null && zr[i] < 0.5)) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
-  daten = { t0, n, K, reihen, ref, vl: binne(pk(VL), t0, n, BIN), rl: binne(pk(RLG), t0, n, BIN), pu: binne(pk(PU, true), t0, n, BIN, true), zu, geladen: jetzt };
-  daten.zuS = schaetzeZu(daten);
+  daten = { t0, n, K, reihen, ref, vl: binne(pk(VL), t0, n, BIN), rl: binne(pk(RLG), t0, n, BIN), pu: binne(pk(PU, true), t0, n, BIN, true), zu, geladen: jetzt,
+    q: binne(pk(QH), t0, n, BIN), ta: binne(pk(TA), t0, n, BIN) };
+  daten.zuS = schaetzeZu(daten); berechneQ(daten);
   zeichne();
 }
 
@@ -264,6 +268,42 @@ const ST_F = { passt: ['#22c55e', 'passt'], kuehl: ['#3b82f6', 'zu kühl'], kueh
 const GRUPPE = { 'sensor.rl_og_flur': 'EG' }, gr = (k) => GRUPPE[k.e] || k.g;
 const K_ORDER = ['sensor.rl_og_flur', 'sensor.rl_flur', 'sensor.rl_wc', 'sensor.rl_wz_1',   // 17.11.2026 (Nutzer): oben Flur O, dann Flur E, dann WC
   'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'];
+const QH = 'sensor.cmi_hk_durchfluss', TA = 'sensor.cmi_t_aussen', Q_OFFEN = 1040, Q_KAL = 1039 / 1077;   // CORA ÷ Σ Röhrchen alle offen (17.11.)   // Durchfluss alle Kreise offen (Messung 17.11.2026: 1.039 l/h)
+const GIRA_GR = [['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden'], ['sensor.rl_dg_3'], ['sensor.rl_dg_4'], ['sensor.rl_yoga'], ['sensor.rl_og_flur'],
+  ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand'], ['sensor.rl_wc'], ['sensor.rl_flur']];   // je Gira-Thermostat; Emil exakt, WZ/WiGa Shelly
+const RAUM_VON = {}; for (const r of RAEUME) for (const e of r[3]) RAUM_VON[e] = r;
+// 17.11.2026 (Nutzer): Watt je Kreis und Abschnitt = Röhrchen-Anteil am CORA-Durchfluss × (VL − RL Kreis) × 1,163 (l/min → 69,78);
+// geschlossene Kreise (Shelly zu, Emil stromlos, „zu (geschätzt)“) = 0 W und zählen nicht zum Anteil. Raum = Summe; Plan = JOCO × (Raumtemp. 2012 − außen) / (Raumtemp. 2012 + 16).
+function berechneQ(d) {
+  const n = d.n, Kn = d.K.filter((k) => typeof k.ist === 'number'), ta0 = parseFloat(hass()?.states[TA]?.state);
+  d.wk = {}; d.rw = {}; for (const k of d.K) d.wk[k.e] = new Array(n).fill(null);
+  // Selbstprüfung je Abschnitt (Nutzer 17.11.2026): (1) Σ Kreise ÷ PMG-Wärme (q × (VL − RL PMG) × 1,163) innerhalb ±10 %,
+  // (2) CORA ÷ erwarteter Durchfluss (Σ Röhrchen der offenen Kreise × 60 × KAL) ≥ 0,9 – sonst ist ein unbekanntes Ventil zu → Abschnitt blass.
+  d.kA = new Array(n).fill(null); d.kQ = new Array(n).fill(null); d.qSoll = new Array(n).fill(null); d.ok = new Array(n).fill(null);
+  d.zuQ = {}; for (const k of d.K) d.zuQ[k.e] = new Array(n).fill(0);
+  for (const r of RAEUME) d.rw[r[0]] = { w: new Array(n).fill(null), p: new Array(n).fill(null) };
+  for (let i = 0; i < n; i++) { const q = d.q?.[i], vl = d.vl[i]; if (q == null || q < 30 || vl == null) continue;
+    const zuK = (k) => ventilZu(k.e, i) || zuGesch(k.e, i) === 2 || (EMIL.includes(k.e) && d.reihen[k.e]?.[i] == null);
+    let of = Kn.filter((k) => !zuK(k) && d.reihen[k.e] && d.reihen[k.e][i] != null), sq = of.reduce((a, k) => a + k.ist, 0); if (!sq) continue;
+    // 17.11.2026 (Nutzer): „zu“-Erkennung über den Durchfluss – fehlt am CORA mehr als 25 l/h gegenüber den Röhrchen der offenen Kreise, ist ein
+    // Gira-Kreis zu. Gesucht werden Kreise, die gerade deutlich kälter als üblich zurückkommen (stehendes Wasser), bis ihr Röhrchen-Durchfluss die Lücke füllt.
+    // Gruppen = je Thermostat (Gira); gesucht wird die Kombination geschlossener Gruppen, deren Röhrchen die Lücke am CORA erklären (±30 l/h) UND deren
+    // offene Kreise gemischt den PMG-Rücklauf ergeben (zwei unabhängige Messungen). Nur wenn am CORA mehr als 25 l/h fehlen.
+    { const D = sq * 60 * Q_KAL - q, rp = d.rl[i];
+      if (D > 25 && rp != null) { const gr = GIRA_GR.map((g) => of.filter((k) => g.includes(k.e))).filter((g) => g.length);
+        let best = null; for (let m = 1; m < (1 << gr.length); m++) { const zu = gr.filter((_, j) => m & (1 << j)).flat(), op = of.filter((k) => !zu.includes(k));
+          const so = op.reduce((a, k) => a + k.ist, 0); if (!so) continue; if (Math.abs(so * 60 * Q_KAL - q) > 30) continue;
+          const mix = op.reduce((a, k) => a + k.ist * d.reihen[k.e][i], 0) / so, fe = Math.abs(mix - rp), nz = zu.length;
+          if (!best || fe < best.fe - 0.05 || (Math.abs(fe - best.fe) <= 0.05 && nz < best.nz)) best = { fe, nz, zu, op, so }; }
+        if (best) { for (const k of best.zu) d.zuQ[k.e][i] = 1; of = best.op; sq = best.so; } } }
+    const f = q / 60 / sq; for (const k of Kn) d.wk[k.e][i] = of.includes(k) ? k.ist * f * (vl - d.reihen[k.e][i]) * 69.78 : (zuK(k) || d.zuQ[k.e][i]) ? 0 : null;
+    { const sw = of.reduce((a, k) => a + d.wk[k.e][i], 0), rp = d.rl[i], pm = rp == null ? null : q * (vl - rp) * 1.163, qs = sq * 60 * Q_KAL;
+      d.qSoll[i] = qs; d.kQ[i] = q / qs; d.kA[i] = pm > 200 ? sw / pm : null;
+      d.ok[i] = d.kQ[i] >= 0.96 && d.kQ[i] <= 1.06 && (d.kA[i] === null || Math.abs(d.kA[i] - 1) <= 0.1); }
+    const ta = d.ta?.[i] ?? ta0;
+    for (const [name, last, norm, fu] of RAEUME) { const ws = fu.map((e) => d.wk[e]?.[i]); if (ws.some((v) => v == null) || isNaN(ta)) continue;
+      d.rw[name].w[i] = ws.reduce((a, b) => a + b, 0); d.rw[name].p[i] = Math.max(1, last * (norm - ta) / (norm + 16)); } } }
+const qLog = (e, i) => { const r = RAUM_VON[e], x = r && daten?.rw?.[r[0]]; if (!x || x.w[i] == null || !x.p[i]) return null; return Math.log2(Math.max(x.w[i], 1) / x.p[i]); };
 const DAIKIN_INFO = 'Daikin heizt zu: nachts Ø 1,7 kW Wärme (0,69 kWh/h Strom × COP 2,5, 09.–16.11.; in den Messnächten aus)';
 let offen = null;   // iPhone: aufgeklappter Raum (Name)
 function hydro(h, K) {
@@ -293,7 +333,7 @@ function hydro(h, K) {
   for (const gn of new Set(liste.filter((r) => r.gem).map((r) => r.gem))) { const tl = liste.filter((r) => r.gem === gn);
     tl.forEach((r, i) => Object.assign(r, { gemW: tl.reduce((a, x) => a + x.w, 0), gemBed: tl.reduce((a, x) => a + (x.bed || 0), 0), gemLetzter: i === tl.length - 1 })); }
   const L = T[T.length - 1], zu = L ? (L.kr || []).filter((r) => r[4]).map((r) => r[0]) : [];
-  return { sp, au, vlN, raum, liste, nNacht: nMax, zu, letzte: L, kontrolle: nP ? { k: sumK / nP, p: sumP / nP, n: nP } : null };
+  return { sp, au, vlN, raum, liste, wk, nNacht: nMax, zu, letzte: L, kontrolle: nP ? { k: sumK / nP, p: sumP / nP, n: nP } : null };
 }
 function karteAnpassen(gesamt) {   // HA-Section: Kachelhöhe = Inhalt (Zeile 56 px + 8 px Abstand)
   try { const fr = window.frameElement; if (!fr) return; let e = fr;
@@ -313,7 +353,9 @@ function fussZeile(h, hy, schmal) {
     s += schmal ? '<br>Kreis antippen = Raum-Bilanz auf/zu · Punkt = Raum: ' : '<br>Punkt = Raum: ';
     s += Object.values(ST_F).map(([c, t]) => `<span style="color:${c}">●</span> ${t}`).join(' · ')
       + ` · Wärme = Mittel der Messnächte (nur offene Kreise, Röhrchen-Verhältnis auf den HK-Durchfluss abgeglichen) · Plan = Heizlast JOCO 2012 auf die Raumtemp. von 2012 und Ø ${zahl(hy.au)} °C außen · × <span style="color:#60a5fa">blau</span> = weniger Watt als geplant (unter 0,8), grau = wie geplant, <span style="color:#f87171">rot</span> = mehr Watt (über 1,25)`;
-    if (hy.kontrolle) { const k = hy.kontrolle, d = k.k / k.p - 1; s += ` · <b>Kontrolle:</b> Σ Räume ${wF(k.k)} W, PMG ${wF(k.p)} W (${d > 0 ? '+' : ''}${Math.round(d * 100)} %)`; } }
+    if (daten?.ok) { const [von, bis] = fenster(), a = Math.max(0, Math.floor((von - daten.t0) / BIN)), b = Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN));
+      let n = 0, o = 0, sA = 0, nA = 0, sQ = 0, nQ = 0; for (let i = a; i < b; i++) { if (daten.ok[i] === null) continue; n++; if (daten.ok[i]) o++; if (daten.kA[i] != null) { sA += daten.kA[i]; nA++; } if (daten.kQ[i] != null) { sQ += daten.kQ[i]; nQ++; } }
+      if (n) s += `<br><b>Selbstprüfung je 10 min</b> (blass = nicht bestanden, rote Marke unter dem Durchfluss): Σ Kreise ÷ PMG-Wärme Ø ${nA ? Math.round(sA / nA * 100) : '–'} % (Grenze ±10 %) · CORA ÷ Röhrchen der offenen Kreise Ø ${nQ ? Math.round(sQ / nQ * 100) : '–'} % (gelbe Linie = erwartet, Grenze 96–106 %; fehlt Durchfluss, werden die Thermostat-Gruppen als „zu (geschätzt)“ gesucht, deren Röhrchen die Lücke erklären und mit denen die offenen Kreise gemischt den PMG-Rücklauf ergeben) · bestanden ${Math.round(o / n * 100)} % der Abschnitte`; } }
   const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
 
 function zeichne() {
@@ -322,8 +364,8 @@ function zeichne() {
   const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'], inHA = !!hassEcht();
   const hy = inHA || WEB.h ? hydro(h, K) : null;   // 22.10.2026: Website rechnet Hydraulik mit
   // rechte Spalten (Desktop A): RL jetzt · Spreizung · Röhrchen · Leiste · %
-  const C = schmal ? null : breit ? { rl: 76, sp: 92, ro: 104, bar: 150, p: 46 } : { rl: 70, sp: 86, ro: 100, bar: 0, p: 46 };
-  const RW = schmal ? (hy ? 58 : 44) : (hy ? C.rl + C.sp + C.ro + C.bar + C.p + 14 : 78);
+  const C = schmal ? null : breit ? { rl: 70, sp: 84, ro: 96, kw: 70, bar: 150, p: 46 } : { rl: 66, sp: 80, ro: 92, kw: 62, bar: 0, p: 46 };
+  const RW = schmal ? (hy ? 58 : 44) : (hy ? C.rl + C.sp + C.ro + C.kw + C.bar + C.p + 14 : 78);
   const ZH = schmal ? 17 : 19, SH = hy && !schmal ? 15 : 0;
   // Zeilenplan
   const zl = []; let y = ACHSE;
@@ -333,11 +375,12 @@ function zeichne() {
     for (const k of ks) { plan.push({ typ: 'k', k, h: ZH }); const r = hy?.raum[k.e];
       if (r && r.letzter === k.e) { if (SH) plan.push({ typ: 's', r, h: SH + 4 }); if (SH && r.gem && r.gemLetzter) plan.push({ typ: 's2', r, h: SH + 4 }); if (schmal && offen === r.name) plan.push({ typ: 'p', r, h: 60 + r.ks.length * 15 + (raumTemps(h, r.name).length ? 15 : 0) }); } }
     plan.push({ typ: 'gap', h: 4 }); }
+  if (daten?.q) plan.push({ typ: 'q', h: 46 }, { typ: 'gap', h: 4 });   // 17.11.2026: CORA-Durchfluss
   for (const z of plan) { z.y = y; y += z.h; }
   const FH = y + LEG + 4;
   const g = leinwand($('feld'), W, FH); g.clearRect(0, 0, W, FH);
   const X0 = LW, X1 = W - RW, [von, bis] = daten ? fenster() : [Date.now() - H48, Date.now()], X = (t) => X0 + (t - von) / (bis - von) * (X1 - X0);
-  $('titel').textContent = modus === 'abw' ? (schmal ? 'Rücklauf gegen Pumpe' : 'Rücklauf je Kreis gegen den Gesamt-Rücklauf an der Pumpe (blau = kälter = gibt mehr ab, rot = wärmer = gibt weniger ab)')
+  $('titel').textContent = modus === 'abw' ? (schmal ? 'Wärme gegen JOCO-Plan' : 'Wärme je Raum gegen JOCO-Plan (blau = weniger Watt, rot = mehr Watt als geplant)')
     : (schmal ? 'Rücklauf 20–35 °C' : 'Rücklauf je Kreis – Temperatur 20–35 °C');
   // Zeitachse oben
   g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle'; g.fillStyle = '#9ca3af';
@@ -349,9 +392,9 @@ function zeichne() {
     g.fillText(mn ? `${tag[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.` : `${String(d.getHours()).padStart(2, '0')}:00`, Math.min(Math.max(x, X0 + 24), X1 - 24), ACHSE / 2); }
   // Spaltenköpfe rechts
   let cx = null;
-  if (!schmal && hy) { cx = { rl: X1 + 8 + C.rl - 4, sp: X1 + 8 + C.rl + C.sp - 4, ro: X1 + 8 + C.rl + C.sp + C.ro - 4, bar: X1 + 8 + C.rl + C.sp + C.ro + 8, p: W - 4 };
+  if (!schmal && hy) { cx = { rl: X1 + 8 + C.rl - 4, sp: X1 + 8 + C.rl + C.sp - 4, ro: X1 + 8 + C.rl + C.sp + C.ro - 4, kw: X1 + 8 + C.rl + C.sp + C.ro + C.kw - 4, bar: X1 + 8 + C.rl + C.sp + C.ro + C.kw + 8, p: W - 4 };
     g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.textAlign = 'right';
-    g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung Nacht', cx.sp, ACHSE / 2); g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2);
+    g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung Nacht', cx.sp, ACHSE / 2); g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2); g.fillText('Wärme Kreis', cx.kw, ACHSE / 2);
     g.textAlign = 'left'; g.fillText(breit ? 'Raum · Wärme Nacht · Plan' : '', cx.bar, ACHSE / 2); if (!breit) { g.textAlign = 'right'; g.fillText('Watt', cx.p, ACHSE / 2); } }
   else if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2); }
   const iv = daten ? Math.max(0, Math.floor((von - daten.t0) / BIN)) : 0, ib = daten ? Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN)) : 0;
@@ -365,6 +408,22 @@ function zeichne() {
       if (cx && hy && z.G === plan.find((q) => q.typ === 'g').G) { const vl = parseFloat(h?.states[VL]?.state); g.textAlign = 'right'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#f87171';
         g.fillText('VL ' + (isNaN(vl) ? '–' : zahl(vl) + ' °C'), cx.rl, z.y + 7);
         if (hy.vlN !== null) g.fillText('VL Ø ' + zahl(hy.vlN) + ' °C', cx.sp, z.y + 7); }
+      continue; }
+    if (z.typ === 'q') { const QM = 1200, yb = z.y + z.h - 3, sk = (v) => yb - Math.min(v, QM) / QM * (z.h - 8);
+      g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, z.h - 2);
+      g.strokeStyle = 'rgba(229,231,235,.35)'; g.setLineDash([3, 3]); g.lineWidth = 1; g.beginPath(); g.moveTo(X0, Math.round(sk(Q_OFFEN)) + 0.5); g.lineTo(X1, Math.round(sk(Q_OFFEN)) + 0.5); g.stroke(); g.setLineDash([]);
+      g.strokeStyle = '#38bdf8'; g.lineWidth = 1.4; g.beginPath(); let st0 = false;
+      for (let i = iv; i < ib; i++) { const v = daten.q[i]; if (v == null) { st0 = false; continue; } const x = X(zeitAus(i) + BIN / 2); if (x < X0 || x > X1) continue; if (st0) g.lineTo(x, sk(v)); else { g.moveTo(x, sk(v)); st0 = true; } }
+      g.stroke();
+      g.strokeStyle = 'rgba(250,204,21,.8)'; g.lineWidth = 1.2; g.beginPath(); st0 = false;   // erwartet laut Röhrchen der offenen Kreise
+      for (let i = iv; i < ib; i++) { const v = daten.qSoll?.[i]; if (v == null) { st0 = false; continue; } const x = X(zeitAus(i) + BIN / 2); if (x < X0 || x > X1) continue; if (st0) g.lineTo(x, sk(v)); else { g.moveTo(x, sk(v)); st0 = true; } }
+      g.stroke();
+      for (let i = iv; i < ib; i++) if (daten.ok?.[i] === false) { const xa = Math.max(X(zeitAus(i)), X0), xb = Math.min(X(zeitAus(i + 1)), X1); if (xb > xa) { g.fillStyle = 'rgba(248,113,113,.55)'; g.fillRect(xa, yb + 1, xb - xa + 0.5, 2); } }
+      g.textAlign = 'left'; g.font = '600 11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText('Durchfluss', 8, z.y + 12, X0 - 10);
+      g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; g.fillText('PMG (CORA)', 8, z.y + 26, X0 - 10);
+      g.fillStyle = 'rgba(229,231,235,.6)'; g.fillText(`alle offen ${wF(Q_OFFEN)} l/h`, X0 + 4, sk(Q_OFFEN) - 6);
+      if (cx) { const qa = parseFloat(h?.states[QH]?.state); g.textAlign = 'right'; g.font = '600 11px system-ui, sans-serif'; g.fillStyle = '#38bdf8'; g.fillText(isNaN(qa) ? '–' : wF(qa) + ' l/h', cx.rl, z.y + 12);
+        g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; g.textAlign = 'left'; g.fillText(isNaN(qa) ? '' : qa < Q_OFFEN - 40 ? `${wF(Q_OFFEN - qa)} l/h weniger als alle offen → Kreise zu` : 'alle Kreise offen', cx.rl + 10, z.y + 12, W - cx.rl - 14); }
       continue; }
     if (z.typ === 's2') { const r = z.r; g.textAlign = 'left'; g.font = '600 10px system-ui, sans-serif'; g.fillStyle = '#facc15'; const t0 = `Σ ${r.gem} `; g.fillText(t0, 8, z.y + SH / 2);
       g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
@@ -407,7 +466,7 @@ function zeichne() {
       const xa = X(zeitAus(i)), xb = X(zeitAus(i + 1)); if (xb < X0 || xa > X1) continue;
       let col; if (an && (ventilZu(z.k.e, i) || zg === 2)) col = zuMuster(g);
       else if (an && zg === 1) col = zuMusterS(g);
-      else if (modus === 'abw') { if (!an) col = schraffur(g); else if (rl === null) col = '#2a2a2e'; else { col = farbe(v - rl); sa += v - rl; sn++; } }
+      else if (modus === 'abw') { const ql = qLog(z.k.e, i); if (!an) col = schraffur(g); else if (ql === null) col = '#2a2a2e'; else { col = farbeQL(ql); sa += ql; sn++; if (daten.ok?.[i] === false) g.globalAlpha = 0.3; } }
       else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
       g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1; }
     const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
@@ -424,6 +483,7 @@ function zeichne() {
     g.fillText(typeof z.k.ist === 'number' ? zahl(z.k.ist) : '–', xs - 8, ym);
     if (z.k.soll) { g.textAlign = 'left'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.fillText('/ ' + zahl(z.k.soll), xs - 4, ym); }
     g.textAlign = 'right';
+    if (hy.wk && hy.wk[z.k.e] != null) { g.textAlign = 'right'; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText(wF(hy.wk[z.k.e]) + ' W', cx.kw, ym); }
     // 16.11.2026 (Nutzer): Punkt = Raum-Status (Farbe, Text im Tooltip) · Wärme je Nacht (W) · Plan – Punkte in einer Linie
     if (raum && raum.erster === z.k.e) { const xd = C.bar ? cx.bar + 6 : cx.p - 52;
       g.fillStyle = raum.farbe; g.beginPath(); g.arc(xd, ym, 4.5, 0, 7); g.fill();
@@ -436,10 +496,10 @@ function zeichne() {
     for (const z of plan) if (z.typ === 'k') { g.beginPath(); g.moveTo(x, z.y); g.lineTo(x, z.y + z.h); g.stroke(); } }
   // Legende: Text – Farbbalken – Text
   const ly = y + 4; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
-  const tl = modus === 'abw' ? (schmal ? '−3 K' : '−3 K kälter') : '20 °C', tr = modus === 'abw' ? (schmal ? '+3 K · grau = wie Pumpe' : '+3 K wärmer als der Rücklauf an der Pumpe · grau = ±0,4 K') : '35 °C · blass = Pumpe aus';
+  const tl = modus === 'abw' ? (schmal ? '0,5×' : 'halb so viel') : '20 °C', tr = modus === 'abw' ? (schmal ? '2× · grau = Plan' : 'doppelt so viel Watt wie JOCO geplant · grau = 0,8–1,25×') : '35 °C · blass = Pumpe aus';
   g.fillText(tl, X0, ly + 7); const sw = modus === 'abw' ? 32 + g.measureText('Pumpe aus').width : 0;   // Platz für die Schraffur-Legende
   const lx = X0 + g.measureText(tl).width + 6, lb = Math.max(60, Math.min(180, (sw ? W - 4 : X1) - lx - g.measureText(tr).width - 12 - sw));
-  for (let i = 0; i < lb; i++) { const v = modus === 'abw' ? -3 + 6 * i / lb : 20 + 15 * i / lb; g.fillStyle = farbe(v); g.fillRect(lx + i, ly + 3, 1.2, 8); }
+  for (let i = 0; i < lb; i++) { const v = modus === 'abw' ? -1 + 2 * i / lb : 20 + 15 * i / lb; g.fillStyle = modus === 'abw' ? farbeQL(v) : farbe(v); g.fillRect(lx + i, ly + 3, 1.2, 8); }
   g.fillStyle = '#9ca3af'; g.fillText(tr, lx + lb + 6, ly + 7);
   if (modus === 'abw') { const sx = lx + lb + 6 + g.measureText(tr).width + 10, st = 'Pumpe aus';
     if (sx + 22 + g.measureText(st).width <= W - 4) { g.fillStyle = schraffur(g); g.fillRect(sx, ly + 2, 16, 10); g.strokeStyle = '#52525b'; g.lineWidth = 1; g.strokeRect(sx + 0.5, ly + 2.5, 15, 9);
@@ -465,11 +525,11 @@ function zeichneLeiste(W) {
   reihen.forEach((k, zi) => { const r = daten.reihen[k.e];
     for (let i = 0; i < daten.n; i += st) { let a = 0, n = 0, an = 0;
       for (let j = i; j < Math.min(i + st, daten.n); j++) { an += (daten.pu[j] ?? 0) >= 0.5 ? 1 : 0; const v = r[j]; if (v === null) continue;
-        const d = modus === 'abw' ? (daten.ref[j] === null ? null : v - daten.ref[j]) : v; if (d !== null) { a += d; n++; } }
+        const d = modus === 'abw' ? qLog(k.e, j) : v; if (d !== null) { a += d; n++; } }
       const zr = daten.zu?.[VENTIL[k.e]], zs = daten.zuS?.[k.e]; let zz = 0, zg = 0;
       for (let j = i; j < Math.min(i + st, daten.n); j++) { if (zr && zr[j] !== null && zr[j] < 0.5) zz++; if (zs && zs[j] === 2) zz++; else if (zs && zs[j] === 1) zg++; }
       if (!n && !zz) continue;
-      g.fillStyle = zz >= st / 2 && an >= st / 2 ? zuMuster(g) : zg >= st / 2 && an >= st / 2 ? zuMusterS(g) : modus === 'abw' && an < st / 2 ? schraffur(g) : n ? farbe(a / n) : '#2a2a2e';
+      g.fillStyle = zz >= st / 2 && an >= st / 2 ? zuMuster(g) : zg >= st / 2 && an >= st / 2 ? zuMusterS(g) : modus === 'abw' && an < st / 2 ? schraffur(g) : n ? (modus === 'abw' ? farbeQL(a / n) : farbe(a / n)) : '#2a2a2e';
       g.fillRect(U(daten.t0 + i * BIN), 5 + zi * zh, Math.max(U(daten.t0 + (i + st) * BIN) - U(daten.t0 + i * BIN), 1), Math.max(zh - 0.5, 1)); } });
   g.font = '10px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
   for (let t = new Date(lo).setHours(24, 0, 0, 0); t < hi; t = new Date(t).setHours(24, 0, 0, 0)) { const d = new Date(t); g.strokeStyle = '#52525b'; g.beginPath(); g.moveTo(U(t) + 0.5, 2); g.lineTo(U(t) + 0.5, UH + 2); g.stroke();
@@ -500,10 +560,14 @@ function zeigeTip(ev) { if (!geo || !daten) return; const r = feld.getBoundingCl
   { const zg = zuGesch(z.k.e, i), b = daten.zuS?.[z.k.e]?.bas?.[i];
     if (ventilZu(z.k.e, i)) s += '<span style="color:#facc15">Ventil zu (Schalter)</span><br>';
     else if (zg === 2) s += '<span style="color:#facc15">Thermostat zu (Fühler stromlos)</span><br>';
-    else if (zg === 1) s += `<span style="color:rgba(250,204,21,.85)">Ventil vermutlich zu – RL ≥ ${zahl(ZU_K)} K unter üblich (${b > 0 ? '+' : ''}${zahl(b)} K zum Mittel)</span><br>`; }
+    else if (zg === 1) s += `<span style="color:rgba(250,204,21,.85)">Ventil vermutlich zu – Durchfluss am CORA fehlt und RL kälter als üblich</span><br>`; }
   if (!rr) s += '<span style="color:#9ca3af">noch kein Fühler</span>';
   else { s += `RL Kreis <b style="color:#f59e0b">${zahl(v)} °C</b><br>PMG: VL <span style="color:#ef4444">${zahl(vl)}</span> / RL <span style="color:#3b82f6">${zahl(rl)}</span> °C`;
-    if (v !== null && mw !== null) s += `<br>gegen Rücklauf Pumpe (${zahl(mw)} °C) <b style="color:${Math.abs(v - mw) < 0.4 ? '#e5e7eb' : v < mw ? '#60a5fa' : '#f87171'}">${v - mw > 0 ? '+' : ''}${zahl(v - mw)} K</b>`;
+    { const rn = RAUM_VON[z.k.e], x = rn && daten.rw?.[rn[0]], wk = daten.wk?.[z.k.e]?.[i];
+      if (wk != null) s += `<br>Wärme Kreis <b>${wF(wk)} W</b>`;
+      if (daten.ok?.[i] != null) s += `<br><span style="color:${daten.ok[i] ? '#22c55e' : '#f87171'}">Kontrolle ${daten.ok[i] ? 'ok' : 'nicht bestanden'}</span> <span style="color:#9ca3af">Σ Kreise/PMG ${daten.kA[i] == null ? '–' : Math.round(daten.kA[i] * 100) + ' %'} · CORA/Röhrchen ${Math.round(daten.kQ[i] * 100)} %</span>`;
+      if (x && x.w[i] != null && x.p[i]) { const qq = x.w[i] / x.p[i]; s += `<br>Raum ${rn[0]}: ${wF(x.w[i])} W · Plan JOCO ${wF(x.p[i])} W → <b style="color:${xFarbe(qq)}">${zahl(qq)}×</b>`; } }
+    if (v !== null && mw !== null) s += `<br><span style="color:#9ca3af">gegen Rücklauf Pumpe (${zahl(mw)} °C) <b style="color:${Math.abs(v - mw) < 0.4 ? '#e5e7eb' : v < mw ? '#60a5fa' : '#f87171'}">${v - mw > 0 ? '+' : ''}${zahl(v - mw)} K</b></span>`;
     if (v !== null && rl !== null) s += `<br><span style="color:#9ca3af">zum PMG-RL ${v - rl > 0 ? '+' : ''}${zahl(v - rl)} K</span>`;
     if (v !== null && vl !== null) s += ` · Spreizung ${zahl(vl - v)} K`; }
   tip.innerHTML = s; tip.style.display = 'block';
