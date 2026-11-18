@@ -420,7 +420,8 @@ function zeichne() {
   let cx = null;
   if (!schmal && hy) { cx = { rl: X1 + 8 + C.rl - 4, sp: X1 + 8 + C.rl + C.sp - 4, ro: X1 + 8 + C.rl + C.sp + C.ro - 4, kw: X1 + 8 + C.rl + C.sp + C.ro + C.kw - 4, bar: X1 + 8 + C.rl + C.sp + C.ro + C.kw + 8, p: W - 4 };
     g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.textAlign = 'right';
-    g.fillText('RL jetzt', cx.rl, ACHSE / 2); g.fillText('Spreizung Nacht', cx.sp, ACHSE / 2); g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2); g.fillText('Wärme Kreis', cx.kw, ACHSE / 2);
+    if (h?.states[PU]?.state === 'off') { g.fillStyle = '#22c55e'; g.fillText('Pumpe aus', cx.rl, ACHSE / 2); g.fillStyle = '#6b7280'; } else g.fillText('RL jetzt', cx.rl, ACHSE / 2);   // 18.11.2026 (Nutzer)
+    g.fillText('Spreizung Nacht', cx.sp, ACHSE / 2); g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2); g.fillText('Wärme Kreis', cx.kw, ACHSE / 2);
     g.textAlign = 'left'; g.fillText(breit ? 'Raum · Wärme Nacht · Plan' : '', cx.bar, ACHSE / 2); if (!breit) { g.textAlign = 'right'; g.fillText('Watt', cx.p, ACHSE / 2); } }
   else if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2); }
   const iv = daten ? Math.max(0, Math.floor((von - daten.t0) / BIN)) : 0, ib = daten ? Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN)) : 0;
@@ -486,6 +487,7 @@ function zeichne() {
     if (z.typ !== 'k') continue;
     zl.push(z); const r = daten?.reihen[z.k.e], hy1 = z.h - 2, raum = hy?.raum[z.k.e];
     g.fillStyle = r ? '#d1d5db' : '#52525b'; g.font = `${schmal ? '' : (raum && raum.erster === z.k.e ? '600 ' : '')}11px system-ui, sans-serif`; g.textAlign = 'left';
+    let rlSt = '';   // 18.11.2026 (Nutzer): RL-Anzeige bei stehendem Wasser – 'pumpe' = HK-Pumpe aus (alle „–“), 'zu' = exakt zu (grau „zu“), 'blass' = geschätzt zu
     { const zs = daten?.zuS?.[z.k.e], la = zs ? zs[daten.n - 2] || zs[daten.n - 1] : 0;   // letzter fertiger Abschnitt
       // 14.11.2026 (Nutzer „Ventile Emil sind doch zu?“): Emil wie die Schalter-Kreise LIVE – Shelly stromlos (Thermostat zu) + Pumpe an = sofort „zu“,
       // sonst wartete die Beschriftung auf den nächsten vollen 10-min-Abschnitt (bis 20 min Verzug, Abschnitt mit Restwerten zählt nicht)
@@ -495,8 +497,11 @@ function zeichne() {
       const fn = g.font; g.font = '600 10px system-ui, sans-serif'; const kw = kz ? g.measureText(kz).width : 0; g.font = fn;
       const nmax = X0 - 12 - (kz ? kw + 3 : 0), nw = Math.min(g.measureText(z.k.k).width, nmax);
       g.fillText(z.k.k, 8, z.y + z.h / 2, nmax);
-      if (kz) { g.fillStyle = la === 1 && !VENTIL[z.k.e] ? 'rgba(250,204,21,.7)' : '#f59e0b'; g.font = '600 10px system-ui, sans-serif';
-        g.fillText(kz, 8 + nw + 3, z.y + z.h / 2); } }
+      const exakt = !!kz && (!!VENTIL[z.k.e] || la === 2 || emLive);
+      rlSt = h?.states[PU]?.state === 'off' ? 'pumpe' : exakt ? 'zu' : kz ? 'blass' : '';
+      // 18.11.2026 (Nutzer): „zu“ bündig untereinander – rechtsbündig vor der Bildkante statt direkt hinter dem Namen
+      if (kz) { g.fillStyle = exakt ? '#f59e0b' : 'rgba(250,204,21,.7)'; g.font = '600 10px system-ui, sans-serif'; g.textAlign = 'right';
+        g.fillText(kz, X0 - 6, z.y + z.h / 2); g.textAlign = 'left'; } }
     if (!r) { g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, hy1); g.fillStyle = '#52525b'; g.textAlign = 'center'; g.fillText(daten ? 'noch kein Fühler' : '…', (X0 + X1) / 2, z.y + z.h / 2); }
     let sa = 0, sn = 0;
     if (r) for (let i = iv; i < ib; i++) { const v = r[i], zg = zuGesch(z.k.e, i); if (v === null && zg !== 2) continue; const an = (daten.pu[i] ?? 0) >= 0.5, rl = daten.ref[i];
@@ -507,13 +512,14 @@ function zeichne() {
       else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
       g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1; }
     const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
-    if (schmal) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt), W - (hy ? 21 : 4), ym);   // 18.11.2026 (Nutzer iPhone): Abstand Zahl ↔ Punkt 3 → 6 px
+    const rlT = (einh) => rlSt === 'pumpe' ? ['–', '#6b7280'] : rlSt === 'zu' ? ['zu', '#9ca3af'] : [isNaN(akt) ? '–' : zahl(akt) + einh, rlSt === 'blass' ? 'rgba(245,158,11,.45)' : '#f59e0b'];
+    if (schmal) { const [tt, tf] = rlT(''); g.textAlign = 'right'; g.fillStyle = tf; g.font = '600 11px system-ui, sans-serif'; g.fillText(tt, W - (hy ? 21 : 4), ym);   // 18.11.2026 (Nutzer iPhone): Abstand Zahl ↔ Punkt 3 → 6 px
       if (hy && raum) { punkt(g, raum, W - 8, ym, 4); if (offen === raum.name) { g.strokeStyle = '#e5e7eb'; g.lineWidth = 1.2; g.stroke(); } } continue; }
-    if (!hy) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt) + ' °C', X1 + 44, ym);
+    if (!hy) { const [tt, tf] = rlT(' °C'); g.textAlign = 'right'; g.fillStyle = tf; g.font = '600 11px system-ui, sans-serif'; g.fillText(tt, X1 + 44, ym);
       if (sn) { const m = sa / sn; g.fillStyle = Math.abs(m) < 0.4 ? '#9ca3af' : m < 0 ? '#60a5fa' : '#f87171'; g.font = '10px system-ui, sans-serif'; g.fillText((m > 0 ? '+' : '') + zahl(m), W - 4, ym); } continue; }
     // Desktop A: Spalten
     const s = hy.sp[z.k.e]; g.textAlign = 'right';
-    g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt) + ' °C', cx.rl, ym);
+    { const [tt, tf] = rlT(' °C'); g.fillStyle = tf; g.font = '600 11px system-ui, sans-serif'; g.fillText(tt, cx.rl, ym); }
     g.fillStyle = '#d1d5db'; g.font = '11px system-ui, sans-serif'; g.fillText(s === null ? (z.k.ist_ab ? 'neu' : '–') : zahl(s) + ' K', cx.sp, ym);
     // Röhrchen: Ist rechtsbündig vor dem „/“, Soll linksbündig dahinter → Kommas untereinander (15.10.2026, Nutzer)
     const xs = cx.ro - 30; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.textAlign = 'right';
