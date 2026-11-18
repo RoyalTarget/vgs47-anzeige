@@ -907,7 +907,7 @@
  {
   "img": "schema_d2_text.svg",
   "conds": [],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_voll.svg",
@@ -923,7 +923,7 @@
     null
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_0.svg",
@@ -934,7 +934,7 @@
     0.5
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_5.svg",
@@ -945,7 +945,7 @@
     5
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_10.svg",
@@ -956,7 +956,7 @@
     10
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_15.svg",
@@ -967,7 +967,7 @@
     15
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_20.svg",
@@ -978,7 +978,7 @@
     20
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_25.svg",
@@ -989,7 +989,7 @@
     25
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_30.svg",
@@ -1000,7 +1000,7 @@
     30
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_35.svg",
@@ -1011,7 +1011,7 @@
     35
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_40.svg",
@@ -1022,40 +1022,29 @@
     40
    ]
   ],
-  "v": 12
- },
- {
-  "img": "schema_d2_stg_42.svg",
-  "conds": [
-   [
-    "sensor.cmi_wp_stellgroesse",
-    39.999,
-    42
-   ]
-  ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_44.svg",
   "conds": [
    [
     "sensor.cmi_wp_stellgroesse",
-    41.999,
-    44
+    39.999,
+    44.5
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_46.svg",
   "conds": [
    [
     "sensor.cmi_wp_stellgroesse",
-    43.999,
+    44.499,
     46
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_48.svg",
@@ -1066,7 +1055,7 @@
     48
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_50.svg",
@@ -1077,7 +1066,7 @@
     50
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_52.svg",
@@ -1088,7 +1077,7 @@
     52
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_54.svg",
@@ -1099,7 +1088,7 @@
     54
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_56.svg",
@@ -1110,7 +1099,7 @@
     56
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_58.svg",
@@ -1121,7 +1110,7 @@
     58
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_60.svg",
@@ -1132,7 +1121,7 @@
     60
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_62.svg",
@@ -1143,7 +1132,7 @@
     62
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_64.svg",
@@ -1154,7 +1143,7 @@
     64
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_66.svg",
@@ -1165,7 +1154,7 @@
     66
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_stg_68.svg",
@@ -1176,51 +1165,7 @@
     68
    ]
   ],
-  "v": 12
- },
- {
-  "img": "schema_d2_stg_69.svg",
-  "conds": [
-   [
-    "sensor.cmi_wp_stellgroesse",
-    67.999,
-    69
-   ]
-  ],
-  "v": 12
- },
- {
-  "img": "schema_d2_stg_70.svg",
-  "conds": [
-   [
-    "sensor.cmi_wp_stellgroesse",
-    68.999,
-    70.5
-   ]
-  ],
-  "v": 12
- },
- {
-  "img": "schema_d2_stg_75.svg",
-  "conds": [
-   [
-    "sensor.cmi_wp_stellgroesse",
-    70.499,
-    75
-   ]
-  ],
-  "v": 12
- },
- {
-  "img": "schema_d2_stg_80.svg",
-  "conds": [
-   [
-    "sensor.cmi_wp_stellgroesse",
-    74.999,
-    null
-   ]
-  ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_az_gruen.svg",
@@ -1231,7 +1176,7 @@
     null
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_az_gelb.svg",
@@ -1242,7 +1187,7 @@
     4
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_az_rot.svg",
@@ -1253,7 +1198,7 @@
     3
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_10.svg",
@@ -1264,7 +1209,7 @@
     15
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_20.svg",
@@ -1275,7 +1220,7 @@
     25
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_30.svg",
@@ -1286,7 +1231,7 @@
     35
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_40.svg",
@@ -1297,7 +1242,7 @@
     45
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_50.svg",
@@ -1308,7 +1253,7 @@
     55
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_60.svg",
@@ -1319,7 +1264,7 @@
     65
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_70.svg",
@@ -1330,7 +1275,7 @@
     75
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_80.svg",
@@ -1341,7 +1286,7 @@
     85
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_90.svg",
@@ -1352,7 +1297,7 @@
     95
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_d2_mix_100.svg",
@@ -1363,7 +1308,7 @@
     105
    ]
   ],
-  "v": 12
+  "v": 13
  },
  {
   "img": "schema_klima_dg_0.svg",
