@@ -2031,7 +2031,7 @@ async function holen() {
     tlSetzen(VERLAUF);
     try { KUECHE = await (await fetch(DATEN.replace("data.json", "kueche.json") + "?t=" + Date.now(), { cache: "no-store" })).json(); zeigeKueche(); } catch (e) { console.warn("kueche", e); }
     const s = d.s || {}, a = d.a || {};
-    zeigeSchema(s, d.sk, a); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
+    zeigeSchema({ ...s, ...(((VERLAUF || {}).ns || {}).s || {}) }, d.sk, a); zeigeFluss(s);   // 18.11.2026: + ns.s aus verlauf.json (Zonen-Schalter WZ/WiGa für RL „zu“) zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d); zeigeTagesbericht(d);
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
     try { zeigeWpFenster(d, VERLAUF); for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id); } catch (e) { console.warn("wpf", e); }   // Zeitleiste neu: LLWP-kWh brauchen WPF (18.10.2026)
