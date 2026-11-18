@@ -510,7 +510,7 @@ function zeichne() {
     if (hy.wk && hy.wk[z.k.e] != null) { g.textAlign = 'right'; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText(wF(hy.wk[z.k.e]) + ' W', cx.kw, ym); }
     // 16.11.2026 (Nutzer): Punkt = Raum-Status (Farbe, Text im Tooltip) · Wärme je Nacht (W) · Plan – Punkte in einer Linie
     // 18.11.2026 (Nutzer): Punkt direkt vor den Raumwert (sonst wirkt er wie Teil des Kreis-Watt links) – Abstand je Zahl (2. Versuch: fester Abstand änderte nichts)
-    if (raum && raum.erster === z.k.e) { g.font = '600 11px system-ui, sans-serif'; const xd = C.bar ? cx.bar + 6 : cx.p - g.measureText(wF(raum.w) + ' W').width - 9;
+    if (raum && raum.erster === z.k.e) { g.font = '600 11px system-ui, sans-serif'; const xd = (C.bar ? cx.bar + 76 : cx.p) - g.measureText(wF(raum.w) + ' W').width - 9;   // 3. Versuch: auch breite Ansicht (C.bar)
       punkt(g, raum, xd, ym, 4.5);
       g.textAlign = 'right'; g.fillStyle = '#e5e7eb'; g.font = '600 11px system-ui, sans-serif'; g.fillText(wF(raum.w) + ' W', C.bar ? cx.bar + 76 : cx.p, ym);
       if (C.bar) { g.textAlign = 'left'; g.fillStyle = '#9ca3af'; g.font = '10px system-ui, sans-serif'; g.fillText(raum.bed === null ? 'Plan –' : 'Plan ' + wF(raum.bed) + ' W', cx.bar + 84, ym, cx.p - cx.bar - 84); } }
