@@ -86,9 +86,14 @@ function zeigeSchema(s, sk, A = {}) {
       el.style.color = v === null ? sl.color : v >= 0.1 ? "#22c55e" : v <= -0.1 ? "#f59e0b" : "#9ca3af";
       el.setAttribute("data-tip", "Puffer-Bilanz, Mittel 15 min: WP-Ladekreis minus Heizkreis.<br>+ = Puffer wird geladen · − = Heizkreis holt Wärme aus dem Puffer");
       el.style.cursor = "help"; continue; }
-    // 25.10.2026: RL Emil – Shelly RL OG 2 hängt an der Thermostat-Phase; ohne Wert = stromlos = Stellantriebe (NC) zu
-    if (v === null && (sl.entity === "sensor.rl_og_5" || sl.entity === "sensor.rl_og_6")) { const el = $("slot_" + sl.id); el.textContent = "zu"; el.style.color = "#9ca3af"; continue; }
-    if (sl.entity === "sensor.rl_og_5" || sl.entity === "sensor.rl_og_6") $("slot_" + sl.id).style.color = sl.color;
+    // 18.11.2026 (Nutzer): RL bei stehendem Wasser – HK-Pumpe aus → alle Kreise grau „–“; exakt zu → grau „zu“ (WZ/WiGa-Shelly aus,
+    // Emil: Shelly RL OG 2 an der Thermostat-Phase stromlos = Stellantriebe (NC) zu). Wie sensor.rl_status_* (dashboard_hilfe.yaml) und Wärmebild.
+    if (/^sensor\.rl_/.test(sl.entity || "")) { const el = $("slot_" + sl.id), RLZ = { "sensor.rl_wz_1": "switch.wz_antriebe", "sensor.rl_wz_2": "switch.wz_antriebe",
+        "sensor.rl_wohnzimmer": "switch.wiga_antriebe", "sensor.rl_wz_aussen": "switch.wiga_antriebe", "sensor.rl_wz_5": "switch.wiga_antriebe" };
+      const pAus = s["binary_sensor.cmi_hk_pumpe"] === "off", emil = sl.entity === "sensor.rl_og_5" || sl.entity === "sensor.rl_og_6";
+      const zu = (RLZ[sl.entity] && s[RLZ[sl.entity]] === "off") || (emil && v === null && s["binary_sensor.cmi_hk_pumpe"] === "on");
+      if (pAus || zu) { el.textContent = pAus ? "–" : "zu"; el.style.color = pAus ? "#6b7280" : "#9ca3af"; continue; }
+      el.style.color = sl.color; }
     $("slot_" + sl.id).textContent = (sl.prefix || "") + txt;
   }
   overlays.forEach((ov, i) => { $("ov_" + i).hidden = !ov.conds.every((c) => bedingung(c, s)); });
