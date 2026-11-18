@@ -376,20 +376,22 @@ function fussZeile(h, hy, schmal) {
   const ti = $('tinfo'); if (ti && !ti.__k) { ti.__k = true; ti.addEventListener('click', () => { infoAuf = !infoAuf; zeichne(); }); }
   // 17.11.2026 (Nutzer): Punkt-Legende sichtbar unter dem Bild (gehört zur Farblegende)
   const ta = parseFloat(h?.states[TA]?.state);
-  let s = 'Punkt = Raum gegen Soll: ' + ['passt', 'warm', 'kuehl', 'kuehl_b'].map((k) => `<span style="color:${ST_F[k][0]}">●</span> ${ST_F[k][1]}`).join(' · ') + ' · ○ = laut Rückmeldung (kein Fühler)'
-    + (isNaN(ta) ? '' : ` · Plan bei außen ${zahl(ta)} °C`)
-    + '<br>Durchfluss: <span style="color:#38bdf8">━</span> gemessen (CORA) · <span style="color:#facc15">━</span> erwartet aus den Röhrchen der offenen Kreise · blau über gelb = mehr Wasser als erwartet';   // 17.11.2026 (Nutzer)
+  // 18.11.2026 (Nutzer iPhone): Einträge nie mitten im Eintrag umbrechen (Punkt am Zeilenende, Text in der nächsten Zeile)
+  const nw = (t) => `<span style="white-space:nowrap">${t}</span>`;
+  let s = 'Punkt = Raum gegen Soll: ' + ['passt', 'warm', 'kuehl', 'kuehl_b'].map((k) => nw(`<span style="color:${ST_F[k][0]}">●</span> ${ST_F[k][1]}`)).join(' · ') + ' · ' + nw('○ = laut Rückmeldung') + ' ' + nw('(kein Fühler)')
+    + (isNaN(ta) ? '' : ' · ' + nw(`Plan bei außen ${zahl(ta)} °C`))
+    + '<br>Durchfluss: ' + nw('<span style="color:#38bdf8">━</span> gemessen (CORA)') + ' · ' + nw('<span style="color:#facc15">━</span> erwartet') + ' aus den Röhrchen der offenen Kreise · ' + nw('blau über gelb') + ' = mehr Wasser als erwartet';   // 17.11.2026 (Nutzer)
   if (infoAuf) s += '<div class="ibox">' + l.join('<br>') + '</div>';
   const f = $('fuss'); if (f.innerHTML !== s) f.innerHTML = s; }
 
 function zeichne() {
   const W = document.body.clientWidth, schmal = W < 560, breit = W >= 880;
-  const KOPF = 26, ACHSE = 18, LEG = 18, LW = schmal ? 58 : 64;
+  const KOPF = 26, ACHSE = 18, LEG = 18, LW = schmal ? 62 : 64;   // 18.11.2026 (Nutzer iPhone): 58 → 62, Namen + „zu“ stießen ans Bild
   const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'], inHA = !!hassEcht();
   const hy = inHA || WEB.h ? hydro(h, K) : null;   // 22.10.2026: Website rechnet Hydraulik mit
   // rechte Spalten (Desktop A): RL jetzt · Spreizung · Röhrchen · Leiste · %
   const C = schmal ? null : breit ? { rl: 70, sp: 84, ro: 96, kw: 70, bar: 150, p: 46 } : { rl: 66, sp: 80, ro: 92, kw: 62, bar: 0, p: 46 };
-  const RW = schmal ? (hy ? 58 : 44) : (hy ? C.rl + C.sp + C.ro + C.kw + C.bar + C.p + 14 : 78);
+  const RW = schmal ? (hy ? 64 : 44) : (hy ? C.rl + C.sp + C.ro + C.kw + C.bar + C.p + 14 : 78);
   const ZH = schmal ? 17 : 19, SH = hy && !schmal ? 15 : 0;
   // Zeilenplan
   const zl = []; let y = ACHSE;
@@ -445,9 +447,20 @@ function zeichne() {
       // 17.11.2026 (Nutzer): keine roten Marken mehr unter dem Durchfluss – Prüfung läuft weiter, Ergebnis im Tooltip + Fußzeile
       g.textAlign = 'left'; g.font = '600 11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText('Durchfluss', 8, z.y + 12, X0 - 10);
       g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; g.fillText('PMG (CORA)', 8, z.y + 26, X0 - 10);
-      g.fillStyle = 'rgba(229,231,235,.6)'; g.fillText(`alle offen ${wF(Q_OFFEN)} l/h`, X0 + 4, sk(Q_OFFEN) - 6);
-      if (cx) { const qa = parseFloat(h?.states[QH]?.state); g.textAlign = 'right'; g.font = '600 11px system-ui, sans-serif'; g.fillStyle = '#38bdf8'; g.fillText(isNaN(qa) ? '–' : wF(qa) + ' l/h', cx.rl, z.y + 12);
-        g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; g.textAlign = 'left'; g.fillText(isNaN(qa) ? '' : qa < Q_OFFEN - 40 ? `${wF(Q_OFFEN - qa)} l/h weniger als alle offen → Kreise zu` : 'alle Kreise offen', cx.rl + 10, z.y + 12, W - cx.rl - 14); }
+      // 18.11.2026 (Nutzer): Zahlen rechts neben dem Bild auf Höhe ihrer Linie (grau alle offen · gelb erwartet · blau gemessen),
+      // nach Höhe sortiert, Mindestabstand 12 px; kein Text mehr im Bild, Satz „… weniger als alle offen“ entfällt; schmal nur Zahlen
+      { const qa = parseFloat(h?.states[QH]?.state); let qs = null;
+        for (let i = ib - 1; i >= iv && qs == null; i--) if (daten.qSoll?.[i] != null) qs = daten.qSoll[i];
+        const wort = W - X1 > 110, yT = (y) => Math.max(z.y + 9, Math.min(z.y + z.h - 5, y + 4));
+        const L = [{ k: 'o', v: Q_OFFEN }, { k: 's', v: qs }, { k: 'a', v: isNaN(qa) ? null : qa }].filter((l) => l.v != null).map((l) => ({ ...l, y: yT(sk(l.v)) })).sort((p, q) => p.y - q.y);
+        for (let i = 1; i < L.length; i++) if (L[i].y - L[i - 1].y < 12) L[i].y = L[i - 1].y + 12;
+        const ueber = L.length ? L[L.length - 1].y - (z.y + z.h - 5) : 0; if (ueber > 0) L.forEach((l) => l.y -= ueber);
+        g.textAlign = 'left';
+        for (const l of L) {
+          if (l.k === 'o') { g.font = '10px system-ui, sans-serif'; g.fillStyle = 'rgba(229,231,235,.6)'; g.fillText(wF(l.v) + (wort ? ' alle offen' : ''), X1 + 5, l.y); }
+          if (l.k === 's') { g.font = '10px system-ui, sans-serif'; g.fillStyle = 'rgba(250,204,21,.9)'; g.fillText(wF(l.v) + (wort ? ' erwartet' : ''), X1 + 5, l.y); }
+          if (l.k === 'a') { g.fillStyle = '#38bdf8'; g.fillRect(X1, Math.round(sk(l.v)) - 0.5, 3, 1.5);
+            g.font = '600 11px system-ui, sans-serif'; g.fillText(wF(l.v) + (wort ? ' l/h gemessen' : ''), X1 + 5, l.y); } } }
       continue; }
     if (z.typ === 's2') { const r = z.r; g.textAlign = 'left'; g.font = '600 10px system-ui, sans-serif'; g.fillStyle = '#facc15'; const t0 = `Σ ${r.gem} `; g.fillText(t0, 8, z.y + SH / 2);
       g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af';
@@ -480,7 +493,7 @@ function zeichne() {
       const kz = VENTIL[z.k.e] ? (h?.states[VENTIL[z.k.e]]?.state === 'off' ? 'zu' : '') : (la || emLive) ? 'zu' : '';   // 06.11.2026 (Nutzer): ohne „?“, Schätzung erkennt man an der blassen Farbe + Legende
       // 12.11.2026 (Nutzer „zu fehlt bei WG W“): iPhone-Spalte 58 px, „WG W“ + „zu“ 0,4 px zu breit → „zu“ fehlte. Jetzt hat „zu“ Vorrang, der Name wird bei Bedarf gestaucht.
       const fn = g.font; g.font = '600 10px system-ui, sans-serif'; const kw = kz ? g.measureText(kz).width : 0; g.font = fn;
-      const nmax = X0 - 10 - (kz ? kw + 3 : 0), nw = Math.min(g.measureText(z.k.k).width, nmax);
+      const nmax = X0 - 12 - (kz ? kw + 3 : 0), nw = Math.min(g.measureText(z.k.k).width, nmax);
       g.fillText(z.k.k, 8, z.y + z.h / 2, nmax);
       if (kz) { g.fillStyle = la === 1 && !VENTIL[z.k.e] ? 'rgba(250,204,21,.7)' : '#f59e0b'; g.font = '600 10px system-ui, sans-serif';
         g.fillText(kz, 8 + nw + 3, z.y + z.h / 2); } }
@@ -494,7 +507,7 @@ function zeichne() {
       else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
       g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1; }
     const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
-    if (schmal) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt), W - (hy ? 18 : 4), ym);
+    if (schmal) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt), W - (hy ? 21 : 4), ym);   // 18.11.2026 (Nutzer iPhone): Abstand Zahl ↔ Punkt 3 → 6 px
       if (hy && raum) { punkt(g, raum, W - 8, ym, 4); if (offen === raum.name) { g.strokeStyle = '#e5e7eb'; g.lineWidth = 1.2; g.stroke(); } } continue; }
     if (!hy) { g.textAlign = 'right'; g.fillStyle = '#f59e0b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(isNaN(akt) ? '–' : zahl(akt) + ' °C', X1 + 44, ym);
       if (sn) { const m = sa / sn; g.fillStyle = Math.abs(m) < 0.4 ? '#9ca3af' : m < 0 ? '#60a5fa' : '#f87171'; g.font = '10px system-ui, sans-serif'; g.fillText((m > 0 ? '+' : '') + zahl(m), W - 4, ym); } continue; }
