@@ -1910,7 +1910,8 @@ function zeigeSchall(s, v) {
     + (n.length ? `Lauteste Minute der letzten ${n.length} Nächte <b style="color:var(--text)">${dz(Math.max(...n.map((x) => x[1])))} dB(A)</b> · ` : "")
     + `auch bei voller Verdichterleistung höchstens <b style="color:var(--text)">33 dB(A)</b> · Grenzwert nachts <b style="color:var(--text)">35 dB(A)</b></p>`;
   if (n.length) {
-    const W = Math.round(Math.max(300, Math.min(760, box.clientWidth || 600))), H = 170, L = 28, R = 6, T = 10, B = 24, y0 = 10, y1 = 40, bw = (W - L - R) / n.length;
+    // 19.11.2026 (Nutzer: „dem Desktop anpassen“): volle Kartenbreite wie „Wer hilft der WP?“ (vorher max. 760 px)
+    const W = Math.round(Math.max(300, Math.min(1400, box.clientWidth || 600))), H = W > 900 ? 220 : 170, L = 28, R = 6, T = 10, B = 24, y0 = 10, y1 = 40, bw = (W - L - R) / n.length;
     const Y = (x) => T + (y1 - Math.max(y0, Math.min(y1, x))) / (y1 - y0) * (H - T - B);
     let sv = "";
     for (const y of [10, 20, 30, 40]) sv += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--rand)"/><text x="${L - 4}" y="${Y(y) + 4}" text-anchor="end">${y}</text>`;
@@ -1918,7 +1919,7 @@ function zeigeSchall(s, v) {
       sv += `<rect x="${(xl + bw * 0.15).toFixed(1)}" y="${Y(x[1]).toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${(Y(y0) - Y(x[1])).toFixed(1)}" fill="#38bdf8" data-tip="${tg(x[0])} 22–6 Uhr<br>lauteste Minute ${dz(x[1])} dB(A)<br>typisch ${dz(x[2])} dB(A) · WP ${zahl(x[4] / 60, 1)} h"/>`;
       if (i % Math.ceil(n.length / 8) === 0) sv += `<text x="${(xl + bw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${tg(x[0])}</text>`; });
     sv += `<polyline points="${n.map((x, i) => `${(L + i * bw + bw / 2).toFixed(1)},${Y(x[2]).toFixed(1)}`).join(" ")}" fill="none" stroke="#1d4ed8" stroke-width="3" style="pointer-events:none"/>`;
-    sv += `<line x1="${L}" x2="${W - R}" y1="${Y(33)}" y2="${Y(33)}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${L + 4}" y="${Y(33) - 4}" fill="#f59e0b">volle Leistung 33</text>`;
+    sv += `<line x1="${L}" x2="${W - R}" y1="${Y(33)}" y2="${Y(33)}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${L + 4}" y="${Y(33) + 13}" fill="#f59e0b">volle Leistung 33</text>`;
     sv += `<line x1="${L}" x2="${W - R}" y1="${Y(35)}" y2="${Y(35)}" stroke="#ef4444" stroke-width="2"/><text x="${W - R}" y="${Y(35) - 4}" text-anchor="end" fill="#ef4444">Grenzwert nachts 35</text>`;
     html += `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;font:11px sans-serif;fill:var(--leise)">${sv}</svg></div>`
       + `<p style="color:var(--leise);font-size:12.5px;margin-top:2px"><span style="color:#38bdf8">■</span> lauteste Minute je Nacht · <span style="color:#1d4ed8">━</span> typisch (Mittel im Lauf) · <span style="color:#f59e0b">┅</span> volle Verdichterleistung · <span style="color:#ef4444">━</span> Grenzwert nachts (reines Wohngebiet, TA Lärm)</p>`;
@@ -2032,7 +2033,9 @@ async function holen() {
     tlSetzen(VERLAUF);
     try { KUECHE = await (await fetch(DATEN.replace("data.json", "kueche.json") + "?t=" + Date.now(), { cache: "no-store" })).json(); zeigeKueche(); } catch (e) { console.warn("kueche", e); }
     const s = d.s || {}, a = d.a || {};
-    zeigeSchema({ ...s, ...(((VERLAUF || {}).ns || {}).s || {}) }, d.sk, a); zeigeFluss(s);   // 18.11.2026: + ns.s aus verlauf.json (Zonen-Schalter WZ/WiGa für RL „zu“) zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
+    // 18.11.2026: + ns.s aus verlauf.json (Zonen-Schalter WZ/WiGa für RL „zu“)
+    // 19.11.2026: Kommentar stand mitten in der Zeile → Batterie/Klima/Wasser/Tabellen liefen seit 18.11. nicht mehr
+    zeigeSchema({ ...s, ...(((VERLAUF || {}).ns || {}).s || {}) }, d.sk, a); zeigeFluss(s); zeigeBatterie(s, d.ap); zeigeKlima(s, a); zeigeWasser(s); zeigeTabellen(s, d.k || {}, d.lp || {}, d.gh);
     zeigeTage(s, d.k || {}, d.h); zeigePV(s); zeigePrognose(d); zeigeTemperaturen(d); zeigeZeitleiste(d); zeigeFazit(d); zeigeHerkunft(d); zeigeWann(d); zeigeWasserGrafik(d); zeigeTagesbericht(d);
     try { zeigeWasserFenster(d, VERLAUF); } catch (e) { console.warn("wf", e); }
     try { zeigeWpFenster(d, VERLAUF); for (const id of Object.keys(ZL)) if ($(id)) zeichneZL(id); } catch (e) { console.warn("wpf", e); }   // Zeitleiste neu: LLWP-kWh brauchen WPF (18.10.2026)
