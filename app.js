@@ -1818,7 +1818,8 @@ function zeigeTemperaturen(d) {
 function zeigeSchwellen(d, v) {
   const el = $("schwellen"); if (!el || !customElements.get("vgs-schwellen-card")) return;
   const ns = (v && v.ns) || {}, st = {};
-  for (const [e, x] of Object.entries({ ...(d.s || {}), ...(ns.s || {}) })) st[e] = { state: String(x), attributes: {} };
+  // 19.11.2026: + fh.s (verlauf.json) – WiGa Ecke/Mitte für „Ventile WiGa“ (roter Punkt fehlte)
+  for (const [e, x] of Object.entries({ ...(d.s || {}), ...((v && v.fh && v.fh.s) || {}), ...(ns.s || {}) })) st[e] = { state: String(x), attributes: {} };
   st["sensor.naechster_start"] = { state: "", attributes: { geraete: ns.g || {} } };
   if (!el._cfg) { el.setConfig({ titel: false }); el._cfg = true; }
   // Tendenz-Pfeile (06.10.2026): HA schickt je Fühler 1-min-Proben der letzten 31 min (ns.h) → als Verlauf an die Karte,
