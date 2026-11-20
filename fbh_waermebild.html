@@ -62,7 +62,7 @@ const ventilZu = (e, i) => { const r = daten?.zu?.[VENTIL[e]]; return !!r && r[i
 const EMIL = ['sensor.rl_og_5', 'sensor.rl_og_6'], ZU_K = 1.0, ZU_MIN = 15 * 6e4;
 function schaetzeZu(d) {
   const out = {}, nMin = Math.max(1, Math.ceil(ZU_MIN / BIN));
-  for (const e in d.reihen) { if (VENTIL[e]) continue; const r = d.reihen[e], z = new Array(d.n).fill(0);
+  for (const e in d.reihen) { if (VENTIL[e] && !VENTIL_DG[e]) continue; const r = d.reihen[e], z = new Array(d.n).fill(0);   // 20.11.2026: GZ/LZ weiter schätzen, wo der Mini noch keine Werte hat (vor 20.11.)
     if (EMIL.includes(e)) { for (let i = 0; i < d.n; i++) if (r[i] === null && (d.pu[i] ?? 0) >= 0.5 && i < d.n - 1) z[i] = 2; out[e] = z; continue; }
     // Basis gleitend (±36 h, je Stunde neu): Pumpe/Kurve/Thermostate verschieben den üblichen Abstand eines Kreises
     const ab = new Array(d.n).fill(null); for (let i = 0; i < d.n; i++) if (r[i] !== null && d.ref[i] !== null && (d.pu[i] ?? 0) >= 0.5 && !d.refLuecke?.[i]) ab[i] = r[i] - d.ref[i];
@@ -72,6 +72,7 @@ function schaetzeZu(d) {
     let lauf = 0;
     for (let i = 0; i < d.n; i++) { const ok = ab[i] !== null && bas[i] !== null && bas[i] - ab[i] >= ZU_K;
       lauf = ok ? lauf + 1 : 0; if (lauf >= nMin) for (let j = i - lauf + 1; j <= i; j++) z[j] = 1; }
+    if (VENTIL_DG[e]) { const ex = d.zu?.[VENTIL[e]]; if (ex) for (let i = 0; i < d.n; i++) if (ex[i] !== null && ex[i] !== undefined) z[i] = 0; }   // exakter Wert vorhanden → keine Schätzung
     out[e] = z; out[e].bas = bas; }
   // ≥ 4 geschätzte Kreise gleichzeitig = Ereignis der ganzen Anlage (VL-Sprung, Abtauen), kein Thermostat → verwerfen
   for (let i = 0; i < d.n; i++) { let c = 0; for (const e in out) if (out[e][i] === 1) c++; if (c >= 4) for (const e in out) if (out[e][i] === 1) out[e][i] = 0; }
@@ -144,9 +145,11 @@ function binne(pkte, t0, n, bin, binaer) {
 const GIST_V = GIST.replace('data.json', 'verlauf.json');
 const FI = ['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden', 'sensor.rl_dg_3', 'sensor.rl_dg_4', 'sensor.rl_yoga', 'sensor.rl_og_bad', 'sensor.rl_og_bad_wand', 'sensor.rl_og_flur',
   'sensor.rl_og_5', 'sensor.rl_og_6', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5', 'sensor.rl_wc', 'sensor.rl_flur',
-  'sensor.cmi_hk_vorlauf', 'sensor.hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen', 'sensor.cmi_t_aussen'];
+  'sensor.cmi_hk_vorlauf', 'sensor.hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen', 'sensor.cmi_t_aussen',
+  'sensor.gz_ventile_offen', 'sensor.lz_ventile_offen'];
 // 06.11.2026 (Nutzer „Website zeigt altes Wärmebild“): Ventile WZ/WiGa als 0/1-Statistik (ventil_statistik.yaml) → wie im Dashboard „Ventil zu“
-const WEB_ZU = { 'switch.wz_antriebe': 'sensor.wz_ventile_offen', 'switch.wiga_antriebe': 'sensor.wiga_ventile_offen' };
+const WEB_ZU = { 'switch.wz_antriebe': 'sensor.wz_ventile_offen', 'switch.wiga_antriebe': 'sensor.wiga_ventile_offen',
+  'binary_sensor.gz_waermeanforderung': 'sensor.gz_ventile_offen', 'binary_sensor.lz_waermeanforderung': 'sensor.lz_ventile_offen' };   // 20.11.2026: GZ/LZ (Minis an der Gira-Phase), SQL-Index 23/24
 function webOhneNamen() {
   for (const r of RAEUME) if (r[0] === 'Emils Zimmer') r[0] = 'Kinderzimmer';
   if (HT_ORT['Emils Zimmer']) { delete HT_ORT['Emils Zimmer']; HT_ORT['Kinderzimmer'] = 'Kinderzimmer'; }
@@ -164,6 +167,7 @@ async function ladeWeb() {
   for (const e in (d.s || {})) states[e] = { state: String(d.s[e]) };
   for (const e in serie) { const s = serie[e]; let l = null; for (let i = s.length - 1; i >= 0; i--) if (s[i] !== null) { l = s[i]; break; } states[e] = { state: String(l) }; }
   const zu = {}; for (const sw in WEB_ZU) { const z = serie[WEB_ZU[sw]]; if (z && z.some((v) => v !== null)) { zu[sw] = z; const l = states[WEB_ZU[sw]]; if (l && l.state !== 'null') states[sw] = { state: +l.state >= 0.5 ? 'on' : 'off' }; } }
+  for (const [e, v] of Object.entries(VENTIL_DG)) if (zu[v]) VENTIL[e] = v;   // 20.11.2026
   WEB.h = { states }; const da = K.filter((k) => serie[k.e]), reihen = {}; for (const k of da) reihen[k.e] = serie[k.e];
   const ref = new Array(n).fill(null);   // wie in HA: Kreise mit Ventil zu zählen nicht zum Mittel
   for (let i = 0; i < n; i++) { let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i], zr = zu[VENTIL[e]]; if (v !== null && !(zr && zr[i] !== null && zr[i] < 0.5)) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
@@ -173,7 +177,7 @@ async function ladeWeb() {
     pu: q.map((v) => v === null ? null : (v > 50 ? 1 : 0)), zu, geladen: Date.now(), q, ta: serie[TA] || null };
   // 07.11.2026 (Nutzer „Website zeigt zu bei GZ/WC, Dashboard nicht“): Ventil-Statistik gibt es erst seit 06.11. abends → davor zählten die
   // zugedrehten WZ/WiGa-Kreise ins Mittel, Bezug zu tief, Basis der übrigen Kreise falsch → Schein-„zu“. Ohne Ventilwert keine Schätzung.
-  daten.refLuecke = new Array(n).fill(false).map((_, i) => Object.values(WEB_ZU).some((e) => !serie[e] || serie[e][i] === null || serie[e][i] === undefined));
+  daten.refLuecke = new Array(n).fill(false).map((_, i) => ['sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen'].some((e) => !serie[e] || serie[e][i] === null || serie[e][i] === undefined));
   daten.zuS = schaetzeZu(daten); berechneQ(daten);
   zeichne();
 }
