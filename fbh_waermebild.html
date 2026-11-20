@@ -52,6 +52,9 @@ const H48 = 48 * 36e5, TAGE = 14, VL = 'sensor.cmi_hk_vorlauf', RLG = 'sensor.hk
 // 03.11.2026 (Nutzer): WZ 1/2 + WG I/A/W hängen am Shelly 2PM (O1 WZ, O2 WiGa, Antriebe stromlos zu) → „Ventil zu“ exakt aus dem Schalter
 const VENTIL = { 'sensor.rl_wz_1': 'switch.wz_antriebe', 'sensor.rl_wz_2': 'switch.wz_antriebe', 'sensor.rl_wohnzimmer': 'switch.wiga_antriebe',
   'sensor.rl_wz_aussen': 'switch.wiga_antriebe', 'sensor.rl_wz_5': 'switch.wiga_antriebe' };
+// 20.11.2026 (Nutzer: „zu in alle Kacheln, auch im Wärmebild“): GZ/LZ exakt über die Minis an der Gira-Phase (gira_anforderung.yaml, off = zu).
+// Nur in HA (Verlauf der binary_sensoren); die Website hat dafür noch keine Statistik → dort weiter Schätzung.
+const VENTIL_DG = { 'sensor.rl_dg_3': 'binary_sensor.gz_waermeanforderung', 'sensor.rl_dg_4': 'binary_sensor.lz_waermeanforderung' };
 const ventilZu = (e, i) => { const r = daten?.zu?.[VENTIL[e]]; return !!r && r[i] !== null && r[i] < 0.5; };
 // 06.11.2026 (Nutzer): „zu?“ für die übrigen Kreise. (a) Emil: RL-Shellys hängen am Thermostat-Strom → Fühler fehlt bei laufender Pumpe = Thermostat zu (exakt).
 // (b) Schätzung: RL ≥ 1 K unter dem üblichen Abstand des Kreises zum Mittel (75-%-Wert über das Datenfenster), mind. 15 min am Stück.
@@ -181,6 +184,7 @@ async function lade() {
   if (!inHA) { await ladeWeb(); return; }
   const h = hass(); if (!h) { setTimeout(lade, 2000); return; }
   const K = kreise(h), jetzt = Date.now(), t0 = Math.floor((jetzt - TAGE * 864e5) / BIN) * BIN, n = Math.ceil((jetzt - t0) / BIN);
+  for (const [e, v] of Object.entries(VENTIL_DG)) if (h.states[v]) VENTIL[e] = v;
   const da = K.filter((k) => h.states[k.e]), sw = [...new Set(Object.values(VENTIL))].filter((e) => h.states[e]), ids = [...da.map((k) => k.e), VL, RLG, PU, QH, TA, ...sw];
   const r = await ws({ type: 'history/history_during_period', start_time: new Date(t0).toISOString(), end_time: new Date(jetzt).toISOString(),
     entity_ids: ids, minimal_response: true, no_attributes: true, significant_changes_only: false });
