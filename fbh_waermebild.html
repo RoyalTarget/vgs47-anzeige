@@ -461,7 +461,14 @@ function zeichne() {
       { const qa = parseFloat(h?.states[QH]?.state); let qs = null;
         for (let i = ib - 1; i >= iv && qs == null; i--) if (daten.qSoll?.[i] != null) qs = daten.qSoll[i];
         const wort = W - X1 > 110, yT = (y) => Math.max(z.y + 9, Math.min(z.y + z.h - 5, y + 4));
-        const L = [{ k: 'o', v: Q_OFFEN }, { k: 's', v: qs }, { k: 'a', v: isNaN(qa) ? null : qa }].filter((l) => l.v != null).map((l) => ({ ...l, y: yT(sk(l.v)) })).sort((p, q) => p.y - q.y);
+        // 20.11.2026 (Nutzer): „erwartet“ ist die Summe der Röhrchen-Spalte → steht jetzt unter der Röhrchen-Spalte (Zahl bündig mit den Ist-Werten),
+        // rechts neben dem Bild nur noch grau „alle offen“ + blau „gemessen“ (mehr Platz). Ohne Spalten (schmal) bleibt die gelbe Zahl rechts.
+        if (cx && qs != null) { const xs = cx.ro - 30, y1 = z.y + 14;
+          g.textAlign = 'right'; g.font = '11px system-ui, sans-serif'; g.fillStyle = '#d1d5db'; g.fillText(zahl(qs / 60 / Q_KAL), xs - 8, y1);   // Σ Ist der offenen Kreise (l/min)
+          g.textAlign = 'left'; g.font = '10px system-ui, sans-serif'; g.fillStyle = '#9ca3af'; g.fillText('Σ offen', xs - 4, y1);
+          g.textAlign = 'right'; g.font = '600 11px system-ui, sans-serif'; g.fillStyle = 'rgba(250,204,21,.95)'; g.fillText(wF(qs), xs - 8, y1 + 15);
+          g.textAlign = 'left'; g.font = '10px system-ui, sans-serif'; g.fillText('l/h erwartet', xs - 4, y1 + 15); }
+        const L = [{ k: 'o', v: Q_OFFEN }, { k: 's', v: cx ? null : qs }, { k: 'a', v: isNaN(qa) ? null : qa }].filter((l) => l.v != null).map((l) => ({ ...l, y: yT(sk(l.v)) })).sort((p, q) => p.y - q.y);
         for (let i = 1; i < L.length; i++) if (L[i].y - L[i - 1].y < 12) L[i].y = L[i - 1].y + 12;
         const ueber = L.length ? L[L.length - 1].y - (z.y + z.h - 5) : 0; if (ueber > 0) L.forEach((l) => l.y -= ueber);
         g.textAlign = 'left';
