@@ -406,14 +406,16 @@ function fussZeile(h, hy, schmal) {
 
 function zeichne() {
   const W = document.body.clientWidth, schmal = W < 560, breit = W >= 880;
-  const KOPF = 26, ACHSE = 18, LEG = 18, LW = schmal ? 62 : 64;   // 18.11.2026 (Nutzer iPhone): 58 → 62, Namen + „zu“ stießen ans Bild
+  const KOPF = 26, LEG = 18, LW = schmal ? 62 : 64;   // 18.11.2026 (Nutzer iPhone): 58 → 62, Namen + „zu“ stießen ans Bild
   const h = hass(), K = daten ? daten.K : kreise(h), gruppen = ['DG', 'OG', 'EG'], inHA = !!hassEcht();
   const hy = inHA || WEB.h ? hydro(h, K) : null;   // 22.10.2026: Website rechnet Hydraulik mit
+  const ACHSE = !schmal && hy ? 44 : 18, AY = ACHSE - 9;   // 21.11.2026: Kopf mit Bereichs-Titel + 2 Zeilen; Zeitachse auf der unteren Kopfzeile
   // rechte Spalten (21.11.2026, Nutzer): Jetzt (Punkt · Wärme 3 h · %) | Bedarf (Plan jetzt) | Hydraulik (RL jetzt · Spreizung Nacht · Röhrchen · Kreis Nacht · Raum Nacht)
   // mittlere Breite ohne Röhrchen-Spalte und ohne Raum Nacht (stehen im Tooltip bzw. in der Σ-Zeile)
-  const C = schmal ? null : breit ? { jw: 112, pl: 64, rl: 62, sp: 84, ro: 96, kw: 62, rn: 112 } : { jw: 100, pl: 58, rl: 60, sp: 80, ro: 0, kw: 60, rn: 0 };
+  // 21.11.2026 (Nutzer): zweizeilige Köpfe + Bereichs-Titel → Spalten enger, mehr Platz für die Streifen
+  const C = schmal ? null : breit ? { jw: 100, pl: 56, rl: 54, sp: 54, ro: 66, kw: 54, rn: 100 } : { jw: 92, pl: 52, rl: 54, sp: 54, ro: 0, kw: 54, rn: 0 };
   hyLast = hy;
-  const RW = schmal ? (hy ? 64 : 44) : (hy ? C.jw + C.pl + C.rl + C.sp + C.ro + C.kw + C.rn + 30 : 78);
+  const RW = schmal ? (hy ? 64 : 44) : (hy ? C.jw + C.pl + C.rl + C.sp + C.ro + C.kw + C.rn + 38 : 78);
   const ZH = schmal ? 17 : 19, SH = hy && !schmal ? 15 : 0;
   // Zeilenplan
   const zl = []; let y = ACHSE;
@@ -437,19 +439,23 @@ function zeichne() {
   for (let t = new Date(von).setMinutes(0, 0, 0); t <= bis; t += 36e5) { const d = new Date(t); if (t < von || d.getHours() % schritt) continue;
     const x = X(t), mn = d.getHours() === 0; g.textAlign = 'center';
     g.fillStyle = mn ? '#e5e7eb' : '#9ca3af'; g.font = (mn ? '600 ' : '') + '11px system-ui, sans-serif';
-    g.fillText(mn ? `${tag[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.` : `${String(d.getHours()).padStart(2, '0')}:00`, Math.min(Math.max(x, X0 + 24), X1 - 24), ACHSE / 2); }
+    g.fillText(mn ? `${tag[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.` : `${String(d.getHours()).padStart(2, '0')}:00`, Math.min(Math.max(x, X0 + 24), X1 - 24), AY); }
   // Spaltenköpfe rechts
   let cx = null;
   if (!schmal && hy) { let xx = X1 + 8; const sp1 = (w) => { xx += w; return xx - 4; };
     cx = { jw: sp1(C.jw) }; cx.t1 = xx + 4; xx += 8; cx.pl = sp1(C.pl); cx.t2 = xx + 4; xx += 8;
-    cx.rl = sp1(C.rl); cx.sp = sp1(C.sp); cx.ro = C.ro ? sp1(C.ro) : null; cx.kw = sp1(C.kw); cx.rn = C.rn ? sp1(C.rn) : null;
-    g.font = '10px system-ui, sans-serif'; g.fillStyle = '#6b7280'; g.textAlign = 'right';
-    g.fillStyle = '#d1d5db'; g.fillText(breit ? 'Wärme jetzt (3 h)' : 'jetzt (3 h)', cx.jw, ACHSE / 2);
-    g.fillStyle = '#9ca3af'; g.fillText('Plan ⓘ', cx.pl, ACHSE / 2); g.fillStyle = '#6b7280';   // ⓘ: Antippen = Erklärung (Tooltips gehen im iframe nicht)
-    if (h?.states[PU]?.state === 'off') { g.fillStyle = '#22c55e'; g.fillText('Pumpe aus', cx.rl, ACHSE / 2); g.fillStyle = '#6b7280'; } else g.fillText('RL jetzt', cx.rl, ACHSE / 2);   // 18.11.2026 (Nutzer)
-    g.fillText('Spreizung Nacht', cx.sp, ACHSE / 2); if (cx.ro) g.fillText('Röhrchen Ist / Soll', cx.ro, ACHSE / 2); g.fillText('Kreis Nacht', cx.kw, ACHSE / 2);
-    if (cx.rn) g.fillText('Raum Nacht', cx.rn, ACHSE / 2); }
-  else if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('jetzt · Ø Abw.', W - 4, ACHSE / 2); }
+    cx.rl = sp1(C.rl); cx.sp = sp1(C.sp); cx.ro = C.ro ? sp1(C.ro) : null; cx.t3 = xx + 4; xx += 8; cx.kw = sp1(C.kw); cx.rn = C.rn ? sp1(C.rn) : null;
+    // Bereichs-Titel (links im Bereich) + zweizeilige Spaltenköpfe (rechtsbündig über den Zahlen)
+    g.textAlign = 'left'; g.font = '600 9px system-ui, sans-serif'; g.fillStyle = '#d1d5db';
+    const tit = (t, xa) => g.fillText(t, xa, 7);
+    tit('JETZT', X1 + 8); tit('BEDARF', cx.t1 + 6); tit('HYDRAULIK', cx.t2 + 6); tit(cx.rn ? 'WÄRME (MESSNÄCHTE)' : 'WÄRME NACHT', cx.t3 + 6);
+    const kopf = (x, a, b, f1, f2) => { g.textAlign = 'right'; g.font = '10px system-ui, sans-serif'; g.fillStyle = f1 || '#9ca3af'; g.fillText(a, x, 20); g.fillStyle = f2 || '#6b7280'; g.fillText(b, x, 32); };
+    kopf(cx.jw, 'Wärme', 'jetzt (3 h)', '#d1d5db', '#9ca3af');
+    kopf(cx.pl, 'Plan ⓘ', 'jetzt');   // ⓘ: Antippen = Erklärung (Tooltips gehen im iframe nicht)
+    if (h?.states[PU]?.state === 'off') kopf(cx.rl, 'Pumpe', 'aus', '#22c55e', '#22c55e'); else kopf(cx.rl, 'RL', 'jetzt');   // 18.11.2026 (Nutzer)
+    kopf(cx.sp, 'Spreizung', 'Nacht'); if (cx.ro) kopf(cx.ro - 8, 'Röhrchen', 'Ist / Soll');
+    kopf(cx.kw, 'Kreis', 'Nacht'); if (cx.rn) kopf(cx.rn, 'Raum', 'Nacht · %'); }
+  else if (!schmal) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('jetzt · Ø Abw.', W - 4, AY); }
   const iv = daten ? Math.max(0, Math.floor((von - daten.t0) / BIN)) : 0, ib = daten ? Math.min(daten.n, Math.ceil((bis - daten.t0) / BIN)) : 0;
   const zeitAus = (i) => daten.t0 + i * BIN, z1 = (v, d = 1) => zahl(v, d);
   const balken = (x, yy, w, hh, p, farbe) => { g.fillStyle = '#3f3f46'; g.beginPath(); g.roundRect(x, yy, w, hh, hh / 2); g.fill();
@@ -587,7 +593,7 @@ function zeichne() {
   }
   // 21.11.2026 (Nutzer): dünne Striche trennen Jetzt | Bedarf | Hydraulik
   if (cx) { const ks = plan.filter((q) => q.typ === 'k' || q.typ === 's' || q.typ === 's2'), yA = 2, yE = ks.length ? Math.max(...ks.map((q) => q.y + q.h)) : y;
-    g.strokeStyle = '#3a3a40'; g.lineWidth = 1; for (const xt of [cx.t1, cx.t2]) { g.beginPath(); g.moveTo(Math.round(xt) + 0.5, yA); g.lineTo(Math.round(xt) + 0.5, yE); g.stroke(); } }
+    g.strokeStyle = '#3a3a40'; g.lineWidth = 1; for (const xt of [cx.t1, cx.t2, cx.t3]) { g.beginPath(); g.moveTo(Math.round(xt) + 0.5, yA); g.lineTo(Math.round(xt) + 0.5, yE); g.stroke(); } }
   // Mitternachtslinien
   g.strokeStyle = 'rgba(229,231,235,.55)'; g.lineWidth = 1;
   for (let t = new Date(von).setHours(24, 0, 0, 0); t < bis; t = new Date(t).setHours(24, 0, 0, 0)) { const x = Math.round(X(t)) + 0.5;
