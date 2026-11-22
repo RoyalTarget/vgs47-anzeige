@@ -1347,6 +1347,7 @@ function doppel(e, fn) { let t0 = 0, x0 = 0, xd = 0;
   e.addEventListener("dblclick", fn); }
 // gelbe Griffe links/rechts am Rahmen = Leiste ist zoombar (wie Videoschnitt bei Apple)
 const griffe = (xa, xb, h) => `<rect x="${xa - 3.5}" y="0" width="7" height="${h + 4}" rx="2" fill="#facc15"/><rect x="${xb - 3.5}" y="0" width="7" height="${h + 4}" rx="2" fill="#facc15"/>`
+  + `<line x1="${xa}" x2="${xa}" y1="${h / 2 - 4}" y2="${h / 2 + 8}" stroke="#1c1c1c" stroke-width="1.4" pointer-events="none"/><line x1="${xb}" x2="${xb}" y1="${h / 2 - 4}" y2="${h / 2 + 8}" stroke="#1c1c1c" stroke-width="1.4" pointer-events="none"/>`   // 22.11.2026 (Nutzer): Griffstrich wie Wärmebild/vgs_fenster
   + `<line x1="${xa}" x2="${xa}" y1="${h / 2 - 4}" y2="${h / 2 + 8}" stroke="#1c1c1c" stroke-width="1.4"/><line x1="${xb}" x2="${xb}" y1="${h / 2 - 4}" y2="${h / 2 + 8}" stroke="#1c1c1c" stroke-width="1.4"/>`;
 
 // ---------- Mouse-over (30.09.2026) ----------
