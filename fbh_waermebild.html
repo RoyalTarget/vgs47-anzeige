@@ -347,8 +347,11 @@ const qLog = (e, i) => { if (abt(i)) { for (let j = i - 1; j >= Math.max(0, i - 
 function jetzt3(name) { const x = daten?.rw?.[name]; if (!x) return null; const m = Math.max(1, Math.round(3 * 36e5 / BIN)); let sw = 0, sp = 0, c = 0, last = null;
   for (let i = x.w.length - 1; i >= 0 && c < m; i--) { if (x.w[i] == null || !x.p[i]) continue; if (last === null) last = x.w[i]; sw += x.w[i]; sp += x.p[i]; c++; }
   // 22.11.2026 abends (Nutzer „Yoga zu, aber jetzt noch Watt“): exakt bekannte Ventile live – sind alle Kreise des Raums laut Schalter/Mini zu, sofort „zu“
-  const rr = RAEUME.find((q) => q[0] === name), hl = hass(); const liveZu = !!(rr && hl && hl.states[PU]?.state === 'on' && rr[3].every((e) => VENTIL[e] && hl.states[VENTIL[e]]?.state === 'off'));
-  return c ? { w: sw / c, p: sp / c, zu: last <= 0 || liveZu } : null; }
+  // 22.11.2026 22:20 (Nutzer „müsste links nicht zu stehen?“): auch umgekehrt – ist ein Kreis laut Schalter/Mini gerade offen, nicht „zu“ (vorher entschied der letzte Abschnitt)
+  const rr = RAEUME.find((q) => q[0] === name), hl = hass();
+  const bekannt = !!(rr && hl && hl.states[PU]?.state === 'on' && rr[3].every((e) => VENTIL[e] && ['on', 'off'].includes(hl.states[VENTIL[e]]?.state)));
+  const liveZu = bekannt && rr[3].every((e) => hl.states[VENTIL[e]].state === 'off');
+  return c ? { w: sw / c, p: sp / c, zu: bekannt ? liveZu : last <= 0 } : null; }
 function kreis3(e) { const x = daten?.wk?.[e]; if (!x) return null; const m = Math.max(1, Math.round(3 * 36e5 / BIN)); let sw = 0, c = 0;
   for (let i = x.length - 1; i >= 0 && c < m; i--) { if (x[i] == null) continue; sw += x[i]; c++; } return c ? sw / c : null; }
 let hyLast = null;
