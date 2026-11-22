@@ -91,7 +91,9 @@ function zeigeSchema(s, sk, A = {}) {
     if (/^sensor\.rl_/.test(sl.entity || "")) { const el = $("slot_" + sl.id), RLZ = { "sensor.rl_wz_1": "switch.wz_antriebe", "sensor.rl_wz_2": "switch.wz_antriebe",
         "sensor.rl_wohnzimmer": "switch.wiga_antriebe", "sensor.rl_wz_aussen": "switch.wiga_antriebe", "sensor.rl_wz_5": "switch.wiga_antriebe",
         "sensor.rl_dg_3": "binary_sensor.gz_waermeanforderung", "sensor.rl_dg_4": "binary_sensor.lz_waermeanforderung",
-        "sensor.rl_bad_fussboden": "binary_sensor.bad_dg_waermeanforderung", "sensor.rl_bad_wand": "binary_sensor.bad_dg_waermeanforderung" };   // 20.11.2026: GZ/LZ, 22.11.2026: Bad DG über die Minis an der Gira-Phase (off = zu)
+        "sensor.rl_bad_fussboden": "binary_sensor.bad_dg_waermeanforderung", "sensor.rl_bad_wand": "binary_sensor.bad_dg_waermeanforderung",
+        "sensor.rl_og_bad": "binary_sensor.bad_og_waermeanforderung", "sensor.rl_og_bad_wand": "binary_sensor.bad_og_waermeanforderung",
+        "sensor.rl_yoga": "binary_sensor.yoga_waermeanforderung", "sensor.rl_og_flur": "binary_sensor.yoga_waermeanforderung" };   // 20.11.2026: GZ/LZ, 22.11.2026: Bad DG über die Minis an der Gira-Phase (off = zu)
       const pAus = s["binary_sensor.cmi_hk_pumpe"] === "off", emil = sl.entity === "sensor.rl_og_5" || sl.entity === "sensor.rl_og_6";
       const zu = (RLZ[sl.entity] && s[RLZ[sl.entity]] === "off") || (emil && v === null && s["binary_sensor.cmi_hk_pumpe"] === "on");
       if (pAus || zu) { el.textContent = pAus ? "–" : "zu"; el.style.color = pAus ? "#6b7280" : "#9ca3af"; continue; }
