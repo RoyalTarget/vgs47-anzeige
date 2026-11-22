@@ -346,7 +346,9 @@ const qLog = (e, i) => { if (abt(i)) { for (let j = i - 1; j >= Math.max(0, i - 
 // zu = letzter Abschnitt mit Wert hat 0 W (Ventil sicher zu). Gilt immer für „jetzt“, nicht für das gezoomte Fenster.
 function jetzt3(name) { const x = daten?.rw?.[name]; if (!x) return null; const m = Math.max(1, Math.round(3 * 36e5 / BIN)); let sw = 0, sp = 0, c = 0, last = null;
   for (let i = x.w.length - 1; i >= 0 && c < m; i--) { if (x.w[i] == null || !x.p[i]) continue; if (last === null) last = x.w[i]; sw += x.w[i]; sp += x.p[i]; c++; }
-  return c ? { w: sw / c, p: sp / c, zu: last <= 0 } : null; }
+  // 22.11.2026 abends (Nutzer „Yoga zu, aber jetzt noch Watt“): exakt bekannte Ventile live – sind alle Kreise des Raums laut Schalter/Mini zu, sofort „zu“
+  const rr = RAEUME.find((q) => q[0] === name), hl = hass(); const liveZu = !!(rr && hl && hl.states[PU]?.state === 'on' && rr[3].every((e) => VENTIL[e] && hl.states[VENTIL[e]]?.state === 'off'));
+  return c ? { w: sw / c, p: sp / c, zu: last <= 0 || liveZu } : null; }
 function kreis3(e) { const x = daten?.wk?.[e]; if (!x) return null; const m = Math.max(1, Math.round(3 * 36e5 / BIN)); let sw = 0, c = 0;
   for (let i = x.length - 1; i >= 0 && c < m; i--) { if (x[i] == null) continue; sw += x[i]; c++; } return c ? sw / c : null; }
 let hyLast = null;
@@ -502,7 +504,10 @@ function zeichne() {
       // 18.11.2026 (Nutzer): Zahlen rechts neben dem Bild auf Höhe ihrer Linie (grau alle offen · gelb erwartet · blau gemessen),
       // nach Höhe sortiert, Mindestabstand 12 px; kein Text mehr im Bild, Satz „… weniger als alle offen“ entfällt; schmal nur Zahlen
       { const qa = parseFloat(h?.states[QH]?.state); let qs = null;
-        for (let i = ib - 1; i >= iv && qs == null; i--) if (daten.qSoll?.[i] != null) qs = daten.qSoll[i];
+        let i0 = null; for (let i = ib - 1; i >= iv && qs == null; i--) if (daten.qSoll?.[i] != null) { qs = daten.qSoll[i]; i0 = i; }
+        // 22.11.2026 abends (Nutzer „erwartet ändert sich nicht“): „gemessen“ ist live, „erwartet“ kam aus dem letzten 10-min-Abschnitt → exakt bekannte Ventile live nachziehen
+        if (qs != null && h && h.states[PU]?.state === 'on') for (const k of daten.K) { if (typeof k.ist !== 'number' || !VENTIL[k.e] || !h.states[VENTIL[k.e]]) continue;
+          const zb = ventilZu(k.e, i0), zl = h.states[VENTIL[k.e]].state === 'off'; if (zb !== zl) qs += (zb ? 1 : -1) * k.ist * 60 * Q_KAL; }
         const wort = W - X1 > 110, yT = (y) => Math.max(z.y + 9, Math.min(z.y + z.h - 5, y + 4));
         // 20.11.2026 (Nutzer): „erwartet“ ist die Summe der Röhrchen-Spalte → steht jetzt unter der Röhrchen-Spalte (Zahl bündig mit den Ist-Werten),
         // rechts neben dem Bild nur noch grau „alle offen“ + blau „gemessen“ (mehr Platz). Ohne Spalten (schmal) bleibt die gelbe Zahl rechts.
