@@ -284,12 +284,12 @@ const ST_F = { kein: ['#6b7280', 'kein Fühler'], passt: ['#22c55e', 'passt'], k
 // EG-Reihenfolge (Nutzer 16.11.): WC, Flur, dann Wohnen, WiGa und die Summe am Ende
 // 17.11.2026: Flur O gehört zum JOCO-Raum Flur/Treppe → wird im EG unter Flur E gezeigt (GRUPPE)
 // 17.11.2026 (Nutzer, korrigiert): Flur O bleibt im OG, dort ganz unten (Σ Flur/Treppe steht unter Flur E im EG)
-const GRUPPE = {}, gr = (k) => GRUPPE[k.e] || k.g, ordK = (e) => e === 'sensor.rl_og_flur' ? 999 : (K_ORDER.indexOf(e) + 1 || 99);
+const GRUPPE = {}, gr = (k) => GRUPPE[k.e] || k.g, ordK = (e) => e === 'sensor.rl_og_flur' ? 999 : e === 'sensor.rl_yoga' ? 998 : (K_ORDER.indexOf(e) + 1 || 99);   // 22.11.2026 (Nutzer): Yoga direkt über Flur O (gleicher Gira), OG = Bad O, Emil, Yoga, Flur O
 const K_ORDER = ['sensor.rl_flur', 'sensor.rl_wc', 'sensor.rl_wz_1',   // EG: Flur E, WC, dann WZ/WiGa
   'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'];
 const QH = 'sensor.cmi_hk_durchfluss', TA = 'sensor.cmi_t_aussen', Q_OFFEN = 1040, Q_KAL = 1039 / 1077;   // CORA ÷ Σ Röhrchen alle offen (17.11.)   // Durchfluss alle Kreise offen (Messung 17.11.2026: 1.039 l/h)
-const GIRA_GR = [['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden'], ['sensor.rl_dg_3'], ['sensor.rl_dg_4'], ['sensor.rl_yoga'], ['sensor.rl_og_flur'],
-  ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand'], ['sensor.rl_wc'], ['sensor.rl_flur']];   // je Gira-Thermostat; Emil exakt, WZ/WiGa Shelly
+const GIRA_GR = [['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden'], ['sensor.rl_dg_3'], ['sensor.rl_dg_4'], ['sensor.rl_yoga', 'sensor.rl_og_flur'],
+  ['sensor.rl_og_bad', 'sensor.rl_og_bad_wand'], ['sensor.rl_wc'], ['sensor.rl_flur']];   // je Gira-Thermostat; Emil exakt, WZ/WiGa Shelly; 22.11.2026: Yoga + Flur O ein Gira (FBH.md)
 const RAUM_VON = {}; for (const r of RAEUME) for (const e of r[3]) RAUM_VON[e] = r;
 // 17.11.2026 (Nutzer): Watt je Kreis und Abschnitt = Röhrchen-Anteil am CORA-Durchfluss × (VL − RL Kreis) × 1,163 (l/min → 69,78);
 // geschlossene Kreise (Shelly zu, Emil stromlos, „zu (geschätzt)“) = 0 W und zählen nicht zum Anteil. Raum = Summe; Plan = JOCO × (Wunsch − außen) / (Raumtemp. 2012 + 16) (18.11.2026).
