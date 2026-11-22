@@ -55,7 +55,9 @@ const VENTIL = { 'sensor.rl_wz_1': 'switch.wz_antriebe', 'sensor.rl_wz_2': 'swit
 // 20.11.2026 (Nutzer: „zu in alle Kacheln, auch im Wärmebild“): GZ/LZ exakt über die Minis an der Gira-Phase (gira_anforderung.yaml, off = zu).
 // Nur in HA (Verlauf der binary_sensoren); die Website hat dafür noch keine Statistik → dort weiter Schätzung.
 const VENTIL_DG = { 'sensor.rl_dg_3': 'binary_sensor.gz_waermeanforderung', 'sensor.rl_dg_4': 'binary_sensor.lz_waermeanforderung',
-  'sensor.rl_bad_fussboden': 'binary_sensor.bad_dg_waermeanforderung', 'sensor.rl_bad_wand': 'binary_sensor.bad_dg_waermeanforderung' };   // 22.11.2026: Bad DG (Mini .60, Kanal 2)
+  'sensor.rl_bad_fussboden': 'binary_sensor.bad_dg_waermeanforderung', 'sensor.rl_bad_wand': 'binary_sensor.bad_dg_waermeanforderung',
+  'sensor.rl_og_bad': 'binary_sensor.bad_og_waermeanforderung', 'sensor.rl_og_bad_wand': 'binary_sensor.bad_og_waermeanforderung',
+  'sensor.rl_yoga': 'binary_sensor.yoga_waermeanforderung', 'sensor.rl_og_flur': 'binary_sensor.yoga_waermeanforderung' };   // 22.11.2026: HKV OG Minis .147/.124   // 22.11.2026: Bad DG (Mini .60, Kanal 2)
 const ventilZu = (e, i) => { const r = daten?.zu?.[VENTIL[e]]; return !!r && r[i] !== null && r[i] < 0.5; };
 // 06.11.2026 (Nutzer): „zu?“ für die übrigen Kreise. (a) Emil: RL-Shellys hängen am Thermostat-Strom → Fühler fehlt bei laufender Pumpe = Thermostat zu (exakt).
 // (b) Schätzung: RL ≥ 1 K unter dem üblichen Abstand des Kreises zum Mittel (75-%-Wert über das Datenfenster), mind. 15 min am Stück.
@@ -147,11 +149,12 @@ const GIST_V = GIST.replace('data.json', 'verlauf.json');
 const FI = ['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden', 'sensor.rl_dg_3', 'sensor.rl_dg_4', 'sensor.rl_yoga', 'sensor.rl_og_bad', 'sensor.rl_og_bad_wand', 'sensor.rl_og_flur',
   'sensor.rl_og_5', 'sensor.rl_og_6', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5', 'sensor.rl_wc', 'sensor.rl_flur',
   'sensor.cmi_hk_vorlauf', 'sensor.hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen', 'sensor.cmi_t_aussen',
-  'sensor.gz_ventile_offen', 'sensor.lz_ventile_offen', 'sensor.bad_dg_ventile_offen'];   // 22.11.2026: Index 25 = Bad DG
+  'sensor.gz_ventile_offen', 'sensor.lz_ventile_offen', 'sensor.bad_dg_ventile_offen', 'sensor.bad_og_ventile_offen', 'sensor.yoga_ventile_offen'];   // 22.11.2026: Index 25 = Bad DG, 26 Bad OG, 27 Yoga + Flur O
 // 06.11.2026 (Nutzer „Website zeigt altes Wärmebild“): Ventile WZ/WiGa als 0/1-Statistik (ventil_statistik.yaml) → wie im Dashboard „Ventil zu“
 const WEB_ZU = { 'switch.wz_antriebe': 'sensor.wz_ventile_offen', 'switch.wiga_antriebe': 'sensor.wiga_ventile_offen',
   'binary_sensor.gz_waermeanforderung': 'sensor.gz_ventile_offen', 'binary_sensor.lz_waermeanforderung': 'sensor.lz_ventile_offen',
-  'binary_sensor.bad_dg_waermeanforderung': 'sensor.bad_dg_ventile_offen' };   // 20.11.2026: GZ/LZ (Minis an der Gira-Phase), SQL-Index 23/24
+  'binary_sensor.bad_dg_waermeanforderung': 'sensor.bad_dg_ventile_offen', 'binary_sensor.bad_og_waermeanforderung': 'sensor.bad_og_ventile_offen',
+  'binary_sensor.yoga_waermeanforderung': 'sensor.yoga_ventile_offen' };   // 20.11.2026: GZ/LZ (Minis an der Gira-Phase), SQL-Index 23/24
 function webOhneNamen() {
   for (const r of RAEUME) if (r[0] === 'Emils Zimmer') r[0] = 'Kinderzimmer';
   if (HT_ORT['Emils Zimmer']) { delete HT_ORT['Emils Zimmer']; HT_ORT['Kinderzimmer'] = 'Kinderzimmer'; }
