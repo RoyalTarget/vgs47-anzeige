@@ -486,6 +486,9 @@ function zeichne() {
       continue; }
     if (z.typ === 'q') { const QM = 1200, yb = z.y + z.h - 3, sk = (v) => yb - Math.min(v, QM) / QM * (z.h - 8);
       g.fillStyle = '#232326'; g.fillRect(X0, z.y, X1 - X0, z.h - 2);
+      // 22.11.2026 abends (Nutzer, Entwurf abtau/ Variante B): Abtauen nur hier – schmales hellblaues Band + Strich oben, nicht mehr in jeder Kreiszeile
+      for (let i = iv; i < ib; i++) { if (!abt(i)) continue; const xa = Math.max(X(zeitAus(i)), X0), xb = Math.min(X(zeitAus(i + 1)), X1); if (xb <= xa) continue;
+        g.fillStyle = 'rgba(156,195,255,.22)'; g.fillRect(xa, z.y, Math.max(xb - xa, 2), z.h - 2); g.fillStyle = '#9cc3ff'; g.fillRect(xa - 0.5, z.y, Math.max(xb - xa, 2) + 1, 3); }
       g.strokeStyle = 'rgba(229,231,235,.35)'; g.setLineDash([3, 3]); g.lineWidth = 1; g.beginPath(); g.moveTo(X0, Math.round(sk(Q_OFFEN)) + 0.5); g.lineTo(X1, Math.round(sk(Q_OFFEN)) + 0.5); g.stroke(); g.setLineDash([]);
       g.strokeStyle = '#38bdf8'; g.lineWidth = 1.4; g.beginPath(); let st0 = false;
       for (let i = iv; i < ib; i++) { const v = daten.q[i]; if (v == null) { st0 = false; continue; } const x = X(zeitAus(i) + BIN / 2); if (x < X0 || x > X1) continue; if (st0) g.lineTo(x, sk(v)); else { g.moveTo(x, sk(v)); st0 = true; } }
@@ -575,7 +578,7 @@ function zeichne() {
       else if (modus === 'abw') { const ql = qLog(z.k.e, i); if (!an) col = schraffur(g); else if (ql === null) col = '#2a2a2e'; else { col = farbeQL(ql); sa += ql; sn++; } }
       else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
       g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1;
-      if (modus === 'abw' && an && abt(i)) { g.fillStyle = '#9cc3ff'; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, 2); } }
+    }
     const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
     const rlT = (einh) => rlSt === 'pumpe' ? ['–', '#6b7280'] : rlSt === 'zu' ? ['–', '#6b7280'] : [isNaN(akt) ? '–' : zahl(akt) + einh, rlSt === 'blass' ? 'rgba(245,158,11,.45)' : '#f59e0b'];
     if (schmal) { const [tt, tf] = rlT(''); g.textAlign = 'right'; g.fillStyle = tf; g.font = '600 11px system-ui, sans-serif'; g.fillText(tt, W - (hy ? 21 : 4), ym);   // 18.11.2026 (Nutzer iPhone): Abstand Zahl ↔ Punkt 3 → 6 px
@@ -632,7 +635,7 @@ function zeichne() {
       if (sx2 + 22 + g.measureText(s2).width <= W - 4) { g.fillStyle = zuMusterS(g); g.fillRect(sx2, ly + 2, 16, 10); g.strokeStyle = '#52525b'; g.strokeRect(sx2 + 0.5, ly + 2.5, 15, 9);
         g.fillStyle = '#9ca3af'; g.fillText(s2, sx2 + 22, ly + 7);
         const s3 = 'Abtauen', sx3 = sx2 + 22 + g.measureText(s2).width + 12;   // 22.11.2026
-        if (modus === 'abw' && sx3 + 22 + g.measureText(s3).width <= W - 4) { g.fillStyle = '#3f3f46'; g.fillRect(sx3, ly + 2, 16, 10); g.fillStyle = '#9cc3ff'; g.fillRect(sx3, ly + 2, 16, 3);
+        if (modus === 'abw' && sx3 + 22 + g.measureText(s3).width <= W - 4) { g.fillStyle = 'rgba(156,195,255,.22)'; g.fillRect(sx3, ly + 2, 16, 10); g.fillStyle = '#9cc3ff'; g.fillRect(sx3, ly + 2, 16, 3);
           g.fillStyle = '#9ca3af'; g.fillText(s3, sx3 + 22, ly + 7); } } } }
   geo = { X0, X1, von, bis, zl, plan, ACHSE, yEnde: y, schmal, cx };
   zeichneLeiste(W);
