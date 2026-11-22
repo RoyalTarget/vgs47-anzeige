@@ -49,6 +49,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const H48 = 48 * 36e5, TAGE = 14, VL = 'sensor.cmi_hk_vorlauf', RLG = 'sensor.hk_ruecklauf', PU = 'binary_sensor.cmi_hk_pumpe';
+const AB = 'binary_sensor.wp_taut_ab';   // 22.11.2026: Abtauen (Dashboard)
 // 03.11.2026 (Nutzer): WZ 1/2 + WG I/A/W hängen am Shelly 2PM (O1 WZ, O2 WiGa, Antriebe stromlos zu) → „Ventil zu“ exakt aus dem Schalter
 const VENTIL = { 'sensor.rl_wz_1': 'switch.wz_antriebe', 'sensor.rl_wz_2': 'switch.wz_antriebe', 'sensor.rl_wohnzimmer': 'switch.wiga_antriebe',
   'sensor.rl_wz_aussen': 'switch.wiga_antriebe', 'sensor.rl_wz_5': 'switch.wiga_antriebe' };
@@ -194,7 +195,7 @@ async function lade() {
   const h = hass(); if (!h) { setTimeout(lade, 2000); return; }
   const K = kreise(h), jetzt = Date.now(), t0 = Math.floor((jetzt - TAGE * 864e5) / BIN) * BIN, n = Math.ceil((jetzt - t0) / BIN);
   for (const [e, v] of Object.entries(VENTIL_DG)) if (h.states[v]) VENTIL[e] = v;
-  const da = K.filter((k) => h.states[k.e]), sw = [...new Set(Object.values(VENTIL))].filter((e) => h.states[e]), ids = [...da.map((k) => k.e), VL, RLG, PU, QH, TA, ...sw];
+  const da = K.filter((k) => h.states[k.e]), sw = [...new Set(Object.values(VENTIL))].filter((e) => h.states[e]), ids = [...da.map((k) => k.e), VL, RLG, PU, QH, TA, AB, ...sw];
   const r = await ws({ type: 'history/history_during_period', start_time: new Date(t0).toISOString(), end_time: new Date(jetzt).toISOString(),
     entity_ids: ids, minimal_response: true, no_attributes: true, significant_changes_only: false });
   const pk = (id, bin) => (r[id] || []).map((x) => [(x.lu ?? x.last_updated) * 1000, bin ? (x.s === 'on' ? 1 : x.s === 'off' ? 0 : null) : parseFloat(x.s)])
@@ -211,7 +212,7 @@ async function lade() {
   const ref = new Array(n).fill(null), rp = binne(pk(RLG), t0, n, BIN);
   for (let i = 0; i < n; i++) { if (rp[i] !== null) { ref[i] = rp[i]; continue; } let a = 0, m = 0; for (const e in reihen) { const v = reihen[e][i], zr = zu[VENTIL[e]]; if (v !== null && !(zr && zr[i] !== null && zr[i] < 0.5)) { a += v; m++; } } if (m >= 2) ref[i] = a / m; }
   daten = { t0, n, K, reihen, ref, vl: binne(pk(VL), t0, n, BIN), rl: binne(pk(RLG), t0, n, BIN), pu: binne(pk(PU, true), t0, n, BIN, true), zu, geladen: jetzt,
-    q: binne(pk(QH), t0, n, BIN), ta: binne(pk(TA), t0, n, BIN) };
+    q: binne(pk(QH), t0, n, BIN), ta: binne(pk(TA), t0, n, BIN), ab0: binne(pk(AB, true), t0, n, BIN, true) };
   daten.zuS = schaetzeZu(daten); berechneQ(daten);
   zeichne();
 }
@@ -312,7 +313,8 @@ function berechneQ(d) {
     // Gruppen = je Thermostat (Gira); gesucht wird die Kombination geschlossener Gruppen, deren Röhrchen die Lücke am CORA erklären (±30 l/h) UND deren
     // offene Kreise gemischt den PMG-Rücklauf ergeben (zwei unabhängige Messungen). Nur wenn am CORA mehr als 25 l/h fehlen.
     { const D = sq * 60 * Q_KAL - q, rp = d.rl[i];
-      if (D > 25 && rp != null) { const gr = GIRA_GR.map((g) => of.filter((k) => g.includes(k.e))).filter((g) => g.length);
+      // 22.11.2026 abends (Nutzer „Bad DG gelb, obwohl offen“): Kreise mit Mini an der Gira-Phase (exakter Wert vorhanden) nie schätzen
+      if (D > 25 && rp != null) { const gr = GIRA_GR.map((g) => of.filter((k) => g.includes(k.e) && !(VENTIL[k.e] && d.zu?.[VENTIL[k.e]]?.[i] != null))).filter((g) => g.length);
         let best = null; for (let m = 1; m < (1 << gr.length); m++) { const zu = gr.filter((_, j) => m & (1 << j)).flat(), op = of.filter((k) => !zu.includes(k));
           const so = op.reduce((a, k) => a + k.ist, 0); if (!so) continue; if (Math.abs(so * 60 * Q_KAL - q) > 30) continue;
           const mix = op.reduce((a, k) => a + k.ist * d.reihen[k.e][i], 0) / so, fe = Math.abs(mix - rp), nz = zu.length;
@@ -329,7 +331,10 @@ function berechneQ(d) {
 const pz = (q) => Math.round(q * 100) + '\u00a0%';   // 17.11.2026 (Nutzer): Faktor als % vom Plan statt ×
 // 22.11.2026 (Nutzer, Entwurf baddg): Abtauen – der Heizkreis gibt kurz Wärme zurück (VL < RL), fast alle Räume gleichzeitig ≤ 0 W → war tiefblau
 // wie „viel zu wenig Wärme“. Jetzt übernimmt der Abschnitt die Farbe davor, oben eine hellblaue Marke, Legende „Abtauen“. Wärme je Raum unverändert.
-function abtauBin(i) { const rw = daten?.rw; if (!rw || (daten.pu?.[i] ?? 0) < 0.5) return false; let n = 0, z = 0;
+// 22.11.2026 abends (Nutzer „blaue Striche“): im Dashboard echtes Abtau-Signal der WP (Anteil im Abschnitt > 15 % oder Abschnitt davor > 50 % = Nachlauf),
+// die Räume-Regel allein verpasste 7-min-Abtauungen in 10-min-Abschnitten. Website (ohne Signal) weiter über die Räume.
+function abtauBin(i) { const a0 = daten?.ab0; if (a0) { if ((a0[i] ?? 0) > 0.15 || (i > 0 && (a0[i - 1] ?? 0) > 0.5)) return (daten.pu?.[i] ?? 0) >= 0.5; }
+  const rw = daten?.rw; if (!rw || (daten.pu?.[i] ?? 0) < 0.5) return false; let n = 0, z = 0;
   for (const k in rw) { const w = rw[k].w[i]; if (w == null) continue; n++; if (w <= 0) z++; } return n >= 4 && z / n >= 0.7; }
 function abt(i) { if (!daten) return false; if (!daten._ab) daten._ab = new Array(daten.n).fill(null); if (daten._ab[i] === null || daten._ab[i] === undefined) daten._ab[i] = abtauBin(i); return daten._ab[i]; }
 const qLog = (e, i) => { if (abt(i)) { for (let j = i - 1; j >= Math.max(0, i - 6); j--) if (!abt(j)) return qLog(e, j); return null; }
