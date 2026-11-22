@@ -54,7 +54,8 @@ const VENTIL = { 'sensor.rl_wz_1': 'switch.wz_antriebe', 'sensor.rl_wz_2': 'swit
   'sensor.rl_wz_aussen': 'switch.wiga_antriebe', 'sensor.rl_wz_5': 'switch.wiga_antriebe' };
 // 20.11.2026 (Nutzer: „zu in alle Kacheln, auch im Wärmebild“): GZ/LZ exakt über die Minis an der Gira-Phase (gira_anforderung.yaml, off = zu).
 // Nur in HA (Verlauf der binary_sensoren); die Website hat dafür noch keine Statistik → dort weiter Schätzung.
-const VENTIL_DG = { 'sensor.rl_dg_3': 'binary_sensor.gz_waermeanforderung', 'sensor.rl_dg_4': 'binary_sensor.lz_waermeanforderung' };
+const VENTIL_DG = { 'sensor.rl_dg_3': 'binary_sensor.gz_waermeanforderung', 'sensor.rl_dg_4': 'binary_sensor.lz_waermeanforderung',
+  'sensor.rl_bad_fussboden': 'binary_sensor.bad_dg_waermeanforderung', 'sensor.rl_bad_wand': 'binary_sensor.bad_dg_waermeanforderung' };   // 22.11.2026: Bad DG (Mini .60, Kanal 2)
 const ventilZu = (e, i) => { const r = daten?.zu?.[VENTIL[e]]; return !!r && r[i] !== null && r[i] < 0.5; };
 // 06.11.2026 (Nutzer): „zu?“ für die übrigen Kreise. (a) Emil: RL-Shellys hängen am Thermostat-Strom → Fühler fehlt bei laufender Pumpe = Thermostat zu (exakt).
 // (b) Schätzung: RL ≥ 1 K unter dem üblichen Abstand des Kreises zum Mittel (75-%-Wert über das Datenfenster), mind. 15 min am Stück.
@@ -146,10 +147,11 @@ const GIST_V = GIST.replace('data.json', 'verlauf.json');
 const FI = ['sensor.rl_bad_wand', 'sensor.rl_bad_fussboden', 'sensor.rl_dg_3', 'sensor.rl_dg_4', 'sensor.rl_yoga', 'sensor.rl_og_bad', 'sensor.rl_og_bad_wand', 'sensor.rl_og_flur',
   'sensor.rl_og_5', 'sensor.rl_og_6', 'sensor.rl_wz_1', 'sensor.rl_wz_2', 'sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5', 'sensor.rl_wc', 'sensor.rl_flur',
   'sensor.cmi_hk_vorlauf', 'sensor.hk_ruecklauf', 'sensor.cmi_hk_durchfluss', 'sensor.wz_ventile_offen', 'sensor.wiga_ventile_offen', 'sensor.cmi_t_aussen',
-  'sensor.gz_ventile_offen', 'sensor.lz_ventile_offen'];
+  'sensor.gz_ventile_offen', 'sensor.lz_ventile_offen', 'sensor.bad_dg_ventile_offen'];   // 22.11.2026: Index 25 = Bad DG
 // 06.11.2026 (Nutzer „Website zeigt altes Wärmebild“): Ventile WZ/WiGa als 0/1-Statistik (ventil_statistik.yaml) → wie im Dashboard „Ventil zu“
 const WEB_ZU = { 'switch.wz_antriebe': 'sensor.wz_ventile_offen', 'switch.wiga_antriebe': 'sensor.wiga_ventile_offen',
-  'binary_sensor.gz_waermeanforderung': 'sensor.gz_ventile_offen', 'binary_sensor.lz_waermeanforderung': 'sensor.lz_ventile_offen' };   // 20.11.2026: GZ/LZ (Minis an der Gira-Phase), SQL-Index 23/24
+  'binary_sensor.gz_waermeanforderung': 'sensor.gz_ventile_offen', 'binary_sensor.lz_waermeanforderung': 'sensor.lz_ventile_offen',
+  'binary_sensor.bad_dg_waermeanforderung': 'sensor.bad_dg_ventile_offen' };   // 20.11.2026: GZ/LZ (Minis an der Gira-Phase), SQL-Index 23/24
 function webOhneNamen() {
   for (const r of RAEUME) if (r[0] === 'Emils Zimmer') r[0] = 'Kinderzimmer';
   if (HT_ORT['Emils Zimmer']) { delete HT_ORT['Emils Zimmer']; HT_ORT['Kinderzimmer'] = 'Kinderzimmer'; }
@@ -322,7 +324,13 @@ function berechneQ(d) {
       d.rw[name].w[i] = ws.reduce((a, b) => a + b, 0); d.rw[name].p[i] = Math.max(1, last * (wu - ta) / (norm + 16)); } } }
 // 17.11.2026 (Nutzer: „zu krass gestreift“): Farbe = Σ Watt ÷ Σ Plan über 1 h (±30 min), gewichtet statt Mittel der Faktoren; Abschnitte mit 0 W (Ventil zu) zählen nur, wenn der Raum jetzt auch zu ist
 const pz = (q) => Math.round(q * 100) + '\u00a0%';   // 17.11.2026 (Nutzer): Faktor als % vom Plan statt ×
-const qLog = (e, i) => { const r = RAUM_VON[e], x = r && daten?.rw?.[r[0]]; if (!x || x.w[i] == null || !x.p[i]) return null;
+// 22.11.2026 (Nutzer, Entwurf baddg): Abtauen – der Heizkreis gibt kurz Wärme zurück (VL < RL), fast alle Räume gleichzeitig ≤ 0 W → war tiefblau
+// wie „viel zu wenig Wärme“. Jetzt übernimmt der Abschnitt die Farbe davor, oben eine hellblaue Marke, Legende „Abtauen“. Wärme je Raum unverändert.
+function abtauBin(i) { const rw = daten?.rw; if (!rw || (daten.pu?.[i] ?? 0) < 0.5) return false; let n = 0, z = 0;
+  for (const k in rw) { const w = rw[k].w[i]; if (w == null) continue; n++; if (w <= 0) z++; } return n >= 4 && z / n >= 0.7; }
+function abt(i) { if (!daten) return false; if (!daten._ab) daten._ab = new Array(daten.n).fill(null); if (daten._ab[i] === null || daten._ab[i] === undefined) daten._ab[i] = abtauBin(i); return daten._ab[i]; }
+const qLog = (e, i) => { if (abt(i)) { for (let j = i - 1; j >= Math.max(0, i - 6); j--) if (!abt(j)) return qLog(e, j); return null; }
+  const r = RAUM_VON[e], x = r && daten?.rw?.[r[0]]; if (!x || x.w[i] == null || !x.p[i]) return null;
   const h = Math.max(0, Math.round(18e5 / BIN)), zu = x.w[i] <= 0; let sw = 0, sp = 0;
   for (let j = Math.max(0, i - h); j <= Math.min(x.w.length - 1, i + h); j++) { const w = x.w[j], p = x.p[j]; if (w == null || !p || ((w <= 0) !== zu)) continue; sw += w; sp += p; }
   return sp ? Math.log2(Math.max(sw, 1) / sp) : null; };
@@ -558,7 +566,8 @@ function zeichne() {
       else if (an && zg === 1) col = zuMusterS(g);
       else if (modus === 'abw') { const ql = qLog(z.k.e, i); if (!an) col = schraffur(g); else if (ql === null) col = '#2a2a2e'; else { col = farbeQL(ql); sa += ql; sn++; } }
       else { col = farbe(v); if (!an) g.globalAlpha = 0.45; }
-      g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1; }
+      g.fillStyle = col; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, hy1); g.globalAlpha = 1;
+      if (modus === 'abw' && an && abt(i)) { g.fillStyle = '#9cc3ff'; g.fillRect(Math.max(xa, X0), z.y, Math.min(xb, X1) - Math.max(xa, X0) + 0.6, 2); } }
     const akt = parseFloat(h?.states[z.k.e]?.state), ym = z.y + z.h / 2;
     const rlT = (einh) => rlSt === 'pumpe' ? ['–', '#6b7280'] : rlSt === 'zu' ? ['–', '#6b7280'] : [isNaN(akt) ? '–' : zahl(akt) + einh, rlSt === 'blass' ? 'rgba(245,158,11,.45)' : '#f59e0b'];
     if (schmal) { const [tt, tf] = rlT(''); g.textAlign = 'right'; g.fillStyle = tf; g.font = '600 11px system-ui, sans-serif'; g.fillText(tt, W - (hy ? 21 : 4), ym);   // 18.11.2026 (Nutzer iPhone): Abstand Zahl ↔ Punkt 3 → 6 px
@@ -613,7 +622,10 @@ function zeichne() {
       g.fillStyle = '#9ca3af'; g.fillText(st, sx0 + 22, ly + 7);
       const s2 = 'zu (geschätzt)', sx2 = sx0 + 22 + g.measureText(st).width + 12;   // 06.11.2026
       if (sx2 + 22 + g.measureText(s2).width <= W - 4) { g.fillStyle = zuMusterS(g); g.fillRect(sx2, ly + 2, 16, 10); g.strokeStyle = '#52525b'; g.strokeRect(sx2 + 0.5, ly + 2.5, 15, 9);
-        g.fillStyle = '#9ca3af'; g.fillText(s2, sx2 + 22, ly + 7); } } }
+        g.fillStyle = '#9ca3af'; g.fillText(s2, sx2 + 22, ly + 7);
+        const s3 = 'Abtauen', sx3 = sx2 + 22 + g.measureText(s2).width + 12;   // 22.11.2026
+        if (modus === 'abw' && sx3 + 22 + g.measureText(s3).width <= W - 4) { g.fillStyle = '#3f3f46'; g.fillRect(sx3, ly + 2, 16, 10); g.fillStyle = '#9cc3ff'; g.fillRect(sx3, ly + 2, 16, 3);
+          g.fillStyle = '#9ca3af'; g.fillText(s3, sx3 + 22, ly + 7); } } } }
   geo = { X0, X1, von, bis, zl, plan, ACHSE, yEnde: y, schmal, cx };
   zeichneLeiste(W);
   if (inHA) { fussZeile(h, hy, schmal); karteAnpassen(KOPF + FH + 40 + $('fuss').offsetHeight + 4); }
