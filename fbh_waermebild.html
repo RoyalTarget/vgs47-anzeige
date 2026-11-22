@@ -607,7 +607,12 @@ function zeichne() {
     // 18.11.2026 (Nutzer): Punkt direkt vor den Raumwert (sonst wirkt er wie Teil des Kreis-Watt links) – Abstand je Zahl (2. Versuch: fester Abstand änderte nichts)
     // 21.11.2026 (Nutzer): Raumwerte vorn „jetzt“ (Punkt · Wärme 3 h · % vom Plan jetzt), Plan jetzt, hinten Raum Nacht · %. Flur/Treppe steht bei Flur E (EG), Flur O zeigt den Verweis.
     const anker = raum && (raum.name === 'Flur/Treppe' ? raum.letzter : raum.erster) === z.k.e;
-    if (raum && raum.name === 'Flur/Treppe' && !anker) { g.textAlign = 'right'; g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('→ bei Flur E', cx.jw, ym); }
+    // 22.11.2026 22:30 (Nutzer): Flur O zeigt seine eigene Wärme (3 h) wie die anderen Kreise bzw. „zu“ (live über den Yoga-Mini); Σ Flur/Treppe + % bleiben bei Flur E
+    if (raum && raum.name === 'Flur/Treppe' && !anker) { const xW = cx.jw - 40, kw = kreis3(z.k.e), hl = hass(), ve = VENTIL[z.k.e];
+      const zuL = !!(ve && hl && hl.states[PU]?.state === 'on' && hl.states[ve]?.state === 'off');
+      g.textAlign = 'right'; g.font = '600 11px system-ui, sans-serif';
+      if (zuL) { g.fillStyle = '#9ca3af'; g.fillText('zu', xW, ym); } else if (kw != null) { g.fillStyle = '#e5e7eb'; g.fillText(wF(kw) + ' W', xW, ym); } else { g.fillStyle = '#6b7280'; g.fillText('–', xW, ym); }
+      g.fillStyle = '#6b7280'; g.font = '10px system-ui, sans-serif'; g.fillText('Σ bei Flur E', cx.jw, ym); }
     if (anker) { const j3 = jetzt3(raum.name), xP = cx.jw, xW = cx.jw - 40;
       g.font = '600 11px system-ui, sans-serif'; const wMax = Math.max(...(hy.liste || []).map((x) => { const q = jetzt3(x.name); return q && !q.zu ? g.measureText(wF(q.w) + ' W').width : 0; }), 20);   // Punkte in einer Linie
       punkt(g, raum, xW - wMax - 9, ym, 4.5);
