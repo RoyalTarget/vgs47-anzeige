@@ -907,7 +907,7 @@
  {
   "img": "schema_d2_text.svg",
   "conds": [],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_voll.svg",
@@ -921,9 +921,13 @@
     "sensor.cmi_wp_stellgroesse",
     0.5,
     72
+   ],
+   [
+    "binary_sensor.wp_heizstab_freigabe",
+    "off"
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_0.svg",
@@ -934,7 +938,7 @@
     0.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_min.svg",
@@ -945,7 +949,7 @@
     52.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_53.svg",
@@ -956,7 +960,7 @@
     53.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_54.svg",
@@ -967,7 +971,7 @@
     54.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_55.svg",
@@ -978,7 +982,7 @@
     55.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_56.svg",
@@ -989,7 +993,7 @@
     56.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_57.svg",
@@ -1000,7 +1004,7 @@
     57.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_58.svg",
@@ -1011,7 +1015,7 @@
     58.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_59.svg",
@@ -1022,7 +1026,7 @@
     59.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_60.svg",
@@ -1033,7 +1037,7 @@
     60.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_61.svg",
@@ -1044,7 +1048,7 @@
     61.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_62.svg",
@@ -1055,7 +1059,7 @@
     62.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_63.svg",
@@ -1066,7 +1070,7 @@
     63.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_64.svg",
@@ -1077,7 +1081,7 @@
     64.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_65.svg",
@@ -1088,7 +1092,7 @@
     65.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_66.svg",
@@ -1099,7 +1103,7 @@
     66.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_67.svg",
@@ -1110,7 +1114,7 @@
     67.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_68.svg",
@@ -1121,7 +1125,7 @@
     68.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_69.svg",
@@ -1132,7 +1136,7 @@
     69.5
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_100.svg",
@@ -1143,7 +1147,7 @@
     72
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_hs1.svg",
@@ -1154,7 +1158,7 @@
     81.8
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_hs2.svg",
@@ -1165,7 +1169,7 @@
     94.4
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_vd_hs3.svg",
@@ -1176,7 +1180,47 @@
     null
    ]
   ],
-  "v": 14
+  "v": 15
+ },
+ {
+  "img": "schema_d2_vd_grenze100.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_heizstab_freigabe",
+    "off"
+   ]
+  ],
+  "v": 15
+ },
+ {
+  "img": "schema_d2_vd_grenze_hs1.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_heizstab_freigabe",
+    "on"
+   ]
+  ],
+  "v": 15
+ },
+ {
+  "img": "schema_d2_vd_frei.svg",
+  "conds": [
+   [
+    "binary_sensor.wp_heizstab_freigabe",
+    "on"
+   ],
+   [
+    "sensor.wp_vollast_minuten",
+    null,
+    1
+   ],
+   [
+    "sensor.cmi_wp_stellgroesse",
+    0.5,
+    72
+   ]
+  ],
+  "v": 15
  },
  {
   "img": "schema_d2_az_gruen.svg",
@@ -1187,7 +1231,7 @@
     null
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_az_gelb.svg",
@@ -1198,7 +1242,7 @@
     4
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_az_rot.svg",
@@ -1209,7 +1253,7 @@
     3
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_10.svg",
@@ -1220,7 +1264,7 @@
     15
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_20.svg",
@@ -1231,7 +1275,7 @@
     25
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_30.svg",
@@ -1242,7 +1286,7 @@
     35
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_40.svg",
@@ -1253,7 +1297,7 @@
     45
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_50.svg",
@@ -1264,7 +1308,7 @@
     55
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_60.svg",
@@ -1275,7 +1319,7 @@
     65
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_70.svg",
@@ -1286,7 +1330,7 @@
     75
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_80.svg",
@@ -1297,7 +1341,7 @@
     85
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_90.svg",
@@ -1308,7 +1352,7 @@
     95
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_d2_mix_100.svg",
@@ -1319,7 +1363,7 @@
     105
    ]
   ],
-  "v": 14
+  "v": 15
  },
  {
   "img": "schema_klima_dg_0.svg",
