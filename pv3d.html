@@ -116,13 +116,14 @@ const zDach = (y) => TR + NEIG * (y <= T / 2 ? y : T - y);
 poly([[-UEBX, -UEB, TR - NEIG * UEB], [B + UEBX, -UEB, TR - NEIG * UEB], [B + UEBX, T / 2, FI], [-UEBX, T / 2, FI]], matDach);
 poly([[-UEBX, T + UEB, TR - NEIG * UEB], [B + UEBX, T + UEB, TR - NEIG * UEB], [B + UEBX, T / 2, FI], [-UEBX, T / 2, FI]], matDach);
 // Gauben (Garten SO: y ab 0 nach innen, Straße NW: y ab 9.5 nach innen)
+const GAUBE_FENSTER = {};   // 23.11.2026: Gauben-Fenster je Seite (Licht LZ/GZ, Form nach Fotos)
 function gaube([xa, xb], seite) {
   const Y = (d) => seite === 'so' ? d : T - d;
   poly([[xa, Y(0), TR], [xb, Y(0), TR], [xb, Y(0), GZ], [xa, Y(0), GZ]], matGaube);                                   // Front
   for (const x of [xa, xb]) poly([[x, Y(0), TR], [x, Y(0), GZ], [x, Y(GTIEF), GZ + G7 * GTIEF]], matGaube);           // Wangen
   poly([[xa - 0.15, Y(-0.35), GZ - G7 * 0.35], [xb + 0.15, Y(-0.35), GZ - G7 * 0.35], [xb + 0.15, Y(GTIEF), GZ + G7 * GTIEF], [xa - 0.15, Y(GTIEF), GZ + G7 * GTIEF]], matBlech);  // Dach 7°
   const fy = seite === 'so' ? -0.02 : T + 0.02, fm = new THREE.Mesh(new THREE.PlaneGeometry(xb - xa - 0.8, 1.2), matFenster);   // Fensterband
-  fm.position.copy(P((xa + xb) / 2, fy, TR + 1.0)); if (seite === 'so') fm.rotation.y = Math.PI; inner.add(fm);
+  fm.position.copy(P((xa + xb) / 2, fy, TR + 1.0)); if (seite === 'so') fm.rotation.y = Math.PI; inner.add(fm); GAUBE_FENSTER[seite] = fm;
 }
 gaube(GAUBE_SO, 'so'); gaube(GAUBE_NW, 'nw');
 // Motorfenster (Nutzer 05.10.2026): je Glasseite die mittlere Scheibe, oben am First angeschlagen (Kettenantrieb D+H),
@@ -132,7 +133,7 @@ const FENSTER = { west: 'cover.fenster_west', ost: 'cover.fenster_ost' }, OFFEN_
 // Glas-Firstaufbau (Foto 01.10.2026): sitzt AUF dem First – graue senkrechte Wände ≈ 0,45 m über der Dachfläche,
 // darauf ein Satteldach aus Glas (je Seite 3 Scheiben mit hellen Rahmen), First ≈ 0,3 m über dem Hausfirst.
 // Vorher lag er mit +9,05/+9,45 unter der Dachfläche (First +10,07) und war unsichtbar.
-{ const xa = 1.1, xb = 4.6, y0 = T / 2 - 1.0, y1 = T / 2 + 1.0, zw = zDach(y0) + 0.45, zf = FI + 0.3;   // endet ≈ 4,7 m von der Wand zu Nr. 45 (Drohnenfoto)
+{ const xa = 1.0, xb = 4.5, y0 = T / 2 - 1.0, y1 = T / 2 + 1.0, zw = zDach(y0) + 0.45, zf = FI + 0.3;   // 23.11.2026 (Nutzer, Bauplan): 1,0 m von Nr. 45, 3,5 m breit, 1,5 m bis zum SW-Giebel (vorher 1,1–4,6 nach Drohnenfoto)
   const matRahmen = new THREE.MeshStandardMaterial({ color: 0xc7ccd3, roughness: 0.5, metalness: 0.4, side: THREE.DoubleSide });
   for (const y of [y0, y1]) poly([[xa, y, zDach(y) - 0.2], [xb, y, zDach(y) - 0.2], [xb, y, zw], [xa, y, zw]], matRahmen);
   for (const x of [xa, xb]) poly([[x, y0, zDach(y0) - 0.2], [x, T / 2, FI], [x, y1, zDach(y1) - 0.2], [x, y1, zw], [x, T / 2, zf], [x, y0, zw]], matRahmen);
@@ -155,41 +156,59 @@ const FENSTER = { west: 'cover.fenster_west', ost: 'cover.fenster_ost' }, OFFEN_
   stab([xa, T / 2, zf + 0.04], [xb, T / 2, zf + 0.04], 0.12); }
 // Südwest-Giebel (Nutzer 30.09.2026): oben zwei ganz kleine Fenster, darunter die 8 Module, darunter zwei Fenstertüren,
 // die unten auf der Dachterrasse der Garage enden. Lage/Höhen aus der Südwest-Ansicht (Maßstab ≈ 84 px/m).
-const fenster = (y, z, b, h) => { const f = new THREE.Mesh(new THREE.PlaneGeometry(b, h), matFenster); f.position.copy(P(B + 0.02, y, z)); f.rotation.y = Math.PI / 2; inner.add(f); };
-for (const y of [3.55, 5.95]) fenster(y, 3.66, 1.0, 2.0);           // Fenstertüren (OG) auf die Garagenterrasse, direkt unter dem Modulfeld
-for (const y of [3.55, 5.95]) fenster(y, 7.35, 0.9, 0.6);           // kleine Giebelfenster, direkt über dem Modulfeld (Foto 30.09.2026)
+const fenster = (y, z, b, h) => { const f = new THREE.Mesh(new THREE.PlaneGeometry(b, h), matFenster.clone()); f.position.copy(P(B + 0.02, y, z)); f.rotation.y = Math.PI / 2; inner.add(f); return f; };
+const SW_TUER = {}, SW_KLEIN = {};   // 23.11.2026: Fenstertüren links Yoga (y 5,95) / rechts Emil (3,55); kleine Fenster links Bad DG (5,95) / rechts GZ (3,55)
+for (const y of [3.55, 5.95]) SW_TUER[y] = fenster(y, 3.66, 1.0, 2.0);           // Fenstertüren (OG) auf die Garagenterrasse, direkt unter dem Modulfeld
+for (const y of [3.55, 5.95]) SW_KLEIN[y] = fenster(y, 7.35, 0.9, 0.6);           // kleine Giebelfenster, direkt über dem Modulfeld (Foto 30.09.2026)
 // Garage vor dem Giebel (3,12 m tief) mit Holz-Dachterrasse (ohne Geländer, Nutzer 30.09.2026)
 const GAR = [1.4, 7.3], GH = 2.6;   // 01.10.2026: ≈ 1 m Richtung Garten – endet kurz vor dem Kamin, fast bündig mit dem Modulfeld (Foto)
 kiste(B, B + 3.12, GAR[0], GAR[1], 0, GH, matWand);
 kiste(B, B + 3.12, GAR[0], GAR[1], GH, GH + 0.08, new THREE.MeshStandardMaterial({ color: 0x8b6b4a, roughness: 0.9 }));
 // Stahlkamin an der Gartenecke des Giebels (neben der Garage)
-{ const k = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 11.2, 20), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7, roughness: 0.3 }));
-  k.position.copy(P(B + 0.25, 0.15, 5.6)); k.castShadow = true; inner.add(k); }   // Kamin an der Gartenecke des Giebels (Nutzer)
+// 23.11.2026 (Bauplan SW-Ansicht + Foto von der Straße): steht direkt hinter dem Garagenende zum Garten (≈ 1,15 m vor der Gartenwand), Oberkante ≈ +8,7 (vorher 0,15 / +11,2)
+{ const k = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 8.7, 20), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7, roughness: 0.3 }));
+  k.position.copy(P(B + 0.25, 1.15, 4.35)); k.castShadow = true; inner.add(k); }   // Kamin an der Gartenecke des Giebels (Nutzer)
 // Windfang Straßenseite (Dach 7°, +2,85) und Wintergarten Gartenseite (Glas)
 const WF = [1.2, 3.9], WFT = 1.9;
 kiste(WF[0], WF[1], T, T + WFT, 0, 2.62, matWand);
 poly([[WF[0] - 0.1, T, 2.85], [WF[1] + 0.1, T, 2.85], [WF[1] + 0.1, T + WFT + 0.15, 2.85 - G7 * (WFT + 0.15)], [WF[0] - 0.1, T + WFT + 0.15, 2.85 - G7 * (WFT + 0.15)]], matBlech);
-kiste(0.04, B - 0.04, -4.0, 0, 0, 2.7, matGlas).castShadow = false;   // Wintergarten 5,90 × 4,0 m (Nutzer 01.10.2026, vorher 2,8 m tief)
+// Wintergarten 5,90 × 4,0 m (Nutzer 01.10.2026). 23.11.2026 (Fotos): Dach zum Garten geneigt (Hauswand +2,85 → vorne +2,45),
+// links (Garten-Blick = SW) Glas über einer Brüstung ≈ 0,6 m, Tür etwa in der Mitte (Sensor), weiße Rahmen
+const WG = { x0: 0.04, x1: B - 0.04, y: -4.0, zh: 2.85, zv: 2.45 };
+{ const matWGDach = new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.2, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide });
+  matGlas.depthWrite = false;   // sonst verdeckt das Glas die Lichtpunkte im Wintergarten (Sortierung nach Mesh-Ursprung)
+  for (const m of [poly([[WG.x0, WG.y, 0], [WG.x1, WG.y, 0], [WG.x1, WG.y, WG.zv], [WG.x0, WG.y, WG.zv]], matGlas, false),
+                   poly([[WG.x0, 0, 0], [WG.x0, WG.y, 0], [WG.x0, WG.y, WG.zv], [WG.x0, 0, WG.zh]], matGlas, false),
+                   poly([[WG.x1, 0, 0], [WG.x1, WG.y, 0], [WG.x1, WG.y, WG.zv], [WG.x1, 0, WG.zh]], matGlas, false),
+                   poly([[WG.x0 - 0.05, 0, WG.zh + 0.02], [WG.x1 + 0.05, 0, WG.zh + 0.02], [WG.x1 + 0.05, WG.y - 0.12, WG.zv - 0.01], [WG.x0 - 0.05, WG.y - 0.12, WG.zv - 0.01]], matWGDach, false)]) m.receiveShadow = false;
+  const matWeiss = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.6 });
+  kiste(2.75, WG.x1, WG.y, WG.y + 0.15, 0, 0.6, matWand);                                         // Brüstung links (Esstisch-Seite)
+  for (const x of [WG.x0, 1.05, 1.9, 2.75, 4.35, WG.x1]) kiste(x - 0.04, x + 0.04, WG.y - 0.02, WG.y + 0.06, 0, WG.zv, matWeiss);   // Pfosten vorne
+  kiste(WG.x0, WG.x1, WG.y - 0.02, WG.y + 0.08, WG.zv - 0.1, WG.zv, matWeiss);                    // Rähm vorne
+  kiste(2.6, 3.4, -0.25, -0.02, 2.2, 2.5, matWeiss);                                               // Daikin-Innengerät WiGa oben an der Hauswand
+}
 
 // ---------- 23.11.2026 (Nutzer): Außengeräte, CMI-Außenfühler, Nachbarhaus – wegen Abluft/Wind am Fühler ----------
 const ziel3 = (x, y, z) => new THREE.Vector3(x, z, y);   // Richtung in Hauskoordinaten
 function pfeil(von, dir, len, farbe, r0 = 0.25, r1 = 0.9) {   // Abluft-Fahne: halbdurchsichtiger Kegel + Pfeilspitze
-  const d = ziel3(...dir).normalize(), o = P(...von);
+  const d = ziel3(...dir).normalize(), o = P(...von), grp = new THREE.Group(); inner.add(grp);
   const k = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, 24, 1, true), new THREE.MeshBasicMaterial({ color: farbe, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide }));
-  k.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); k.position.copy(o.clone().addScaledVector(d, len / 2)); inner.add(k);
-  const a = new THREE.ArrowHelper(d, o, len + 0.3, farbe, 0.6, 0.45); inner.add(a); return a; }
+  k.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); k.position.copy(o.clone().addScaledVector(d, len / 2)); grp.add(k);
+  const a = new THREE.ArrowHelper(d, o, len + 0.3, farbe, 0.6, 0.45); grp.add(a);
+  grp.userData.farbe = (c) => { k.material.color.set(c); a.setColor(c); }; return grp; }
+const ETIKETTEN = [];
 function etikett(txt, pos, farbe, breite = 2.6) {
   const c = document.createElement('canvas'); c.width = 320; c.height = 72; const g = c.getContext('2d');
   g.fillStyle = 'rgba(17,20,24,0.85)'; g.strokeStyle = farbe; g.lineWidth = 3; g.beginPath(); g.roundRect(4, 4, c.width - 8, c.height - 8, 16); g.fill(); g.stroke();
   g.fillStyle = '#f3f4f6'; g.font = 'bold 30px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, c.width / 2, c.height / 2 + 1);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); sp.scale.set(breite, breite * 72 / 320, 1); sp.position.copy(P(...pos)); sp.renderOrder = 11; inner.add(sp); return sp;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); sp.scale.set(breite, breite * 72 / 320, 1); sp.position.copy(P(...pos)); sp.renderOrder = 11; inner.add(sp); ETIKETTEN.push(sp); return sp;
 }
 // WP CHA-07 (Lageplan v6, Projektverlauf 23.10.): Vorgarten Straßenseite (NW), Ecke zu Nr. 45, Außeneinheit 1,29 × 0,56 × 0,98 m,
 // Ansaugung zur Straße, Ausblasung 2,4 m gegen den Windfang bzw. halb in den Gang
 const WPX = [0.45, 1.74], WPY0 = T + WFT + 2.4;
 kiste(WPX[0], WPX[1], WPY0, WPY0 + 0.56, 0, 0.98, new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.5 }));
-pfeil([(WPX[0] + WPX[1]) / 2, WPY0 - 0.05, 0.5], [0, -1, 0], 2.3, 0x60a5fa, 0.35, 0.8);
+const fahneWP = pfeil([(WPX[0] + WPX[1]) / 2, WPY0 - 0.05, 0.5], [0, -1, 0], 2.3, 0x60a5fa, 0.35, 0.8);
 etikett('WP CHA-07', [(WPX[0] + WPX[1]) / 2, WPY0 + 0.3, 2.0], '#f59e0b');
 // CMI-Außenfühler (Nutzer 23.11. im Lageplan): Straßenfassade über dem Gang zu Nr. 45, ca. 3 m hoch, knapp über dem Windfang-Dach
 // Nutzer 23.11.: Fühler nicht so prominent → kleiner Punkt, kleines graues Schild
@@ -200,8 +219,22 @@ etikett('Außenfühler', [0.7, T + 0.4, 3.5], '#6b7280', 1.3);
 // 3MXM52A: 974 B × 734 H × 408 T mm (Daikin-Produkttabelle), mittig zwischen den Fenstertüren (y 3,55 / 5,95), füllt die Lücke
 const DKX = [B + 0.12, B + 0.12 + 0.408], DKY = [4.75 - 0.487, 4.75 + 0.487], DKZ = GH + 0.08;
 kiste(DKX[0], DKX[1], DKY[0], DKY[1], DKZ, DKZ + 0.734, new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.5 }));
-pfeil([DKX[1] + 0.02, (DKY[0] + DKY[1]) / 2, DKZ + 0.37], [1, 0, 0], 2.0, 0x60a5fa, 0.25, 0.7);
+const fahneDK = pfeil([DKX[1] + 0.02, (DKY[0] + DKY[1]) / 2, DKZ + 0.37], [1, 0, 0], 2.0, 0x60a5fa, 0.25, 0.7);
 etikett('Daikin', [(DKX[0] + DKX[1]) / 2, (DKY[0] + DKY[1]) / 2, DKZ + 1.4], '#2dd4bf', 1.8);
+// Windpfeil (23.11.2026, nur im HA-Dashboard – weather.forecast_home = met.no-Vorhersage): liegt auf der Luv-Seite am Boden und zeigt,
+// wohin der Wind weht; Länge nach Stärke. Test: ?wind=200,9 (aus Grad, km/h)
+const windPfeil = new THREE.Group(); windPfeil.visible = false; scene.add(windPfeil);
+{ const m = new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.75, depthWrite: false });
+  const schaft = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.05, 1), m); schaft.position.z = 0.5; windPfeil.add(schaft);
+  const spitze = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.4, 3), m); spitze.rotation.x = Math.PI / 2; spitze.position.z = 1.7; windPfeil.add(spitze);
+  windPfeil.userData = { schaft, spitze }; }
+function windSetzen(aus, kmh) {
+  if (aus == null || kmh == null) { windPfeil.visible = false; return; }
+  const zu = (aus + 180) * Math.PI / 180, dir = new THREE.Vector3(Math.sin(zu), 0, -Math.cos(zu)), L = Math.max(2, Math.min(2 + kmh / 3, 9));
+  const { schaft, spitze } = windPfeil.userData; schaft.scale.z = L; schaft.position.z = L / 2; spitze.position.z = L + 0.6;
+  windPfeil.position.copy(dir.clone().multiplyScalar(-(9 + L / 2 + 0.7))).setY(0.06);
+  windPfeil.lookAt(windPfeil.position.clone().add(dir)); windPfeil.visible = true;
+}
 // Nachbarhaus SW (Nutzer 23.11.): Fassade 6,50 m vor unserem Giebel, gleich hoch und breit (Lage parallel angenommen), halbdurchsichtig
 { const matN = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.9, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide });
   const X0 = B + 6.5, X1 = X0 + B;
@@ -209,6 +242,99 @@ etikett('Daikin', [(DKX[0] + DKX[1]) / 2, (DKY[0] + DKY[1]) / 2, DKZ + 1.4], '#2
   for (const x of [X0, X1]) poly([[x, 0, TR], [x, T, TR], [x, T / 2, FI]], matN);
   poly([[X0, 0, TR], [X1, 0, TR], [X1, T / 2, FI], [X0, T / 2, FI]], matN); poly([[X0, T, TR], [X1, T, TR], [X1, T / 2, FI], [X0, T / 2, FI]], matN);
   etikett('Nachbarhaus · 6,5 m', [X0 + B / 2, T / 2, FI + 1.0], '#9ca3af', 3.2); }
+
+// ---------- 23.11.2026 (Nutzer, Fotos + Skizzen): Fenster, Türen, Lichter – Licht und Türen nur im HA-Dashboard, nie auf der Website ----------
+// Raumzuordnung + Gartenlichter: Themen/Dashboard.md „PV-3D Ausbau – Sammlung“. Lichtzustand aus sensor.lichter_inventar (Attribut liste: n, an).
+// Test außerhalb HA: ?licht=alle, ?tuer=alle, ?el=-12 (Nacht)
+const matGlasLicht = () => new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.2, emissive: 0x000000, side: THREE.DoubleSide });
+const matRahmenW = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.6, side: THREE.DoubleSide });
+const matLaden = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.7, side: THREE.DoubleSide });
+const RAUM = {};   // Raum → Liste von Glas-Materialien, die bei Licht warm leuchten
+function glas(raum) { const m = matGlasLicht(); (RAUM[raum] = RAUM[raum] || []).push(m); return m; }
+// Fenster in einer Hauswand: seite 'str' (y = T, nach außen +y) oder 'gar' (y = 0, nach außen −y); x0..x1, z0..z1
+function wandFenster(seite, x0, x1, z0, z1, raum, rahmen = true) {
+  const y = seite === 'str' ? T : 0, d = seite === 'str' ? 1 : -1, b = x1 - x0, h = z1 - z0;
+  if (rahmen) { const r = new THREE.Mesh(new THREE.PlaneGeometry(b + 0.16, h + 0.16), matRahmenW); r.position.copy(P((x0 + x1) / 2, y + d * 0.012, (z0 + z1) / 2)); if (d < 0) r.rotation.y = Math.PI; inner.add(r); }
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(b, h), raum ? glas(raum) : matFenster); g.position.copy(P((x0 + x1) / 2, y + d * 0.022, (z0 + z1) / 2)); if (d < 0) g.rotation.y = Math.PI; inner.add(g);
+  return g;
+}
+function laden(seite, x0, x1, z0, z1) { const y = seite === 'str' ? T : 0, d = seite === 'str' ? 1 : -1;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), matLaden); m.position.copy(P((x0 + x1) / 2, y + d * 0.03, (z0 + z1) / 2)); if (d < 0) m.rotation.y = Math.PI; inner.add(m); }
+// Straßenseite (Blick von der Straße: links = Nr. 45 = kleines x). Maße aus Bauplan NW-Ansicht + Fotos
+wandFenster('str', 0.74, 1.93, 3.9, 5.3, 'bad_og'); laden('str', 0.2, 0.68, 3.9, 5.3); laden('str', 1.99, 2.47, 3.9, 5.3);     // OG links Bad OG
+wandFenster('str', 3.47, 4.66, 3.9, 5.3, 'yoga'); laden('str', 2.93, 3.41, 3.9, 5.3); laden('str', 4.72, 5.2, 3.9, 5.3);       // OG rechts Yoga
+wandFenster('str', 0.4, 0.85, 1.85, 2.5, 'wc');                                                                                  // WC EG, links vom Windfang
+// Küche: Flügeltür bis zum Boden rechts vom Windfang, Sensor am Flügel näher am Windfang (links)
+const KT = { x0: 4.05, xm: 4.6, x1: 5.15, z1: 2.3 };
+wandFenster('str', KT.x0, KT.x1, 0.05, KT.z1, null).visible = false; laden('str', 5.25, 5.8, 0.05, KT.z1);
+const kuecheFluegel = wandFenster('str', KT.x0 + 0.04, KT.xm - 0.03, 0.12, KT.z1 - 0.06, 'kueche', false);
+wandFenster('str', KT.xm + 0.03, KT.x1 - 0.04, 0.12, KT.z1 - 0.06, 'kueche', false);
+// Haustür (blau, 4 Glasfelder) vorn im Windfang + Glasband darüber → Flur EG
+const HT = { x0: 2.05, x1: 3.05, z1: 2.15, y: T + WFT };
+const matTuerBlau = new THREE.MeshStandardMaterial({ color: 0x1e2a78, roughness: 0.6, side: THREE.DoubleSide });
+const haustuer = new THREE.Group(); inner.add(haustuer);
+{ const t = new THREE.Mesh(new THREE.PlaneGeometry(HT.x1 - HT.x0, HT.z1), matTuerBlau); t.position.copy(P((HT.x0 + HT.x1) / 2, HT.y + 0.02, HT.z1 / 2)); haustuer.add(t);
+  for (let i = 0; i < 4; i++) { const gz = 0.35 + i * 0.47, g = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.32), glas('flur_eg')); g.position.copy(P((HT.x0 + HT.x1) / 2 + 0.05, HT.y + 0.03, gz)); haustuer.add(g); } }
+{ const g = new THREE.Mesh(new THREE.PlaneGeometry(WF[1] - WF[0] - 0.5, 0.32), glas('flur_eg')); g.position.copy(P((WF[0] + WF[1]) / 2, HT.y + 0.02, 2.38)); inner.add(g); }
+// Gartenseite (Blick vom Garten: links = SW = großes x): OG beide Fenster Emil; EG hinter dem Wintergarten Öffnung zum Wohnzimmer
+wandFenster('gar', 3.7, 5.0, 3.85, 5.3, 'emil'); wandFenster('gar', 0.6, 1.8, 4.1, 5.3, 'emil');
+wandFenster('gar', 1.0, 5.0, 0.05, 2.15, 'wz');
+// Gauben: Garten (GZ) zwei große Flügelfenster fast bis zum Gaubenboden, Straße (LZ) breites Band mit 4 Flügeln; Geländer an der Traufe
+{ const so = GAUBE_FENSTER.so, nw = GAUBE_FENSTER.nw;
+  so.geometry = new THREE.PlaneGeometry(GAUBE_SO[1] - GAUBE_SO[0] - 0.5, 1.6); so.position.copy(P((GAUBE_SO[0] + GAUBE_SO[1]) / 2, -0.02, TR + 0.88)); so.material = glas('gz');
+  nw.geometry = new THREE.PlaneGeometry(GAUBE_NW[1] - GAUBE_NW[0] - 0.5, 1.25); nw.position.copy(P((GAUBE_NW[0] + GAUBE_NW[1]) / 2, T + 0.02, TR + 1.0)); nw.material = glas('lz');
+  const matGel = new THREE.MeshStandardMaterial({ color: 0x3f2a22, roughness: 0.7 });
+  for (const [yy, x0, x1] of [[0.35, 0.3, 5.7], [T - 0.35, 0.3, 5.7]]) { const zb = zDach(yy);
+    kiste(x0, x1, yy - 0.02, yy + 0.02, zb + 0.55, zb + 0.6, matGel);
+    for (let x = x0; x <= x1 + 0.01; x += 0.45) kiste(x - 0.015, x + 0.015, yy - 0.015, yy + 0.015, zb, zb + 0.58, matGel); } }
+SW_KLEIN[5.95].material = glas('bad_dg'); SW_KLEIN[3.55].material = glas('gz'); SW_TUER[5.95].material = glas('yoga'); SW_TUER[3.55].material = glas('emil');
+// Wintergarten-Tür (Sensor) etwa in der Mitte, geht nach außen auf; Scharnier bei x 2,73
+const wigaTuer = new THREE.Group(); wigaTuer.position.copy(P(2.73, WG.y - 0.03, 0)); inner.add(wigaTuer);
+{ const b = 0.83, f = new THREE.Mesh(new THREE.PlaneGeometry(b, 2.25), new THREE.MeshStandardMaterial({ color: 0xbfdbfe, roughness: 0.1, transparent: true, opacity: 0.4, side: THREE.DoubleSide }));
+  f.position.set(-b / 2, 1.13, 0); wigaTuer.add(f);
+  for (const [w, h, x, z] of [[0.06, 2.25, -0.03, 1.13], [0.06, 2.25, -b + 0.03, 1.13], [b, 0.07, -b / 2, 0.03], [b, 0.07, -b / 2, 2.22]]) { const r = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.05), matRahmenW); r.position.set(x, z, 0); wigaTuer.add(r); } }
+// Tür offen ohne Sichtbarkeit nach außen (Haustür, Küche): Öffnung dunkel + oranger Rahmen
+function offenRahmen(cx, y, b, h, d) { const g = new THREE.Group(); g.visible = false; inner.add(g);
+  const m = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+  for (const [w, hh, x, z] of [[0.06, h, -b / 2, h / 2], [0.06, h, b / 2, h / 2], [b, 0.06, 0, h]]) { const r = new THREE.Mesh(new THREE.BoxGeometry(w, hh, 0.04), m); r.position.copy(P(cx + x, y + d * 0.05, z)); g.add(r); }
+  const loch = new THREE.Mesh(new THREE.PlaneGeometry(b, h), new THREE.MeshBasicMaterial({ color: 0x0b0b0b })); loch.position.copy(P(cx, y + d * 0.045, h / 2)); g.add(loch); return g; }
+{ const g = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.05), matLaden); g.position.copy(P(B + 0.36 + 1.2, GAR[1] + 0.02, 1.03)); inner.add(g); }   // Garagentor blau
+const haustuerOffen = offenRahmen((HT.x0 + HT.x1) / 2, HT.y, HT.x1 - HT.x0, HT.z1, 1);
+const kuecheOffen = offenRahmen((KT.x0 + KT.xm) / 2, T, KT.xm - KT.x0, KT.z1, 1);
+// Lichtpunkte (Wintergarten innen, Garten): weiches Leuchten als Sprite, nur sichtbar wenn an
+const GLUT = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,236,190,1)'); r.addColorStop(0.25, 'rgba(255,200,110,0.85)'); r.addColorStop(1, 'rgba(255,170,60,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+const PUNKTE = {};   // Inventar-Name → Liste Sprites
+function punkt(name, x, y, z, gr = 0.9) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLUT, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  s.scale.set(gr, gr, 1); s.position.copy(P(x, y, z)); s.visible = false; s.renderOrder = 5; inner.add(s); (PUNKTE[name] = PUNKTE[name] || []).push(s); }
+function kette(name, pfad, z, n, gr = 0.32) { for (let i = 0; i < n; i++) { const t = i / (n - 1), k = Math.min(Math.floor(t * (pfad.length - 1)), pfad.length - 2), u = t * (pfad.length - 1) - k;
+  punkt(name, pfad[k][0] + (pfad[k + 1][0] - pfad[k][0]) * u, pfad[k][1] + (pfad[k + 1][1] - pfad[k][1]) * u, z + 0.12 * Math.sin(i * 1.7), gr); } }
+const ring = (cx, cy, r, n = 9) => Array.from({ length: n + 1 }, (_, i) => [cx + r * Math.cos(i / n * 2 * Math.PI), cy + r * Math.sin(i / n * 2 * Math.PI)]);
+// Wintergarten (Blick vom Garten: links = SW = großes x): Esstisch links, fast alles andere rechts; „Lampe links“ steht rechts, „Lampe rechts“ links
+punkt('Esstisch', 4.6, -1.9, 1.9, 1.3); punkt('Lampe rechts', 5.4, -3.4, 1.3); punkt('Lampe links', 0.6, -3.4, 1.3);
+punkt('Rohr', 0.45, -1.2, 1.6); punkt('Tintin', 0.3, -2.2, 0.9, 0.6); punkt('Tintin Leiste', 0.3, -2.9, 0.6, 0.6);
+kette('Bücher oben', [[0.2, -0.4], [0.2, -1.8]], 2.2, 5, 0.4); kette('Bücher unten', [[0.2, -0.4], [0.2, -1.8]], 0.5, 5, 0.4);
+// Garten + Vorgarten (Skizze Nutzer 23.11., Hauskoordinaten)
+kette('Lounge', ring(1.7, -6.5, 1.0), 1.8, 14); punkt('Gartenlampe', 5.4, -10.6, 1.0, 1.2); kette('Birke', ring(7.7, -10.6, 0.8), 2.5, 12);
+kette('Lichterkette Zaun', [[9.6, -0.3], [9.6, -3.8]], 1.2, 10); kette('Baum', ring(3.4, 14.6, 0.7), 2.2, 10); kette('Tisch', [[3.6, 13.5], [5.5, 11.3]], 2.0, 10);
+const RAUM_LICHT = { dachspitz: ['Dachspitz'], lz: ['Wandlicht Lesezimmer', 'Leselampe'], bad_dg: ['Licht oben', 'Licht unten'], bad_og: ['Bad OG eine Lampe'], wc: ['WC EG'],
+  flur_eg: ['Flur EG'], kueche: ['Unterschrank A', 'Unterschrank B', 'Decke Birne Garten', 'Decke Birne Kühlschrank'], wz: ['Regal', 'Couch 1', 'Couch 2', 'Gin', 'Seillicht'] };
+let lichtStand = '';
+function lichterTueren(st, Q) {
+  const alle = Q.get('licht') === 'alle', inv = (st && st['sensor.lichter_inventar'] && st['sensor.lichter_inventar'].attributes && st['sensor.lichter_inventar'].attributes.liste) || [];
+  const an = (praefix) => alle || inv.some((l) => l && typeof l.n === 'string' && l.n.startsWith(praefix) && l.an === true);
+  const imHA = quelle === 'ha' || alle;
+  let neu = '';
+  for (const [raum, mats] of Object.entries(RAUM)) { const ein = imHA && (RAUM_LICHT[raum] || []).some(an); neu += ein ? '1' : '0';
+    for (const m of mats) { m.emissive.set(ein ? 0xffb54d : 0x000000); m.emissiveIntensity = ein ? 0.9 : 0; m.color.set(ein ? 0x8a6a3a : 0x334155); } }
+  const dachAn = imHA && an('Dachspitz'); matGlasDach.emissive.set(dachAn ? 0xffb54d : 0x000000); matGlasDach.emissiveIntensity = dachAn ? 0.6 : 0;
+  for (const [n, sp] of Object.entries(PUNKTE)) { const ein = imHA && an(n); for (const s of sp) s.visible = ein; neu += ein ? '1' : '0'; }
+  const tAlle = Q.get('tuer') === 'alle', tz = (e) => tAlle || (quelle === 'ha' && st && st[e] && st[e].state === 'on');
+  const htOff = tz('binary_sensor.nuki_door_sensor'), kOff = tz('binary_sensor.tuer_kueche_offen'), wOff = tz('binary_sensor.tuer_wiga_offen');
+  haustuer.visible = !htOff; haustuerOffen.visible = htOff; kuecheFluegel.visible = !kOff; kuecheOffen.visible = kOff;
+  wigaTuer.rotation.y = wOff ? -1.2 : 0;
+  return { tueren: [htOff && 'Haustür', kOff && 'Küche', wOff && 'Wintergarten'].filter(Boolean) };
+}
 
 // ---------- Module ----------
 // Zellbild als Textur (Halbzellen: sichtbare Mittelteilung), Farbe = Leistung (dunkel → bernstein → gelb)
@@ -260,7 +386,10 @@ for (const dx of [-0.59, 0.59]) { const xm = (WF[0] + WF[1]) / 2, d = WFT / 2 + 
 // Dachfenster Straßenseite zwischen Gaube und Giebel, nahe der Traufe (Nutzer 30.09.2026)
 { const cosA = 1 / Math.hypot(1, NEIG), xm = GAUBE_NW[1] + 0.4, s0 = 0.55, s1 = 1.6;
   const y0 = T - s0 * cosA, y1 = T - s1 * cosA;
-  poly([[xm - 0.28, y0, zDach(y0) + 0.03], [xm + 0.28, y0, zDach(y0) + 0.03], [xm + 0.28, y1, zDach(y1) + 0.03], [xm - 0.28, y1, zDach(y1) + 0.03]], matFenster, false); }
+  poly([[xm - 0.28, y0, zDach(y0) + 0.03], [xm + 0.28, y0, zDach(y0) + 0.03], [xm + 0.28, y1, zDach(y1) + 0.03], [xm - 0.28, y1, zDach(y1) + 0.03]], glas('bad_dg'), false); }   // 23.11.2026 (Nutzer): Dachfenster gehört zum Bad DG → leuchtet mit
+// Abgasrohr (schwarz) auf der Straßenseite oberhalb des Dachfensters (Foto IMG_8074)
+{ const r = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.3, 12), new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5 }));
+  r.position.copy(P(GAUBE_NW[1] + 0.95, T - 2.9, zDach(T - 2.9) + 0.6)); r.castShadow = true; inner.add(r); }
 // Geplante Module (Nutzer 30.09.2026): je 3 hochkant übereinander im Streifen zwischen Gaube und Südwest-Giebel,
 // Straßenseite → String Dach West, Gartenseite → String Dach Ost (Ausrichtung/Neigung wie die Dachmodule). Grau, halbdurchsichtig.
 for (const [key, xm, so] of [['dach_west', 5.3, false], ['dach_ost', 5.2, true]]) {
@@ -356,6 +485,16 @@ async function aktualisieren() {
   // Fenster: im HA-iframe live, auf der Anzeigeseite aus data.json „fe“ = [West %, Ost %] (06.10.2026, Nutzerwunsch)
   const fe = quelle === 'web' ? werte.cache?.d?.fe : null;
   const st = haZustaende() || (fe ? { 'cover.fenster_west': { attributes: { current_position: fe[0] } }, 'cover.fenster_ost': { attributes: { current_position: fe[1] } } } : null);
+  // 23.11.2026: Abluft-Fahnen nur bei laufendem Gerät (WP > 150 W, Daikin WiGa > 50 W geschätzt), Abtauen = orange (nur HA); Wind nur im HA-Dashboard
+  const Q = new URLSearchParams(location.search);
+  const wpW = w('sensor.wp_leistung_elektrisch_gesamt'), dkW = w('sensor.klima_wintergarten_leistung_geschatzt');
+  const abt = st && st['sensor.wolf_operating_mode_heater'] && st['sensor.wolf_operating_mode_heater'].state === 'Abtaubetrieb';
+  fahneWP.visible = Q.has('an') ? Q.get('an').includes('wp') : (wpW ?? 0) > 150; fahneWP.userData.farbe(abt ? 0xf59e0b : 0x60a5fa);
+  fahneDK.visible = Q.has('an') ? Q.get('an').includes('dk') : (dkW ?? 0) > 50;
+  const wx = st && st['weather.forecast_home'], wq = Q.get('wind');
+  const wAus = wq ? +wq.split(',')[0] : (quelle === 'ha' && wx ? Number(wx.attributes?.wind_bearing) : null), wKmh = wq ? +wq.split(',')[1] : (quelle === 'ha' && wx ? Number(wx.attributes?.wind_speed) : null);
+  windSetzen(Number.isFinite(wAus) ? wAus : null, Number.isFinite(wKmh) ? wKmh : null);
+  const lt = lichterTueren(st, Q);
   const s = sonneSetzen(); let fText = '';
   for (const [seite, ent] of Object.entries(FENSTER)) { const f = FLUEGEL[seite], x = ent && st && st[ent];
     const pos = x ? Math.max(0, Math.min(Number(x.attributes?.current_position ?? (x.state === 'open' ? 100 : 0)) || 0, 100)) : 0;
@@ -363,6 +502,8 @@ async function aktualisieren() {
   if (Object.values(FLUEGEL).some((f) => Math.abs(f.soll - f.ist) > 0.001)) anfordern();
   document.querySelector('#kopf b').textContent = `☀️ PV jetzt ${zahl(summe / 1000, 2)} kW`;
   document.getElementById('kopf2').textContent = `heute ${zahl(heute, 1)} kWh · Sonne ${s.el > 0 ? zahl(s.el) + '° hoch, aus ' + himmel(s.az) : 'unter dem Horizont'}${quelle === 'web' ? ' · Stand ≤ 1 min' : ''}`;
+  if (lt.tueren.length) fText += `${fText ? ' · ' : ''}🚪 offen: ${lt.tueren.join(', ')}`;
+  if (windPfeil.visible) fText += `${fText ? ' · ' : ''}💨 Wind aus ${himmel(((wAus % 360) + 360) % 360)} ${zahl(wKmh)} km/h`;
   document.getElementById('kopf3').textContent = fText;   // Fenster eigene Zeile (06.10.2026: kollidierte am iPhone mit der Legende)
   anfordern();   // neue Farben/Schilder/Sonnenstand zeichnen
 }
@@ -405,10 +546,10 @@ function groesse() { const w = cv.clientWidth, h = cv.clientHeight; renderer.set
   cam.fov = w / h < 1.1 ? 50 : 38; cam.updateProjectionMatrix(); try { anfordern(); } catch (e) {} }
 new ResizeObserver(groesse).observe(cv); groesse(); reset();
 // Schilder ausblenden, wenn das Haus zwischen Kamera und Schild liegt (Sichtstrahl gegen Hausflächen, ohne Module/Glas)
-const verdecker = () => inner.children.filter((o) => o.isMesh && !module.includes(o) && o.material !== matGlas && o.material !== matGlasDach);
+const verdecker = () => inner.children.filter((o) => o.isMesh && !module.includes(o) && o.material !== matGlas && o.material !== matGlasDach && !o.material.transparent);
 const sr = new THREE.Raycaster(), wp = new THREE.Vector3();
 function sichtbarkeit() { const vd = verdecker();
-  for (const { s } of Object.values(schilder)) { s.getWorldPosition(wp); const d = wp.distanceTo(cam.position);
+  for (const s of [...Object.values(schilder).map((o) => o.s), ...ETIKETTEN]) { s.getWorldPosition(wp); const d = wp.distanceTo(cam.position);
     sr.set(cam.position, wp.clone().sub(cam.position).normalize()); sr.far = d - 0.4; s.visible = sr.intersectObjects(vd, false).length === 0; } }
 // Zeichnen nur bei Bedarf (04.10.2026): vorher Dauerschleife mit 60 Bildern/s → iPhone/Dashboard träge.
 // Jetzt: beim Drehen (inkl. Auslaufen der Dämpfung), nach neuen Werten, nach Größenänderung; sonst steht die Szene.
