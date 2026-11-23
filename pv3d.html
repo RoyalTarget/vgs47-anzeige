@@ -232,20 +232,19 @@ function plakette(pos) { const c = document.createElement('canvas'); c.width = 3
 const plDach = plakette([2.75, T / 2 - 1.3, FI + 0.9]), plEmil = plakette([2.75, -0.5, 5.75]);
 const fahneDK = pfeil([DKX[1] + 0.02, (DKY[0] + DKY[1]) / 2, DKZ + 0.37], [1, 0, 0], 2.0, 0x60a5fa, 0.25, 0.7);
 etikett('Daikin', [(DKX[0] + DKX[1]) / 2, (DKY[0] + DKY[1]) / 2, DKZ + 1.4], '#2dd4bf', 1.8);
-// Windpfeil (23.11.2026, nur im HA-Dashboard – weather.forecast_home = met.no-Vorhersage): liegt auf der Luv-Seite am Boden und zeigt,
-// wohin der Wind weht; Länge nach Stärke. Test: ?wind=200,9 (aus Grad, km/h)
-const windPfeil = new THREE.Group(); windPfeil.visible = false; scene.add(windPfeil);
-{ const m = new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.6, depthWrite: false });
-  // 23.11.2026 (Nutzer): in der Höhe (≈ 12 m, über dem First) und rund statt flach am Boden
-  const schaft = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1, 12), m); schaft.rotation.x = Math.PI / 2; schaft.position.z = 0.5; windPfeil.add(schaft);
-  const spitze = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.9, 16), m); spitze.rotation.x = Math.PI / 2; spitze.position.z = 1.7; windPfeil.add(spitze);
-  windPfeil.userData = { schaft, spitze }; }
+// Windfahne (23.11.2026, nur im HA-Dashboard – weather.forecast_home = met.no-Vorhersage). Nutzer: 3D-Pfeil am Boden/in der Höhe zu dominant →
+// flache Fahne am Boden neben dem Nordpfeil (gleicher Stil wie „N“), Spitze zeigt, wohin der Wind weht. Test: ?wind=200,9 (aus Grad, km/h)
+const windPfeil = new THREE.Group(); windPfeil.visible = false; windPfeil.position.set(2.6, 0.03, -14); scene.add(windPfeil);
+{ const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.strokeStyle = '#cbd5e1'; g.fillStyle = '#cbd5e1'; g.lineWidth = 5; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(64, 112); g.lineTo(64, 30); g.stroke();                                    // Schaft
+  g.beginPath(); g.moveTo(64, 10); g.lineTo(80, 38); g.lineTo(48, 38); g.closePath(); g.fill();       // Spitze
+  for (const y of [96, 108]) { g.beginPath(); g.moveTo(64, y); g.lineTo(46, y - 14); g.moveTo(64, y); g.lineTo(82, y - 14); g.stroke(); }   // Federn
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.9), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.85, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; windPfeil.add(m); }
 function windSetzen(aus, kmh) {
   if (aus == null || kmh == null) { windPfeil.visible = false; return; }
-  const zu = (aus + 180) * Math.PI / 180, dir = new THREE.Vector3(Math.sin(zu), 0, -Math.cos(zu)), L = Math.max(2, Math.min(2 + kmh / 3, 7));
-  const { schaft, spitze } = windPfeil.userData; schaft.scale.y = L; schaft.position.z = L / 2; spitze.position.z = L + 0.45;
-  windPfeil.position.copy(dir.clone().multiplyScalar(-(L + 0.9) / 2)).setY(11.2);   // mittig über dem Haus, weht darüber hinweg
-  windPfeil.lookAt(windPfeil.position.clone().add(dir)); windPfeil.visible = true;
+  windPfeil.rotation.y = -(aus + 180) * Math.PI / 180; windPfeil.visible = true;   // Bildoberkante = Norden (wie Nordpfeil), im Uhrzeigersinn auf die Zielrichtung
 }
 // Nachbarhaus SW (Nutzer 23.11.): Fassade 6,50 m vor unserem Giebel, gleich hoch und breit (Lage parallel angenommen), halbdurchsichtig
 { const matN = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.9, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide });
