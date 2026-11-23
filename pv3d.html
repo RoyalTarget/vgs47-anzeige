@@ -401,9 +401,7 @@ for (const dx of [-0.59, 0.59]) { const xm = (WF[0] + WF[1]) / 2, d = WFT / 2 + 
 { const cosA = 1 / Math.hypot(1, NEIG), xm = GAUBE_NW[1] + 0.4, s0 = 0.55, s1 = 1.6;
   const y0 = T - s0 * cosA, y1 = T - s1 * cosA;
   poly([[xm - 0.28, y0, zDach(y0) + 0.03], [xm + 0.28, y0, zDach(y0) + 0.03], [xm + 0.28, y1, zDach(y1) + 0.03], [xm - 0.28, y1, zDach(y1) + 0.03]], glas('bad_dg'), false); }   // 23.11.2026 (Nutzer): Dachfenster gehört zum Bad DG → leuchtet mit
-// Abgasrohr (schwarz) auf der Straßenseite oberhalb des Dachfensters (Foto IMG_8074)
-{ const r = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.3, 12), new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5 }));
-  r.position.copy(P(GAUBE_NW[1] + 0.95, T - 2.9, zDach(T - 2.9) + 0.6)); r.castShadow = true; inner.add(r); }
+// (Abgasrohr der Gastherme auf der Straßenseite ist abgebaut – Nutzer 23.11.2026, daher nicht im Modell)
 // Geplante Module (Nutzer 30.09.2026): je 3 hochkant übereinander im Streifen zwischen Gaube und Südwest-Giebel,
 // Straßenseite → String Dach West, Gartenseite → String Dach Ost (Ausrichtung/Neigung wie die Dachmodule). Grau, halbdurchsichtig.
 for (const [key, xm, so] of [['dach_west', 5.3, false], ['dach_ost', 5.2, true]]) {
