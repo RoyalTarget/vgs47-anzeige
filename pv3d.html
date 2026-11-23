@@ -221,20 +221,30 @@ etikett('Außenfühler', [0.7, T + 0.4, 3.5], '#6b7280', 1.3);
 // 3MXM52A: 974 B × 734 H × 408 T mm (Daikin-Produkttabelle), mittig zwischen den Fenstertüren (y 3,55 / 5,95), füllt die Lücke
 const DKX = [B + 0.12, B + 0.12 + 0.408], DKY = [4.75 - 0.487, 4.75 + 0.487], DKZ = GH + 0.08;
 kiste(DKX[0], DKX[1], DKY[0], DKY[1], DKZ, DKZ + 0.734, new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.5 }));
+// 23.11.2026 (Nutzer): Daikin-Innengeräte sichtbar – WiGa: Luftstrom vom Innengerät in den Raum (rot heizt, blau kühlt);
+// Dachspitz + Emil: kleine Plakette außen am Raum. Außengerät-Fahne läuft mit der Summe aller drei (sensor.klima_leistung_geschatzt).
+const luftWG = pfeil([3.0, -0.3, 2.25], [0, -1, -0.55], 1.8, 0xef4444, 0.18, 0.6);
+function plakette(pos) { const c = document.createElement('canvas'); c.width = 320; c.height = 72; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); sp.scale.set(1.9, 1.9 * 72 / 320, 1); sp.position.copy(P(...pos)); sp.renderOrder = 11; sp.visible = false; inner.add(sp); ETIKETTEN.push(sp);
+  sp.userData.malen = (txt, farbe) => { const g = c.getContext('2d'); g.clearRect(0, 0, 320, 72); g.fillStyle = 'rgba(17,20,24,0.85)'; g.strokeStyle = farbe; g.lineWidth = 4;
+    g.beginPath(); g.roundRect(4, 4, 312, 64, 16); g.fill(); g.stroke(); g.fillStyle = '#f3f4f6'; g.font = 'bold 30px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 160, 37); t.needsUpdate = true; };
+  return sp; }
+const plDach = plakette([2.75, T / 2 - 1.3, FI + 0.9]), plEmil = plakette([2.75, -0.5, 5.75]);
 const fahneDK = pfeil([DKX[1] + 0.02, (DKY[0] + DKY[1]) / 2, DKZ + 0.37], [1, 0, 0], 2.0, 0x60a5fa, 0.25, 0.7);
 etikett('Daikin', [(DKX[0] + DKX[1]) / 2, (DKY[0] + DKY[1]) / 2, DKZ + 1.4], '#2dd4bf', 1.8);
 // Windpfeil (23.11.2026, nur im HA-Dashboard – weather.forecast_home = met.no-Vorhersage): liegt auf der Luv-Seite am Boden und zeigt,
 // wohin der Wind weht; Länge nach Stärke. Test: ?wind=200,9 (aus Grad, km/h)
 const windPfeil = new THREE.Group(); windPfeil.visible = false; scene.add(windPfeil);
-{ const m = new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.75, depthWrite: false });
-  const schaft = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.05, 1), m); schaft.position.z = 0.5; windPfeil.add(schaft);
-  const spitze = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.4, 3), m); spitze.rotation.x = Math.PI / 2; spitze.position.z = 1.7; windPfeil.add(spitze);
+{ const m = new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.6, depthWrite: false });
+  // 23.11.2026 (Nutzer): in der Höhe (≈ 12 m, über dem First) und rund statt flach am Boden
+  const schaft = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1, 12), m); schaft.rotation.x = Math.PI / 2; schaft.position.z = 0.5; windPfeil.add(schaft);
+  const spitze = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.9, 16), m); spitze.rotation.x = Math.PI / 2; spitze.position.z = 1.7; windPfeil.add(spitze);
   windPfeil.userData = { schaft, spitze }; }
 function windSetzen(aus, kmh) {
   if (aus == null || kmh == null) { windPfeil.visible = false; return; }
-  const zu = (aus + 180) * Math.PI / 180, dir = new THREE.Vector3(Math.sin(zu), 0, -Math.cos(zu)), L = Math.max(2, Math.min(2 + kmh / 3, 9));
-  const { schaft, spitze } = windPfeil.userData; schaft.scale.z = L; schaft.position.z = L / 2; spitze.position.z = L + 0.6;
-  windPfeil.position.copy(dir.clone().multiplyScalar(-(9 + L / 2 + 0.7))).setY(0.06);
+  const zu = (aus + 180) * Math.PI / 180, dir = new THREE.Vector3(Math.sin(zu), 0, -Math.cos(zu)), L = Math.max(2, Math.min(2 + kmh / 3, 7));
+  const { schaft, spitze } = windPfeil.userData; schaft.scale.y = L; schaft.position.z = L / 2; spitze.position.z = L + 0.45;
+  windPfeil.position.copy(dir.clone().multiplyScalar(-(L + 0.9) / 2)).setY(11.2);   // mittig über dem Haus, weht darüber hinweg
   windPfeil.lookAt(windPfeil.position.clone().add(dir)); windPfeil.visible = true;
 }
 // Nachbarhaus SW (Nutzer 23.11.): Fassade 6,50 m vor unserem Giebel, gleich hoch und breit (Lage parallel angenommen), halbdurchsichtig
@@ -492,10 +502,18 @@ async function aktualisieren() {
   const st = haZustaende() || (fe ? { 'cover.fenster_west': { attributes: { current_position: fe[0] } }, 'cover.fenster_ost': { attributes: { current_position: fe[1] } } } : null);
   // 23.11.2026: Abluft-Fahnen nur bei laufendem Gerät (WP > 150 W, Daikin WiGa > 50 W geschätzt), Abtauen = orange (nur HA); Wind nur im HA-Dashboard
   const Q = new URLSearchParams(location.search);
-  const wpW = w('sensor.wp_leistung_elektrisch_gesamt'), dkW = w('sensor.klima_wintergarten_leistung_geschatzt');
+  const wpW = w('sensor.wp_leistung_elektrisch_gesamt'), dkW = w('sensor.klima_leistung_geschatzt');
   const abt = st && st['sensor.wolf_operating_mode_heater'] && st['sensor.wolf_operating_mode_heater'].state === 'Abtaubetrieb';
   fahneWP.visible = Q.has('an') ? Q.get('an').includes('wp') : (wpW ?? 0) > 150; fahneWP.userData.farbe(abt ? 0xf59e0b : 0x60a5fa);
   fahneDK.visible = Q.has('an') ? Q.get('an').includes('dk') : (dkW ?? 0) > 50;
+  // Daikin innen: läuft = geschätzte Leistung > 50 W; Modus aus climate.* (nur HA), sonst neutral
+  const modus = (e) => { const x = st && st[e]; return x ? x.state : null; };
+  const dk = [['WiGa', 'sensor.klima_wintergarten_leistung_geschatzt', 'climate.wintergarten_room_temperature'], ['Dachspitz', 'sensor.klima_dachspitz_leistung_geschatzt', 'climate.dachspitz_room_temperature'],
+    ['Emil', 'sensor.klima_emil_leistung_geschatzt', 'climate.emil_room_temperature']].map(([n, p, c]) => { const m = Q.get('dk_' + n.toLowerCase()) || modus(c);
+      const an = Q.has('dk_' + n.toLowerCase()) || (w(p) ?? 0) > 50; return { n, an, m, f: m === 'cool' ? 0x3b82f6 : m === 'heat' ? 0xef4444 : m === 'fan_only' ? 0x9ca3af : 0xe5e7eb,
+        txt: m === 'cool' ? 'kühlt' : m === 'heat' ? 'heizt' : m === 'dry' ? 'trocknet' : m === 'fan_only' ? 'lüftet' : 'läuft' }; });
+  luftWG.visible = dk[0].an; luftWG.userData.farbe(dk[0].f);
+  for (const [sp, d] of [[plDach, dk[1]], [plEmil, dk[2]]]) { sp.visible = d.an; if (d.an) sp.userData.malen(`Daikin ${d.n} ${d.txt}`, '#' + new THREE.Color(d.f).getHexString()); }
   const wx = st && st['weather.forecast_home'], wq = Q.get('wind');
   const wAus = wq ? +wq.split(',')[0] : (quelle === 'ha' && wx ? Number(wx.attributes?.wind_bearing) : null), wKmh = wq ? +wq.split(',')[1] : (quelle === 'ha' && wx ? Number(wx.attributes?.wind_speed) : null);
   windSetzen(Number.isFinite(wAus) ? wAus : null, Number.isFinite(wKmh) ? wKmh : null);
@@ -507,6 +525,9 @@ async function aktualisieren() {
   if (Object.values(FLUEGEL).some((f) => Math.abs(f.soll - f.ist) > 0.001)) anfordern();
   document.querySelector('#kopf b').textContent = `☀️ PV jetzt ${zahl(summe / 1000, 2)} kW`;
   document.getElementById('kopf2').textContent = `heute ${zahl(heute, 1)} kWh · Sonne ${s.el > 0 ? zahl(s.el) + '° hoch, aus ' + himmel(s.az) : 'unter dem Horizont'}${quelle === 'web' ? ' · Stand ≤ 1 min' : ''}`;
+  { const g = []; if (fahneWP.visible) g.push(abt ? 'WP taut ab' : 'WP läuft');
+    const dl = dk.filter((d) => d.an).map((d) => `${d.n} ${d.txt}`); if (dl.length) g.push('Daikin ' + dl.join(', '));
+    if (g.length) fText += `${fText ? ' · ' : ''}♨️ ${g.join(' · ')}`; }
   if (lt.tueren.length) fText += `${fText ? ' · ' : ''}🚪 offen: ${lt.tueren.join(', ')}`;
   if (windPfeil.visible) fText += `${fText ? ' · ' : ''}💨 Wind aus ${himmel(((wAus % 360) + 360) % 360)} ${zahl(wKmh)} km/h`;
   document.getElementById('kopf3').textContent = fText;   // Fenster eigene Zeile (06.10.2026: kollidierte am iPhone mit der Legende)
