@@ -171,6 +171,45 @@ kiste(WF[0], WF[1], T, T + WFT, 0, 2.62, matWand);
 poly([[WF[0] - 0.1, T, 2.85], [WF[1] + 0.1, T, 2.85], [WF[1] + 0.1, T + WFT + 0.15, 2.85 - G7 * (WFT + 0.15)], [WF[0] - 0.1, T + WFT + 0.15, 2.85 - G7 * (WFT + 0.15)]], matBlech);
 kiste(0.04, B - 0.04, -4.0, 0, 0, 2.7, matGlas).castShadow = false;   // Wintergarten 5,90 × 4,0 m (Nutzer 01.10.2026, vorher 2,8 m tief)
 
+// ---------- 23.11.2026 (Nutzer): Außengeräte, CMI-Außenfühler, Nachbarhaus – wegen Abluft/Wind am Fühler ----------
+const ziel3 = (x, y, z) => new THREE.Vector3(x, z, y);   // Richtung in Hauskoordinaten
+function pfeil(von, dir, len, farbe, r0 = 0.25, r1 = 0.9) {   // Abluft-Fahne: halbdurchsichtiger Kegel + Pfeilspitze
+  const d = ziel3(...dir).normalize(), o = P(...von);
+  const k = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, 24, 1, true), new THREE.MeshBasicMaterial({ color: farbe, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide }));
+  k.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); k.position.copy(o.clone().addScaledVector(d, len / 2)); inner.add(k);
+  const a = new THREE.ArrowHelper(d, o, len + 0.3, farbe, 0.6, 0.45); inner.add(a); return a; }
+function etikett(txt, pos, farbe, breite = 2.6) {
+  const c = document.createElement('canvas'); c.width = 320; c.height = 72; const g = c.getContext('2d');
+  g.fillStyle = 'rgba(17,20,24,0.85)'; g.strokeStyle = farbe; g.lineWidth = 3; g.beginPath(); g.roundRect(4, 4, c.width - 8, c.height - 8, 16); g.fill(); g.stroke();
+  g.fillStyle = '#f3f4f6'; g.font = 'bold 30px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, c.width / 2, c.height / 2 + 1);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); sp.scale.set(breite, breite * 72 / 320, 1); sp.position.copy(P(...pos)); sp.renderOrder = 11; inner.add(sp); return sp;
+}
+// WP CHA-07 (Lageplan v6, Projektverlauf 23.10.): Vorgarten Straßenseite (NW), Ecke zu Nr. 45, Außeneinheit 1,29 × 0,56 × 0,98 m,
+// Ansaugung zur Straße, Ausblasung 2,4 m gegen den Windfang bzw. halb in den Gang
+const WPX = [0.45, 1.74], WPY0 = T + WFT + 2.4;
+kiste(WPX[0], WPX[1], WPY0, WPY0 + 0.56, 0, 0.98, new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.5 }));
+pfeil([(WPX[0] + WPX[1]) / 2, WPY0 - 0.05, 0.5], [0, -1, 0], 2.3, 0x60a5fa, 0.35, 0.8);
+etikett('WP CHA-07', [(WPX[0] + WPX[1]) / 2, WPY0 + 0.3, 2.0], '#f59e0b');
+// CMI-Außenfühler (Nutzer 23.11. im Lageplan): Straßenfassade über dem Gang zu Nr. 45, ca. 3 m hoch, knapp über dem Windfang-Dach
+// Nutzer 23.11.: Fühler nicht so prominent → kleiner Punkt, kleines graues Schild
+const fuehler = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), new THREE.MeshBasicMaterial({ color: 0xf87171 }));
+fuehler.position.copy(P(0.7, T + 0.06, 3.0)); inner.add(fuehler);
+etikett('Außenfühler', [0.7, T + 0.4, 3.5], '#6b7280', 1.3);
+// Daikin-Außengerät WiGa (Nutzer 23.11.): auf der Garagenterrasse vor dem SW-Giebel, bläst vom Haus weg
+// 3MXM52A: 974 B × 734 H × 408 T mm (Daikin-Produkttabelle), mittig zwischen den Fenstertüren (y 3,55 / 5,95), füllt die Lücke
+const DKX = [B + 0.12, B + 0.12 + 0.408], DKY = [4.75 - 0.487, 4.75 + 0.487], DKZ = GH + 0.08;
+kiste(DKX[0], DKX[1], DKY[0], DKY[1], DKZ, DKZ + 0.734, new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.5 }));
+pfeil([DKX[1] + 0.02, (DKY[0] + DKY[1]) / 2, DKZ + 0.37], [1, 0, 0], 2.0, 0x60a5fa, 0.25, 0.7);
+etikett('Daikin', [(DKX[0] + DKX[1]) / 2, (DKY[0] + DKY[1]) / 2, DKZ + 1.4], '#2dd4bf', 1.8);
+// Nachbarhaus SW (Nutzer 23.11.): Fassade 6,50 m vor unserem Giebel, gleich hoch und breit (Lage parallel angenommen), halbdurchsichtig
+{ const matN = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.9, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide });
+  const X0 = B + 6.5, X1 = X0 + B;
+  kiste(X0, X1, 0, T, 0, TR, matN);
+  for (const x of [X0, X1]) poly([[x, 0, TR], [x, T, TR], [x, T / 2, FI]], matN);
+  poly([[X0, 0, TR], [X1, 0, TR], [X1, T / 2, FI], [X0, T / 2, FI]], matN); poly([[X0, T, TR], [X1, T, TR], [X1, T / 2, FI], [X0, T / 2, FI]], matN);
+  etikett('Nachbarhaus · 6,5 m', [X0 + B / 2, T / 2, FI + 1.0], '#9ca3af', 3.2); }
+
 // ---------- Module ----------
 // Zellbild als Textur (Halbzellen: sichtbare Mittelteilung), Farbe = Leistung (dunkel → bernstein → gelb)
 function zellTextur(hochkant) {
