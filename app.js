@@ -79,8 +79,18 @@ function zeigeSchema(s, sk, A = {}) {
     // 06.11.2026: AZ-Plakette – Farbe nach Güte (grün ab 4, gelb 3–4, rot darunter), ohne Wert/Stillstand leer
     if (sl.id === "d2_az") { const el = $("slot_" + sl.id); el.textContent = v !== null && v > 0.05 ? zahl(v, 2) : "";
       el.style.color = v >= 4 ? "#86efac" : v >= 3 ? "#fde68a" : "#fca5a5"; continue; }
+    // 23.11.2026 (Nutzer): Verdichter % statt Stellgröße – gleiche Rechnung wie sensor.wp_verdichter_prozent (schema_werte.yaml), bei Änderung beide anpassen.
+    // % = (Stellgröße − 42) ÷ 28, mind. 37 % (Minimum 25 Hz bis Stellgröße ~53), > 72 = 100 % + Heizstab Stufe 1/2/3 (Wolf S. 142: ≤ 81,8 / ≤ 94,4 / darüber)
+    if (sl.id === "d2_stg") { const el = $("slot_" + sl.id);
+      if (v === null || v < 0.5) { el.textContent = ""; el.removeAttribute("data-tip"); continue; }
+      const p = Math.max(37, Math.min(100, Math.round((v - 42) / 28 * 100))), st = v <= 72 ? 0 : v <= 81.8 ? 1 : v <= 94.4 ? 2 : 3;
+      el.textContent = st ? "100 % + Heizstab " + st : p + " %";
+      el.setAttribute("data-tip", "<b>Verdichter " + el.textContent + "</b><br>UVR-Stellgröße jetzt: " + Math.round(v) + " (F10-Regler, 0–10 V an die Wolf)<br>"
+        + "Verdichter % = Drehzahl ÷ 68 Hz (= Stellgröße 70, voll). Unter 37 % (25 Hz) kann der Verdichter nicht drosseln – das gilt von Stellgröße 44 bis ~53.<br>"
+        + "Über 70 kommt der WP-Heizstab dazu: Stufe 1 = 3 kW, 2 = 6 kW, 3 = 9 kW (rote Felder).<br>Die Wolf-App zeigt eine eigene %-Skala (bei Volllast ~71 %).");
+      el.style.cursor = "help"; continue; }
     // 06.11.2026: Vollast-Timer – wie lange die WP schon am Anschlag fährt (sensor.wp_vollast_minuten, Stellgröße ≥ 69); sonst leer, dann zeigt overlays „70 = voll“
-    if (sl.id === "d2_voll") { const m = v === null ? 0 : Math.floor(v); $("slot_" + sl.id).textContent = m < 1 ? "" : m < 60 ? "seit " + m + " min" : "seit " + Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min"; continue; }
+    if (sl.id === "d2_voll") { const m = v === null || (num(s, "sensor.cmi_wp_stellgroesse") ?? 0) > 72 ? 0 : Math.floor(v); $("slot_" + sl.id).textContent = m < 1 ? "" : m < 60 ? "seit " + m + " min" : "seit " + Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min"; continue; }
     // 02.11.2026: Puffer-Bilanz (Ø 15 min, WP − Heizkreis): + grün = Puffer lädt, − orange = Puffer gibt ab, sonst grau
     if (sl.id === "puf_b") { const el = $("slot_" + sl.id); el.textContent = v === null ? "" : (v >= 0.1 ? "+" : "") + txt;
       el.style.color = v === null ? sl.color : v >= 0.1 ? "#22c55e" : v <= -0.1 ? "#f59e0b" : "#9ca3af";
