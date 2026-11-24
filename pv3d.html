@@ -290,14 +290,11 @@ const haustuer = new THREE.Group(); inner.add(haustuer);
 // Gartenseite (Blick vom Garten: links = SW = großes x): OG beide Fenster Emil; EG hinter dem Wintergarten Öffnung zum Wohnzimmer
 wandFenster('gar', 3.7, 5.0, 3.85, 5.3, 'emil'); wandFenster('gar', 0.6, 1.8, 4.1, 5.3, 'emil');
 wandFenster('gar', 1.0, 5.0, 0.05, 2.15, 'wz');
-// Gauben: Garten (GZ) zwei große Flügelfenster fast bis zum Gaubenboden, Straße (LZ) breites Band mit 4 Flügeln; Geländer an der Traufe
+// Gauben: Garten (GZ) zwei große Flügelfenster fast bis zum Gaubenboden, Straße (LZ) breites Band mit 4 Flügeln (Geländer 24.11.2026 entfernt)
 { const so = GAUBE_FENSTER.so, nw = GAUBE_FENSTER.nw;
   so.geometry = new THREE.PlaneGeometry(GAUBE_SO[1] - GAUBE_SO[0] - 0.5, 1.6); so.position.copy(P((GAUBE_SO[0] + GAUBE_SO[1]) / 2, -0.02, TR + 0.88)); so.material = glas('gz');
   nw.geometry = new THREE.PlaneGeometry(GAUBE_NW[1] - GAUBE_NW[0] - 0.5, 1.25); nw.position.copy(P((GAUBE_NW[0] + GAUBE_NW[1]) / 2, T + 0.02, TR + 1.0)); nw.material = glas('lz');
-  const matGel = new THREE.MeshStandardMaterial({ color: 0x3f2a22, roughness: 0.7 });
-  for (const [yy, x0, x1] of [[0.35, 0.3, 5.7], [T - 0.35, 0.3, 5.7]]) { const zb = zDach(yy);
-    kiste(x0, x1, yy - 0.02, yy + 0.02, zb + 0.55, zb + 0.6, matGel);
-    for (let x = x0; x <= x1 + 0.01; x += 0.45) kiste(x - 0.015, x + 0.015, yy - 0.015, yy + 0.015, zb, zb + 0.58, matGel); } }
+}  // Geländer an den Traufen entfernt (Nutzer 24.11.2026)
 SW_KLEIN[5.95].material = glas('bad_dg'); SW_KLEIN[3.55].material = glas('gz'); SW_TUER[5.95].material = glas('yoga'); SW_TUER[3.55].material = glas('emil');
 // Wintergarten-Tür (Sensor) etwa in der Mitte, geht nach außen auf; Scharnier bei x 2,73
 const wigaTuer = new THREE.Group(); wigaTuer.position.copy(P(2.73, WG.y - 0.03, 0)); inner.add(wigaTuer);
