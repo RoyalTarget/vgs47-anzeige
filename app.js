@@ -1836,6 +1836,9 @@ function zeigeSchwellen(d, v) {
   // 19.11.2026: + fh.s (verlauf.json) – WiGa Ecke/Mitte für „Ventile WiGa“ (roter Punkt fehlte)
   for (const [e, x] of Object.entries({ ...(d.s || {}), ...((v && v.fh && v.fh.s) || {}), ...(ns.s || {}) })) st[e] = { state: String(x), attributes: {} };
   st["sensor.naechster_start"] = { state: "", attributes: { geraete: ns.g || {} } };
+  // 24.11.2026: Daikin-Soll (data.json a.soll) als Attribut für die Modulations-Grafik im Daikin-ⓘ
+  const kla = (d.a || {})["climate.wintergarten_room_temperature"];
+  if (st["climate.wintergarten_room_temperature"] && kla) st["climate.wintergarten_room_temperature"].attributes = { temperature: kla.soll, current_temperature: kla.ist };
   if (!el._cfg) { el.setConfig({ titel: false }); el._cfg = true; }
   // Tendenz-Pfeile (06.10.2026): HA schickt je Fühler 1-min-Proben der letzten 31 min (ns.h) → als Verlauf an die Karte,
   // zeitlich so verschoben, dass die jüngste Probe „jetzt“ ist (verlauf.json kommt nur alle 5 min)
