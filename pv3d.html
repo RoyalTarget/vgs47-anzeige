@@ -84,8 +84,8 @@ boden.rotation.x = -Math.PI / 2; boden.receiveShadow = true; scene.add(boden);
 { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
   g.fillStyle = '#e5e7eb'; g.beginPath(); g.moveTo(64, 8); g.lineTo(88, 70); g.lineTo(64, 58); g.lineTo(40, 70); g.closePath(); g.fill();
   g.font = 'bold 40px system-ui'; g.textAlign = 'center'; g.fillText('N', 64, 118);
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
-  m.rotation.x = -Math.PI / 2; m.position.set(0, 0.02, -14); scene.add(m); }
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));   // 2,2 → 1,3 (Nutzer 24.11.)
+  m.rotation.x = -Math.PI / 2; m.position.set(0, 0.02, -14); scene.add(m); scene.userData.nord = m; }
 
 // Haus-Gruppe (Hauskoordinaten → three: X = x, Y = z, Z = y), um die Mitte zentriert und nach Himmelsrichtung gedreht
 const haus = new THREE.Group(); const inner = new THREE.Group(); inner.position.set(-B / 2, 0, -T / 2); haus.add(inner);
@@ -234,17 +234,30 @@ const fahneDK = pfeil([DKX[1] + 0.02, (DKY[0] + DKY[1]) / 2, DKZ + 0.37], [1, 0,
 etikett('Daikin', [(DKX[0] + DKX[1]) / 2, (DKY[0] + DKY[1]) / 2, DKZ + 1.4], '#2dd4bf', 1.8);
 // Windfahne (23.11.2026, nur im HA-Dashboard – weather.forecast_home = met.no-Vorhersage). Nutzer: 3D-Pfeil am Boden/in der Höhe zu dominant →
 // flache Fahne am Boden neben dem Nordpfeil (gleicher Stil wie „N“), Spitze zeigt, wohin der Wind weht. Test: ?wind=200,9 (aus Grad, km/h)
-const windPfeil = new THREE.Group(); windPfeil.visible = false; windPfeil.position.set(2.6, 0.03, -14); scene.add(windPfeil);
-{ const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
-  g.strokeStyle = '#cbd5e1'; g.fillStyle = '#cbd5e1'; g.lineWidth = 5; g.lineCap = 'round';
-  g.beginPath(); g.moveTo(64, 112); g.lineTo(64, 30); g.stroke();                                    // Schaft
-  g.beginPath(); g.moveTo(64, 10); g.lineTo(80, 38); g.lineTo(48, 38); g.closePath(); g.fill();       // Spitze
-  for (const y of [96, 108]) { g.beginPath(); g.moveTo(64, y); g.lineTo(46, y - 14); g.moveTo(64, y); g.lineTo(82, y - 14); g.stroke(); }   // Federn
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.9), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.85, depthWrite: false }));
-  m.rotation.x = -Math.PI / 2; windPfeil.add(m); }
+// 24.11.2026 (Nutzer, statt Bodenpfeil): Windsack wie am Flugplatz statt Bodenpfeil. Mast 3,5 m neben dem Nordpfeil, Kegel 5 Streifen orange/weiß,
+// Öffnung in den Wind, Spitze zeigt, wohin er weht. Steht waagrecht ab 15 kt (28 km/h), je Streifen ~3 kt, bei Flaute hängt er.
+const windPfeil = new THREE.Group(); windPfeil.visible = false; windPfeil.scale.setScalar(0.6); scene.add(windPfeil);   // 0,6: nur zur Orientierung (Nutzer 24.11.)
+// Nutzer 24.11. (Skizze): Nordpfeil + Windsack vorn links in der Startansicht (Straßenseite vor dem Windfang), sonst nur am Bildrand
+{ haus.updateMatrixWorld(true); const n = inner.localToWorld(P(3.7, 14.1, 0)); scene.userData.nord.position.set(n.x, 0.02, n.z);
+  const w = inner.localToWorld(P(4.7, 12.7, 0)); windPfeil.position.set(w.x, 0, w.z); }
+const SACK_H = 3.5, SACK_L = 1.7;
+const windDreh = new THREE.Group(); windDreh.position.y = SACK_H; windPfeil.add(windDreh);
+const windNeig = new THREE.Group(); windDreh.add(windNeig);
+{ const matMast = new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.5, metalness: 0.3 });
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, SACK_H + 0.15, 10), matMast); mast.position.y = (SACK_H + 0.15) / 2; windPfeil.add(mast);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.025, 6, 24), matMast); ring.rotation.y = Math.PI / 2; windNeig.add(ring);
+  const mO = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.8, side: THREE.DoubleSide, emissive: 0x7c2d12, emissiveIntensity: 0.35 });
+  const mW = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8, side: THREE.DoubleSide, emissive: 0x334155, emissiveIntensity: 0.35 });
+  const n = 5, l = SACK_L / n, r0 = 0.3, r1 = 0.11;
+  for (let i = 0; i < n; i++) { const ra = r0 - (r0 - r1) * i / n, rb = r0 - (r0 - r1) * (i + 1) / n;
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(rb, ra, l, 20, 1, true), i % 2 ? mW : mO);
+    seg.rotation.z = -Math.PI / 2; seg.position.x = l * (i + 0.5); windNeig.add(seg); } }
 function windSetzen(aus, kmh) {
   if (aus == null || kmh == null) { windPfeil.visible = false; return; }
-  windPfeil.rotation.y = -(aus + 180) * Math.PI / 180; windPfeil.visible = true;   // Bildoberkante = Norden (wie Nordpfeil), im Uhrzeigersinn auf die Zielrichtung
+  const nach = aus + 180, kt = kmh / 1.852;
+  windDreh.rotation.y = (90 - nach) * Math.PI / 180;                                   // lokal +x = Richtung, wohin der Wind weht (Norden = −z wie Nordpfeil)
+  windNeig.rotation.z = -(1 - Math.min(kt / 15, 1)) * 80 * Math.PI / 180;               // 0 kt: hängt (80°), ab 15 kt waagrecht
+  windPfeil.visible = true;
 }
 // Nachbarhaus SW (Nutzer 23.11.): Fassade 6,50 m vor unserem Giebel, gleich hoch und breit (Lage parallel angenommen), halbdurchsichtig
 { const matN = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.9, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide });
@@ -252,7 +265,7 @@ function windSetzen(aus, kmh) {
   kiste(X0, X1, 0, T, 0, TR, matN);
   for (const x of [X0, X1]) poly([[x, 0, TR], [x, T, TR], [x, T / 2, FI]], matN);
   poly([[X0, 0, TR], [X1, 0, TR], [X1, T / 2, FI], [X0, T / 2, FI]], matN); poly([[X0, T, TR], [X1, T, TR], [X1, T / 2, FI], [X0, T / 2, FI]], matN);
-  etikett('Nachbarhaus · 6,5 m', [X0 + B / 2, T / 2, FI + 1.0], '#9ca3af', 3.2); }
+  }   // Schild „Nachbarhaus · 6,5 m“ entfernt (Nutzer 24.11.2026)
 
 // ---------- 23.11.2026 (Nutzer, Fotos + Skizzen): Fenster, Türen, Lichter – Licht und Türen nur im HA-Dashboard, nie auf der Website ----------
 // Raumzuordnung + Gartenlichter: Themen/Dashboard.md „PV-3D Ausbau – Sammlung“. Lichtzustand aus sensor.lichter_inventar (Attribut liste: n, an).
@@ -523,7 +536,8 @@ async function aktualisieren() {
     const dl = dk.filter((d) => d.an).map((d) => `${d.n} ${d.txt}`); if (dl.length) g.push('Daikin ' + dl.join(', '));
     if (g.length) fText += `${fText ? ' · ' : ''}♨️ ${g.join(' · ')}`; }
   if (lt.tueren.length) fText += `${fText ? ' · ' : ''}🚪 offen: ${lt.tueren.join(', ')}`;
-  if (windPfeil.visible) fText += `${fText ? ' · ' : ''}💨 Wind aus ${himmel(((wAus % 360) + 360) % 360)} ${zahl(wKmh)} km/h`;
+  if (windPfeil.visible) { const g = ((Math.round(wAus / 10) * 10 % 360) + 360) % 360 || 360, kt = Math.round(wKmh / 1.852);
+    fText += `${fText ? ' · ' : ''}💨 Wind ${kt < 1 ? 'still' : String(g).padStart(3, '0') + '° / ' + kt + ' kt'} (${zahl(wKmh)} km/h aus ${himmel(((wAus % 360) + 360) % 360)})`; }
   document.getElementById('kopf3').textContent = fText;   // Fenster eigene Zeile (06.10.2026: kollidierte am iPhone mit der Legende)
   anfordern();   // neue Farben/Schilder/Sonnenstand zeichnen
 }
@@ -584,7 +598,7 @@ controls.addEventListener('start', () => { zieht = true; anfordern(); });
 controls.addEventListener('end', () => { zieht = false; anfordern(); });
 anfordern();
 aktualisieren(); setInterval(aktualisieren, 5000);
-window.__pv3d = { schilder, cam, inner, THREE, controls, FLUEGEL };   // für Tests
+window.__pv3d = { windPfeil, inner, haus, P, schilder, cam, inner, THREE, controls, FLUEGEL };   // für Tests
 </script>
 </body>
 </html>
