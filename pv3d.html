@@ -334,13 +334,23 @@ const ring = (cx, cy, r, n = 9) => Array.from({ length: n + 1 }, (_, i) => [cx +
 // Wintergarten (Blick vom Garten: links = SW = großes x): Esstisch links, fast alles andere rechts; „Lampe links“ steht rechts, „Lampe rechts“ links
 // Innenfotos 23.11.: Esstisch = 3 Pendel über dem langen Tisch (Richtung Haus → Garten), „Lampe rechts“ auf der Brüstung in der SW-Ecke,
 // an der Wand zu Nr. 45: Bücher oben (oberstes Brett), Rohr (auf dem Regal, gartenseitig), Tintin-Vitrine (Mitte), Bücher unten (Bank), „Lampe links“ auf dem Fensterbrett vorn rechts
-for (const yy of [-1.0, -2.0, -3.0]) punkt('Esstisch', 4.5, yy, 1.95, 0.9);
+for (const yy of [-1.0, -2.0, -3.0]) punkt('Esstisch', 4.5, yy, 1.6, 0.9);   // 27.11.2026 (Nutzer): knapp 1 m über dem Tisch
 punkt('Lampe rechts', 5.45, -3.75, 0.95); punkt('Lampe links', 0.35, -3.7, 1.0); punkt('Rohr', 0.3, -2.1, 1.65, 0.7);
-kette('Tintin', [[0.36, -0.6], [0.36, -1.9]], 1.3, 5, 0.5); kette('Tintin Leiste', [[0.36, -0.6], [0.36, -1.9]], 1.05, 4, 0.35);
-kette('Bücher oben', [[0.36, -0.4], [0.36, -2.0]], 2.15, 5, 0.4); kette('Bücher unten', [[0.47, -0.5], [0.47, -3.2]], 0.42, 7, 0.35);
+// 27.11.2026 (Nutzer): Tintin/Bücher sind lange Lichtleisten → leuchtender Streifen statt Einzelpunkte (Rohr bleibt Punkt)
+function leiste(name, x, y0, y1, z, h = 0.05) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.03, h, Math.abs(y1 - y0)), new THREE.MeshBasicMaterial({ color: 0xffd9a0 }));
+  m.position.copy(P(x, (y0 + y1) / 2, z)); m.visible = false; inner.add(m); (PUNKTE[name] = PUNKTE[name] || []).push(m);
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(Math.abs(y1 - y0) + 0.3, h + 0.35), new THREE.MeshBasicMaterial({ color: 0xffb54d, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  g.position.copy(P(x + 0.04, (y0 + y1) / 2, z)); g.rotation.y = Math.PI / 2; g.visible = false; inner.add(g); PUNKTE[name].push(g); }
+leiste('Tintin', 0.36, -0.6, -1.9, 1.3); leiste('Tintin Leiste', 0.36, -0.6, -1.9, 1.05);
+leiste('Bücher oben', 0.36, -0.4, -2.0, 2.15); leiste('Bücher unten', 0.52, -0.3, -3.3, 0.38);   // vorne an der Bankkante (Box x 0,04–0,49 hat sie verdeckt)
 // Garten + Vorgarten (Skizze Nutzer 23.11., Hauskoordinaten)
-kette('Lounge', ring(1.7, -6.5, 1.0), 1.8, 14); punkt('Gartenlampe', 5.4, -10.6, 1.0, 1.2); kette('Birke', ring(7.7, -10.6, 0.8), 2.5, 12);
-kette('Lichterkette Zaun', [[9.6, -0.3], [9.6, -3.8]], 1.2, 10); kette('Baum', ring(3.4, 14.6, 0.7), 2.2, 10); kette('Tisch', [[3.6, 13.5], [5.5, 11.3]], 2.0, 10);
+kette('Lounge', ring(1.7, -5.7, 1.0), 1.8, 14);   // 27.11.2026 (Nutzer): näher an den WiGa
+punkt('Gartenlampe', 5.4, -10.6, 1.0, 1.2); kette('Birke', ring(7.7, -10.6, 0.8), 2.5, 12);
+kette('Lichterkette Zaun', [[9.6, -0.3], [9.6, -7.3]], 1.2, 20); kette('Baum', ring(4.6, 14.6, 0.7), 2.2, 14, 0.2);   // 27.11.2026 (Nutzer): Zaun doppelt so lang Richtung Birke, Baum gegenüber der Küche
+// Wohnzimmer (Nutzer 27.11.): je ein Spot, sichtbar durch die WZ-Öffnung hinter dem WiGa – Gin/Regal (SW-Wand), Couch (Wand zu Nr. 45), Seillicht (Decke)
+punkt('Gin|Regal', 4.75, -0.06, 1.15, 0.6); punkt('Couch', 1.4, -0.06, 1.3, 0.6); punkt('Seillicht', 3.0, -0.06, 1.95, 0.6); 
+// Biergarten „Tisch“ (Foto Nutzer 27.11.): große Birnen im Dreieck Hausecke (SW, Straße) → Baum → Windfang-Ecke → Hausecke
+kette('Tisch', [[B - 0.05, T + 0.05], [4.6, 14.6], [WF[1] + 0.05, T + WFT + 0.05], [B - 0.05, T + 0.05]], 2.35, 16, 0.42);
 const RAUM_LICHT = { dachspitz: ['Dachspitz'], lz: ['Wandlicht Lesezimmer', 'Leselampe'], bad_dg: ['Licht oben', 'Licht unten'], bad_og: ['Bad OG eine Lampe'], wc: ['WC EG'],
   flur_eg: ['Flur EG'], kueche: ['Unterschrank A', 'Unterschrank B', 'Decke Birne Garten', 'Decke Birne Kühlschrank'], wz: ['Regal', 'Couch 1', 'Couch 2', 'Gin', 'Seillicht'] };
 let lichtStand = '';
@@ -352,7 +362,7 @@ function lichterTueren(st, Q) {
   for (const [raum, mats] of Object.entries(RAUM)) { const ein = imHA && (RAUM_LICHT[raum] || []).some(an); neu += ein ? '1' : '0';
     for (const m of mats) { m.emissive.set(ein ? 0xffb54d : 0x000000); m.emissiveIntensity = ein ? 0.9 : 0; m.color.set(ein ? 0x8a6a3a : 0x334155); } }
   const dachAn = imHA && an('Dachspitz'); matGlasDach.emissive.set(dachAn ? 0xffb54d : 0x000000); matGlasDach.emissiveIntensity = dachAn ? 0.6 : 0;
-  for (const [n, sp] of Object.entries(PUNKTE)) { const ein = imHA && an(n); for (const s of sp) s.visible = ein; neu += ein ? '1' : '0'; }
+  for (const [n, sp] of Object.entries(PUNKTE)) { const ein = imHA && n.split('|').some(an); for (const s of sp) s.visible = ein; neu += ein ? '1' : '0'; }
   const tAlle = Q.get('tuer') === 'alle', tz = (e) => tAlle || (quelle === 'ha' && st && st[e] && st[e].state === 'on');
   const htOff = tz('binary_sensor.nuki_door_sensor'), kOff = tz('binary_sensor.tuer_kueche_offen'), wOff = tz('binary_sensor.tuer_wiga_offen');
   haustuer.visible = !htOff; haustuerOffen.visible = htOff; kuecheFluegel.visible = !kOff; kuecheOffen.visible = kOff;
