@@ -1626,7 +1626,7 @@ function zeigePrognose(d) {
   // Kurve (30.09.2026: blätterbar −4 … +7 Tage, Standard vorgestern … übermorgen; Ziehen im Feld / Tagesleiste darunter,
   // Doppelklick = Standard). Messwerte durchgezogen, Prognosen ab jetzt kräftig gestrichelt, Vergangenheit blass.
   window.__progD = d;
-  const W = 1000, H = 330, L = 44, R = 956, T = 12, B = 290;
+  const W = 1000, H = 330, L = 44, R = 956, T = 30, B = 290;   // T 12 → 30 (28.11.2026: Platz für Sonnenbogen)
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const LO = tagPlus(t0.getTime(), -4), HI = tagPlus(t0.getTime(), 8), FEN = 5 * 864e5;
   if (!window.__progWin) window.__progWin = { std: true, von: 0, breite: FEN };
@@ -1648,6 +1648,9 @@ function zeigePrognose(d) {
   const Y = (v) => B - v / max * (B - T), Ys = (v) => B - v / 100 * (B - T);
   const linie = (pts) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
   let svg = `<defs><clipPath id="pkclip"><rect x="${L}" y="0" width="${R - L}" height="${B + 1}"/></clipPath></defs>`;
+  // 28.11.2026 (Nutzer): Tag/Nacht wie Dashboard
+  const hmT = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  svg += zlHimmel("progk", x0, x1, L, R, T + 10, B, X, hmT);
   for (let i = 0; i <= max; i += (max > 6 ? 2 : 1))
     svg += `<line x1="${L}" x2="${R}" y1="${Y(i)}" y2="${Y(i)}" stroke="#374151" stroke-dasharray="3 4"/>`
       + `<text x="${L - 6}" y="${Y(i) + 4}" fill="#9ca3af" font-size="12" text-anchor="end">${i}</text>`;
@@ -1795,7 +1798,9 @@ function zeigeTemperaturen(d) {
   const lo = Math.min(0, Math.floor(Math.min(...werte) / 5) * 5), hi = Math.max(30, Math.ceil(Math.max(...werte) / 5) * 5);   // ab 0 °C (29.09.2026)
   const Y = (v) => B - (v - lo) / (hi - lo || 1) * (B - T);
   const linie = (pts) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
-  let svg = "";
+  // 28.11.2026 (Nutzer): Tag/Nacht wie Dashboard („Dämmerung“ + Sonnenbogen)
+  const hmT = (t) => new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  let svg = zlHimmel("tempk", x0, x1, L, R, T + 10, B, X, hmT);
   for (let v = lo; v <= hi; v += 5)
     svg += `<line x1="${L}" x2="${R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#374151" stroke-dasharray="3 4"/>`
       + `<text x="${L - 6}" y="${Y(v) + 4}" fill="#9ca3af" font-size="12" text-anchor="end">${v}</text>`;
