@@ -250,7 +250,7 @@ const RAEUME = [
   // 6. Feld = gemeinsame Gruppe: Bedarf/Versorgung nur gemeinsam (Wunsch 22), „gibt ab“ je Teil.
   // 16.11.2026 (Nutzer): JOCO 3.439 W gemeinsam → 40 % Wohnen / 60 % WiGa, zusätzlich Summenzeile „WZ + WiGa“
   ['Wohnen', 811, 20, ['sensor.rl_wz_1', 'sensor.rl_wz_2'], 22.5, 'WZ + WiGa'],
-  ['WiGa', 2628, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 22, 'WZ + WiGa'],
+  ['WiGa', 2628, 20, ['sensor.rl_wohnzimmer', 'sensor.rl_wz_aussen', 'sensor.rl_wz_5'], 20, 'WZ + WiGa'],   // 28.11.2026 (Nutzer): Soll 20 = Ziel WiGa Mitte (Daikin + Ventile), vorher 22
   ['WC', 154, 20, ['sensor.rl_wc'], 20],
   ['Flur/Treppe', 783, 18, ['sensor.rl_og_flur', 'sensor.rl_flur'], 21.5]];   // 17.11.2026 (Nutzer): Wunsch Flur 21,5; Plan seit 18.11. auf Wunsch
 // Raumtemperatur je Raum (19.10.2026, Nutzer): H&T nach Standort (input_select.ht_x_standort, wandert mit), feste Fühler je Raum.
@@ -382,7 +382,8 @@ function hydro(h, K) {
     if (name === 'Flur/Treppe') ks.sort((a, b) => fu.indexOf(a.e) - fu.indexOf(b.e)); if (ks.every((k) => K_ORDER.includes(k.e))) ks.sort((a, b) => K_ORDER.indexOf(a.e) - K_ORDER.indexOf(b.e));
     const bed = typeof last === 'number' ? last * (soll - au) / (norm + 16) : null;   // 18.11.2026: Plan auf Wunschtemp.
     // 17.11.2026 (Nutzer): Punkt live = Raumfühler (erster ohne Daikin) gegen Soll, ±0,5 K = passt; ohne Fühler fester Eintrag (STATUS) bzw. „kein Fühler“
-    const ft = raumTemps(h, name).filter((t) => !t.g)[0], dT = ft ? ft.v - soll : null;
+    // 28.11.2026 (Nutzer): WiGa – Raumaussage nach H&T Mitte (wie Daikin + Ventile), Ecke steht nur daneben
+    const tl = raumTemps(h, name).filter((t) => !t.g), ft = (name === 'WiGa' ? tl.find((t) => t.k === 'H&T Mitte') : null) || tl[0], dT = ft ? ft.v - soll : null;
     const rm = dT === null, st = dT === null ? (STATUS[name] || 'kein') : Math.abs(dT) <= 0.5 ? 'passt' : dT < 0 ? (STATUS[name] === 'kuehl_b' ? 'kuehl_b' : 'kuehl') : 'warm', farbe = ST_F[st][0];
     const r = { name, soll, norm, w, dT, rm, tR: ft ? ft.v : null, ok: true, bed, p: bed ? w / bed * 100 : null, farbe, st, neu: false, gem, ks, letzter: ks.length ? ks[ks.length - 1].e : null, erster: ks.length ? ks[0].e : null };
     liste.push(r); for (const k of ks) raum[k.e] = r; }
